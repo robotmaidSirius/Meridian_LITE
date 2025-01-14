@@ -51,5 +51,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: firmware.bin
-        path: ${{github.workspace}}/${{env.DIR}}/.pio/build/${{inputs.board_env}}/*.bin
+        path: ${{github.workspace}}/${{env.DIR}}/.pio/build/${{inputs.board_env}}/firmware.bin
         overwrite: true
