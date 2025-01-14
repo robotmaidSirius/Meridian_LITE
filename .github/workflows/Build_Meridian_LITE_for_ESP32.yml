@@ -46,7 +46,20 @@ jobs:
       env:
         PLATFORMIO_BUILD_FLAGS: ${{inputs.build_flags}}
 
+    - name: List
+      working-directory: ${{github.workspace}}/${{env.DIR}}
+      run: ls
+
+    - name: List
+      working-directory: ${{github.workspace}}/${{env.DIR}}/.pio/build
+      run: ls
+
+    - name: List
+      working-directory: ${{github.workspace}}/${{env.DIR}}/.pio/build/${{inputs.board_env}}
+      run: ls
+
     - name: Upload artifacts
+      if: success()
       uses: actions/upload-artifact@v3
       with:
         name: firmware.bin
