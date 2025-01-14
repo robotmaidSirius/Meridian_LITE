@@ -1,13 +1,25 @@
-name: PlatformIO CI
-on: workflow_dispatch
-
-env:
-  BUILD_TYPE: Release
+name: Build Meridian_LITE for ESP32
+on:
+  workflow_dispatch:
+    inputs:
+      board_env:
+        description: 'Select environments'
+        required: true
+        default: 'esp32dev'
+        type: choice
+        options:
+          - esp32dev
+      build_flags:
+        description: 'Build flags'
+        required: false
+        type: string
 
 jobs:
   build:
-    name: Build Meridian_LITE_for_ESP32
+    name: Running PlatformIO
     runs-on: ubuntu-latest
+    env:
+      DIR: Meridian_LITE_for_ESP32
 
     steps:
     - name: Checkout my project
@@ -17,17 +29,25 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          ${{github.workspace}}/Meridian_LITE_for_ESP32/.cache/pip
-          ${{github.workspace}}/Meridian_LITE_for_ESP32/.platformio/.cache
+          ${{github.workspace}}/${{env.DIR}}/.cache/pip
+          ${{github.workspace}}/${{env.DIR}}/.platformio/.cache
         key: ${{ runner.os }}-pio
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     - name: Install PlatformIO Core
-      working-directory: ${{github.workspace}}/Meridian_LITE_for_ESP32
+      working-directory: ${{github.workspace}}/${{env.DIR}}
       run: pip install --upgrade platformio
 
     - name: Build PlatformIO Project
-      working-directory: ${{github.workspace}}/Meridian_LITE_for_ESP32
-      run: pio run
+      working-directory: ${{github.workspace}}/${{env.DIR}}
+      run: pio run -e ${{inputs.board_env}}
+      env:
+        PLATFORMIO_BUILD_FLAGS: ${{inputs.build_flags}}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: firmware.bin
+        path: ${{github.workspace}}/${{env.DIR}}/.pio/build/${{inputs.board_env}}/firmware.bin
