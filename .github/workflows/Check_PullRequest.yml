@@ -3,12 +3,7 @@ on:
   pull_request:
     branches:
     - main
-  workflow_dispatch:
-    inputs:
-      build_flags:
-        description: 'Build flags'
-        required: false
-        type: string
+    - develop
 
 jobs:
   Meridian_LITE_for_ESP32:

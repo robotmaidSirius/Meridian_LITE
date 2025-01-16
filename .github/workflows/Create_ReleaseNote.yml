@@ -3,12 +3,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      build_flags:
-        description: 'Build flags'
-        required: false
-        type: string
 
 jobs:
   Meridian_LITE_for_ESP32:
@@ -37,7 +31,9 @@ jobs:
         path: artifacts
         pattern: Meridian_LITE_*
         merge-multiple: true
-    - run: ls -R artifacts
+
+    - name: List all artifacts
+      run: ls -R artifacts
 
     - name: Create Release Note
       id: create_release
@@ -52,13 +48,13 @@ jobs:
         draft: true
         prerelease: false
 
-    - name: Upload Release Asset
+    - name: Upload Release Asset (Meridian_LITE_for_ESP32)
       id: upload-release-asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/Meridian_LITE_for_ESP32.bin
+        asset_path: ${{github.workspace}}/artifacts/Meridian_LITE_for_ESP32.bin
         asset_name: Meridian_LITE_for_ESP32.bin
         asset_content_type: application/bin
