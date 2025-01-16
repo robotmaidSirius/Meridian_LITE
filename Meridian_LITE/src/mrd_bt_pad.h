@@ -31,9 +31,9 @@ constexpr unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
 /// @param a_interval 読み取り間隔（ミリ秒）.
 /// @return 更新されたジョイパッドの状態を64ビット整数で返す.
 uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
-  static uint64_t pre_val_tmp = 0;        // 前回の値を保持する静的変数
-  int8_t pad_analog_tmp[4] = {0};         // アナログ入力のデータ組み立て用
-  static int calib[4] = {0}; // アナログスティックのキャリブレーション値
+  static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
+  int8_t pad_analog_tmp[4] = {0};  // アナログ入力のデータ組み立て用
+  static int calib[4] = {0};       // アナログスティックのキャリブレーション値
 
   static unsigned long last_time_tmp = 0; // 最後に関数が呼ばれた時間を記録
   unsigned long current_time_tmp = millis();
@@ -58,7 +58,7 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
         }
 
         if ((button_tmp & 368) == 368) {
-          pad_common_tmp += 8; // 右側十字ボタン全部押しなら start押下とみなす
+          pad_common_tmp += 8;              // 右側十字ボタン全部押しなら start押下とみなす
           button_tmp &= 0b1111111010001111; // 右十字ボタンのクリア
         }
 
@@ -89,7 +89,6 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
 
     // アナログスティックのキャリブレーション
     // [WIP]
-
 
     // データの組み立て
     uint64_t updated_val_tmp = 0;

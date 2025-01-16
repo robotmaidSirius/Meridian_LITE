@@ -286,5 +286,4 @@ public:
   }
 };
 
-
 #endif // __MERIDIAN_MESSAGE_H__

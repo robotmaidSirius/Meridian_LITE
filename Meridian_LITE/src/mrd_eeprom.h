@@ -137,7 +137,7 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect) {
     EEPROM.commit(); // 書き込みを確定する
     Serial.print("Value updated ");
     return true;
-  }else{
+  } else {
     Serial.print("Same value ");
   }
   return false;
