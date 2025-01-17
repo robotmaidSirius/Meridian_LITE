@@ -8,7 +8,7 @@
 	"settings": {
 		"files.encoding": "utf8",
 		"files.eol": "\n",
-		"doxdocgen.file.versionTag": "@version 0.23.1",
+		"doxdocgen.file.versionTag": "@version 1.2.0",
 		"doxdocgen.generic.useGitUserName": true,
 		"doxdocgen.generic.useGitUserEmail": true,
 		"doxdocgen.file.copyrightTag": [

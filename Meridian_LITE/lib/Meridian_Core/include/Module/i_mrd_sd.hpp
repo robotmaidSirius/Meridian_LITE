@@ -1,7 +1,7 @@
 /**
  * @file i_mrd_sd.hpp
- * @brief
- * @version 0.25.1
+ * @brief MeridianCoreで使用するSDカードのインターフェースクラス
+ * @version 1.2.0
  * @date 2025-01-16
  *
  * @copyright Copyright (c) 2025-.
