@@ -2,8 +2,6 @@
 #define __MERIDIAN_SERVO_DISTRIBUTOR_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
 #include "mrd_module/servo/sv_ftbrx.h"
 #include "mrd_module/servo/sv_ics.h"
 
@@ -15,10 +13,17 @@
 //  各UARTの開始
 //------------------------------------------------------------------------------------
 
+#if 0
 /// @brief 指定されたUARTラインとサーボタイプに基づいてサーボの通信プロトコルを設定する.
 /// @param a_line UART通信ライン（L, R, またはC）.
 /// @param a_servo_type サーボのタイプを示す整数値.
 /// @return サーボがサポートされている場合はtrueを, サポートされていない場合はfalseを返す.
+bool mrd_servo_begin(IcsHardSerialClass &servo) {
+  if (NULL != &servo) {
+    return servo.begin(); // サーボモータの通信初期設定. Serial2
+  }
+  return false;
+}
 bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
   switch (a_servo_type) {
   case 1:
@@ -59,6 +64,7 @@ bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
     return false;
   }
 }
+#endif
 
 //------------------------------------------------------------------------------------
 //  サーボ通信フォーメーションの分岐

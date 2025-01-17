@@ -1,10 +1,6 @@
 #ifndef __MERIDIAN_SD_H__
 #define __MERIDIAN_SD_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
 // ライブラリ導入
 #include <SD.h> // SDカード用
 

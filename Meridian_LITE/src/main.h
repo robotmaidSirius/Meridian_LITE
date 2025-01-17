@@ -2,55 +2,10 @@
 #define __MERIDIAN_MAIN_FUNC__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-
-// ライブラリ導入
-#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
-
-extern IcsHardSerialClass ics_L;
-extern IcsHardSerialClass ics_R;
-#include "Meridim90.hpp" // Meridim90
 
 //------------------------------------------------------------------------------------
 //  列挙型
 //------------------------------------------------------------------------------------
-
-enum UartLine { // サーボ系統の列挙型(L,R,C)
-  L,            // Left
-  R,            // Right
-  C             // Center
-};
-
-enum PadType {   // リモコン種の列挙型(NONE, PC, MERIMOTE, BLUERETRO, SBDBT, KRR5FH)
-  NONE = 0,      // リモコンなし
-  PC = 0,        // PCからのPD入力情報を使用
-  MERIMOTE = 1,  // MERIMOTE(未導入)
-  BLUERETRO = 2, // BLUERETRO(未導入)
-  SBDBT = 3,     // SBDBT(未導入)
-  KRR5FH = 4,    // KRR5FH
-  WIIMOTE = 5,   // WIIMOTE / WIIMOTE + Nunchuk
-  WIIMOTE_C = 6, // WIIMOTE+Classic
-};
-
-enum PadButton {  // リモコンボタンの列挙型
-  PAD_SELECT = 1, // Select
-  PAD_HOME = 2,   // HOME
-  PAD_L3 = 2,     // L3
-  PAD_R3 = 4,     // L4
-  PAD_START = 8,  // Start
-  PAD_UP = 16,    // 十字上
-  PAD_RIGHT = 32, // 十字右
-  PAD_DOWN = 64,  // 十字下
-  PAD_LEFT = 128, // 十字左
-  PAD_L2 = 256,   // L2
-  PAD_R2 = 512,   // R2
-  PAD_L1 = 1024,  // L1
-  PAD_R1 = 2048,  // R1
-  PAD_bU = 4096,  // △ 上
-  PAD_bR = 8192,  // o 右
-  PAD_bD = 16384, // x 下
-  PAD_bL = 32768  // ◻︎ 左
-};
 
 enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
   Bin = 0,       // BIN
@@ -59,25 +14,8 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
 };
 
 //------------------------------------------------------------------------------------
-//  変数
-//------------------------------------------------------------------------------------
-
-// システム用の変数
-const int MRD_ERR = MRDM_LEN - 2;      // エラーフラグの格納場所（配列の末尾から2つめ）
-const int MRD_ERR_u = MRD_ERR * 2 + 1; // エラーフラグの格納場所（上位8ビット）
-const int MRD_ERR_l = MRD_ERR * 2;     // エラーフラグの格納場所（下位8ビット）
-const int MRD_CKSM = MRDM_LEN - 1;     // チェックサムの格納場所（配列の末尾）
-const int PAD_LEN = 5;                 // リモコン用配列の長さ
-TaskHandle_t thp[4];                   // マルチスレッドのタスクハンドル格納用
-
-//------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
 //------------------------------------------------------------------------------------
-
-// Meridim配列用の共用体の設定
-Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
-Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
-Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 // フラグ用変数
 struct MrdFlags {
@@ -103,63 +41,6 @@ struct MrdFlags {
   bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
 };
 MrdFlags flg;
-
-// シーケンス番号理用の変数
-struct MrdSq {
-  int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
-  int r_expect = 0;    // フレーム毎に0-59999をカウントし, 受信値と比較
-};
-MrdSq mrdsq;
-
-// タイマー管理用の変数
-struct MrdTimer {
-  long frame_ms = FRAME_DURATION;                                   // 1フレームあたりの単位時間(ms)
-  int count_loop = 0;                                               // サイン計算用の循環カウンタ
-  int count_loop_dlt = 2;                                           // サイン計算用の循環カウンタを1フレームにいくつ進めるか
-  int count_loop_max = 359999;                                      // 循環カウンタの最大値
-  unsigned long count_frame = 0;                                    // メインフレームのカウント
-  int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
-};
-MrdTimer tmr;
-
-// エラーカウント用
-struct MrdErr {
-  int esp_pc = 0;   // PCの受信エラー（ESP32からのUDP）
-  int pc_esp = 0;   // ESP32の受信エラー（PCからのUDP）
-  int esp_tsy = 0;  // Teensyの受信エラー（ESP32からのSPI）
-  int tsy_esp = 0;  // ESP32の受信エラー（TeensyからのSPI）
-  int esp_skip = 0; // UDP→ESP受信のカウントの連番スキップ回数
-  int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
-  int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
-};
-MrdErr err;
-
-typedef union // リモコン値格納用
-{
-  short sval[PAD_LEN];        // short型で4個の配列データを持つ
-  uint16_t usval[PAD_LEN];    // 上記のunsigned short型
-  int8_t bval[PAD_LEN * 2];   // 上記のbyte型
-  uint8_t ubval[PAD_LEN * 2]; // 上記のunsigned byte型
-  uint64_t ui64val;           // 上記のunsigned int16型
-                              // [0]button, [1]pad.stick_L_x:pad.stick_L_y,
-                              // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
-} PadUnion;
-PadUnion pad_array = {0}; // pad値の格納用配列
-PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
-
-// リモコンのアナログ入力データ
-struct PadValue {
-  unsigned short stick_R = 0;
-  int stick_R_x = 0;
-  int stick_R_y = 0;
-  unsigned short stick_L = 0;
-  int stick_L_x = 0;
-  int stick_L_y = 0;
-  unsigned short stick_L2R2V = 0;
-  int R2_val = 0;
-  int L2_val = 0;
-};
-PadValue pad_analog;
 
 // サーボ用変数
 struct ServoParam {
@@ -198,34 +79,8 @@ struct ServoParam {
 };
 ServoParam sv;
 
-// モニタリング設定
-struct MrdMonitor {
-  bool flow = MONITOR_FLOW;           // フローを表示
-  bool all_err = MONITOR_ERR_ALL;     // 全経路の受信エラー率を表示
-  bool servo_err = MONITOR_ERR_SERVO; // サーボエラーを表示
-  bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
-  bool pad = MONITOR_PAD;             // リモコンのデータを表示
-};
-MrdMonitor monitor;
-
 //================================================================================================================
 //  関数各種
 //================================================================================================================
-
-///@brief Generate expected sequence number from input.
-///@param a_previous_num Previous sequence number.
-///@return Expected sequence number. (0 to 59,999)
-uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
-  uint16_t x_tmp = a_previous_num + 1;
-  if (x_tmp > 59999) // Reset counter
-  {
-    x_tmp = 0;
-  }
-  return x_tmp;
-}
-
-// 予約用
-bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe);
-bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe);
 
 #endif //__MERIDIAN_MAIN_FUNC__

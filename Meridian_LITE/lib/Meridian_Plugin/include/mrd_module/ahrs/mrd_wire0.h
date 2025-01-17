@@ -1,10 +1,6 @@
 #ifndef __MERIDIAN_WIRE0_H__
 #define __MERIDIAN_WIRE0_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
 // ライブラリ導入
 #include <Adafruit_BNO055.h>            // 9軸センサBNO055用
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用

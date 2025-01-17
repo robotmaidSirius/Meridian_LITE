@@ -45,6 +45,8 @@
         "**/*.code-search": true,
         "lib/ESP32Wiimote": true,
         "lib/gs2d": true,
-        "lib/IcsClass_V210": true
+        "lib/IcsClass_V210": true,
+        "Doxyfile": true,
+        "doxygen": true
     }
 }

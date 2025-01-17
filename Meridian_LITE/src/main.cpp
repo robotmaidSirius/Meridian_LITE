@@ -13,14 +13,46 @@
 //  初期設定
 //================================================================================================================
 
+//================================================================================================================
+//  サーボIDとロボット部位、軸との対応表 (KHR-3HVの例)
+//================================================================================================================
+//
+// ID    Parts/Axis ＜ICS_Left_Upper SIO1,SIO2＞
+// [L00] 頭/ヨー
+// [L01] 左肩/ピッチ
+// [L02] 左肩/ロール
+// [L03] 左肘/ヨー
+// [L04] 左肘/ピッチ
+// [L05] -
+// ID    Parts/Axis ＜ICS_Left_Lower SIO3,SIO4＞
+// [L06] 左股/ロール
+// [L07] 左股/ピッチ
+// [L08] 左膝/ピッチ
+// [L09] 左足首/ピッチ
+// [L10] 左足首/ロール
+// ID    Parts/Axis  ＜ICS_Right_Upper SIO5,SIO6＞
+// [R00] 腰/ヨー
+// [R01] 右肩/ピッチ
+// [R02] 右肩/ロール
+// [R03] 右肘/ヨー
+// [R04] 右肘/ピッチ
+// [R05] -
+// ID    Parts/Axis  ＜ICS_Right_Lower SIO7,SIO8＞
+// [R06] 右股/ロール
+// [R07] 右股/ピッチ
+// [R08] 右膝/ピッチ
+// [R09] 右足首/ピッチ
+// [R10] 右足首/ロール
+// ヘッダファイルの読み込み
+#include "config.h"
+
 // ライブラリ導入
 #include "Board/meridian_board_lite_for_esp32.hpp"
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "keys.h"
 #include "main.h"
 
+#include "Meridim90.hpp" // Meridim90
 #include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
@@ -32,12 +64,65 @@
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
+//------------------------------------------------------------------------------------
+//  変数
+//------------------------------------------------------------------------------------
+
+// システム用の変数
+const int MRD_ERR = MRDM_LEN - 2;      // エラーフラグの格納場所（配列の末尾から2つめ）
+const int MRD_ERR_u = MRD_ERR * 2 + 1; // エラーフラグの格納場所（上位8ビット）
+const int MRD_ERR_l = MRD_ERR * 2;     // エラーフラグの格納場所（下位8ビット）
+const int MRD_CKSM = MRDM_LEN - 1;     // チェックサムの格納場所（配列の末尾）
+TaskHandle_t thp[4];                   // マルチスレッドのタスクハンドル格納用
+
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
 volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ
 portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタイマー用のミューテックス
 unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
 volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
+
+// Meridim配列用の共用体の設定
+Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
+Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
+Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
+
+// シーケンス番号理用の変数
+struct MrdSq {
+  int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
+  int r_expect = 0;    // フレーム毎に0-59999をカウントし, 受信値と比較
+};
+MrdSq mrdsq;
+// タイマー管理用の変数
+struct MrdTimer {
+  long frame_ms = FRAME_DURATION;                                   // 1フレームあたりの単位時間(ms)
+  int count_loop = 0;                                               // サイン計算用の循環カウンタ
+  int count_loop_dlt = 2;                                           // サイン計算用の循環カウンタを1フレームにいくつ進めるか
+  int count_loop_max = 359999;                                      // 循環カウンタの最大値
+  unsigned long count_frame = 0;                                    // メインフレームのカウント
+  int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
+};
+MrdTimer tmr;
+// エラーカウント用
+struct MrdErr {
+  int esp_pc = 0;   // PCの受信エラー（ESP32からのUDP）
+  int pc_esp = 0;   // ESP32の受信エラー（PCからのUDP）
+  int esp_tsy = 0;  // Teensyの受信エラー（ESP32からのSPI）
+  int tsy_esp = 0;  // ESP32の受信エラー（TeensyからのSPI）
+  int esp_skip = 0; // UDP→ESP受信のカウントの連番スキップ回数
+  int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
+  int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
+};
+MrdErr err;
+// モニタリング設定
+struct MrdMonitor {
+  bool flow = MONITOR_FLOW;           // フローを表示
+  bool all_err = MONITOR_ERR_ALL;     // 全経路の受信エラー率を表示
+  bool servo_err = MONITOR_ERR_SERVO; // サーボエラーを表示
+  bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
+  bool pad = MONITOR_PAD;             // リモコンのデータを表示
+};
+MrdMonitor monitor;
 
 /// @brief count_timerを保護しつつ1ずつインクリメント
 void IRAM_ATTR frame_timer() {
@@ -46,7 +131,25 @@ void IRAM_ATTR frame_timer() {
   portEXIT_CRITICAL_ISR(&timer_mux);
   xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
 }
+///@brief Generate expected sequence number from input.
+///@param a_previous_num Previous sequence number.
+///@return Expected sequence number. (0 to 59,999)
+inline uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
+#if 1
+  return (a_previous_num + 1) % 60000; // Reset counter
+#else
+  uint16_t x_tmp = a_previous_num + 1;
+  if (x_tmp > 59999) // Reset counter
+  {
+    x_tmp = 0;
+  }
+  return x_tmp;
+#endif
+}
 
+// 予約用
+bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe);
+bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe);
 //================================================================================================================
 //  シリアルモニタ表示用の関数
 //================================================================================================================
@@ -56,6 +159,11 @@ private:
   Stream &m_serial; // シリアルオブジェクトの参照を保持
 
 public:
+  enum UartLine { // サーボ系統の列挙型(L,R,C)
+    L,            // Left
+    R,            // Right
+    C             // Center
+  };
   // コンストラクタでStreamオブジェクトを受け取り, メンバーに保存
   MrdMsgHandler(Stream &a_serial) : m_serial(a_serial) {}
 
@@ -382,20 +490,24 @@ void setup() {
   // サーボUARTの通信速度の表示
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
-  // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L);         // サーボモータの通信初期設定. Serial2
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R);         // サーボモータの通信初期設定. Serial3
-  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
+// サーボ用UART設定
+#if 1
+  ics_L.begin();
+  ics_R.begin();
+#else
+  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L); // サーボモータの通信初期設定. Serial2
+  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R); // サーボモータの通信初期設定. Serial3
+#endif
+  mrd_disp.servo_protocol(MrdMsgHandler::L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
+  mrd_disp.servo_protocol(MrdMsgHandler::R, MOUNT_SERVO_TYPE_R);
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
 
   // EEPROMの開始, ダンプ表示
-  mrd_eeprom_init(EEPROM_SIZE);                                   // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);             // 内容のダンプ表示
-  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), // EEPROMのリードライトテスト
-                              CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+  mrd_eeprom_init(EEPROM_SIZE);                                                                                   // EEPROMの初期化
+  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);                                                             // 内容のダンプ表示
+  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE); // EEPROMのリードライトテスト
 
   // SDカードの初期設定とチェック
   mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);

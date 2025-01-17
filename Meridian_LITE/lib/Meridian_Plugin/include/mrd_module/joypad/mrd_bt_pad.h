@@ -1,12 +1,70 @@
 #ifndef __MERIDIAN_BT_PAD_H__
 #define __MERIDIAN_BT_PAD_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
 // ライブラリ導入
-#include <ESP32Wiimote.h> // Wiiコントローラー
+#include "mrd_module/servo/sv_ics.h"
+#include <ESP32Wiimote.h>       // Wiiコントローラー
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+
+const int PAD_LEN = 5; // リモコン用配列の長さ
+
+enum PadType {   // リモコン種の列挙型(NONE, PC, MERIMOTE, BLUERETRO, SBDBT, KRR5FH)
+  NONE = 0,      // リモコンなし
+  PC = 0,        // PCからのPD入力情報を使用
+  MERIMOTE = 1,  // MERIMOTE(未導入)
+  BLUERETRO = 2, // BLUERETRO(未導入)
+  SBDBT = 3,     // SBDBT(未導入)
+  KRR5FH = 4,    // KRR5FH
+  WIIMOTE = 5,   // WIIMOTE / WIIMOTE + Nunchuk
+  WIIMOTE_C = 6, // WIIMOTE+Classic
+};
+
+enum PadButton {  // リモコンボタンの列挙型
+  PAD_SELECT = 1, // Select
+  PAD_HOME = 2,   // HOME
+  PAD_L3 = 2,     // L3
+  PAD_R3 = 4,     // L4
+  PAD_START = 8,  // Start
+  PAD_UP = 16,    // 十字上
+  PAD_RIGHT = 32, // 十字右
+  PAD_DOWN = 64,  // 十字下
+  PAD_LEFT = 128, // 十字左
+  PAD_L2 = 256,   // L2
+  PAD_R2 = 512,   // R2
+  PAD_L1 = 1024,  // L1
+  PAD_R1 = 2048,  // R1
+  PAD_bU = 4096,  // △ 上
+  PAD_bR = 8192,  // o 右
+  PAD_bD = 16384, // x 下
+  PAD_bL = 32768  // ◻︎ 左
+};
+
+typedef union // リモコン値格納用
+{
+  short sval[PAD_LEN];        // short型で4個の配列データを持つ
+  uint16_t usval[PAD_LEN];    // 上記のunsigned short型
+  int8_t bval[PAD_LEN * 2];   // 上記のbyte型
+  uint8_t ubval[PAD_LEN * 2]; // 上記のunsigned byte型
+  uint64_t ui64val;           // 上記のunsigned int16型
+                              // [0]button, [1]pad.stick_L_x:pad.stick_L_y,
+                              // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
+} PadUnion;
+PadUnion pad_array = {0}; // pad値の格納用配列
+PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
+
+// リモコンのアナログ入力データ
+struct PadValue {
+  unsigned short stick_R = 0;
+  int stick_R_x = 0;
+  int stick_R_y = 0;
+  unsigned short stick_L = 0;
+  int stick_L_x = 0;
+  int stick_L_y = 0;
+  unsigned short stick_L2R2V = 0;
+  int R2_val = 0;
+  int L2_val = 0;
+};
+PadValue pad_analog;
 ESP32Wiimote wiimote;
 
 // リモコン受信ボタンデータの変換テーブル

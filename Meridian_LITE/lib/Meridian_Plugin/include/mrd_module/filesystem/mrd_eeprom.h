@@ -1,10 +1,6 @@
 #ifndef __MERIDIAN_EEPROM_H__
 #define __MERIDIAN_EEPROM_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
 // ライブラリ導入
 #include <EEPROM.h>
 
