@@ -16,6 +16,7 @@ class MrdServoFeetech_SCS : public I_Meridian_Servo {
 
 public:
   MrdServoFeetech_SCS() {
+    this->setServoType(ServoType::FTCSCS);
   }
   ~MrdServoFeetech_SCS() {
   }

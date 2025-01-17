@@ -15,6 +15,7 @@
 class MrdServoFutabaRsxttl : public I_Meridian_Servo {
 public:
   MrdServoFutabaRsxttl() {
+    this->setServoType(ServoType::FTBRSX);
   }
   ~MrdServoFutabaRsxttl() {
   }

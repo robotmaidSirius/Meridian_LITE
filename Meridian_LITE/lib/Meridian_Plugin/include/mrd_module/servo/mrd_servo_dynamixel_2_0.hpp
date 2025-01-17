@@ -15,6 +15,7 @@
 class MrdServoDynamixel_2_0 : public I_Meridian_Servo {
 public:
   MrdServoDynamixel_2_0() {
+    this->setServoType(ServoType::DXL2);
   }
   ~MrdServoDynamixel_2_0() {
   }

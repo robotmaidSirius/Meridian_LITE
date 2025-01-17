@@ -16,6 +16,7 @@ class MrdServoPca9685 : public I_Meridian_Servo {
 
 public:
   MrdServoPca9685() {
+    this->setServoType(ServoType::PCA9685);
   }
   ~MrdServoPca9685() {
   }

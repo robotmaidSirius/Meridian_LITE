@@ -135,7 +135,6 @@
 // I2C設定, I2Cセンサ関連設定
 #define I2C0_SPEED       400000 // I2Cの速度（400kHz推奨）
 #define IMUAHRS_INTERVAL 10     // IMU/AHRSのセンサの読み取り間隔(ms)
-#define IMUAHRS_STOCK    4      // MPUで移動平均を取る際の元にする時系列データの個数
 // #define I2C1_SPEED 100000  // I2Cの速度（100kHz推奨?）
 // #define I2C1_MERIMOTE_ADDR 0x58 // MerimoteのI2Cアドレス
 

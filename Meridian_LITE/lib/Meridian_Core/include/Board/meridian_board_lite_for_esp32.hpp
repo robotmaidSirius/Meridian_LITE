@@ -10,4 +10,7 @@
 #ifndef MERIDIAN_BOARD_LITE_FOR_ESP32_HPP
 #define MERIDIAN_BOARD_LITE_FOR_ESP32_HPP
 
+#include "meridian_core.hpp"
+
+#include <Arduino.h>
 #endif // MERIDIAN_BOARD_LITE_FOR_ESP32_HPP

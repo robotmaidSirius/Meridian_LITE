@@ -3,7 +3,6 @@
 
 #include "config.h"
 #include "main.h"
-#include "mrd_disp.h"
 
 #include "gs2d_krs.h"
 

@@ -15,6 +15,7 @@
 class MrdServoKondoPmx : public I_Meridian_Servo {
 public:
   MrdServoKondoPmx() {
+    this->setServoType(ServoType::KOPMX);
   }
   ~MrdServoKondoPmx() {
   }

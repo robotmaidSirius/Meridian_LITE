@@ -15,6 +15,8 @@
 class MrdServoJrpropoXbus : public I_Meridian_Servo {
 public:
   MrdServoJrpropoXbus() {
+
+    this->setServoType(ServoType::JRXBUS);
   }
   ~MrdServoJrpropoXbus() {
   }

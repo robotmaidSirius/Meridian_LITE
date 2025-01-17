@@ -15,6 +15,7 @@
 class MrdServoPwm : public I_Meridian_Servo {
 public:
   MrdServoPwm() {
+    this->setServoType(ServoType::PWM_S);
   }
   ~MrdServoPwm() {
   }

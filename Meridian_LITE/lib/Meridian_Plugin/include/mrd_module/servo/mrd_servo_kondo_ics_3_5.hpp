@@ -16,6 +16,7 @@ class MrdServoKondoIcs35 : public I_Meridian_Servo {
 
 public:
   MrdServoKondoIcs35() {
+    this->setServoType(ServoType::KOICS3);
   }
   ~MrdServoKondoIcs35() {
   }
