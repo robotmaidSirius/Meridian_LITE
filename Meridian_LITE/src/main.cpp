@@ -12,11 +12,12 @@
 //================================================================================================================
 //  初期設定
 //================================================================================================================
+#include "Board/meridian_board_lite_for_esp32.hpp"
 
 // ヘッダファイルの読み込み
-#include "main.h"
 #include "config.h"
 #include "keys.h"
+#include "main.h"
 
 #include "mrd_bt_pad.h"
 #include "mrd_disp.h"
@@ -145,8 +146,8 @@ void setup() {
   r_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(r_udp_meridim.sval, MRDM_LEN);
 
   // タイマーの設定
-  timer_semaphore = xSemaphoreCreateBinary(); // セマフォの作成
-  timer = timerBegin(0, 80, true);            // タイマーの設定（1つ目のタイマーを使用, 分周比80）
+  timer_semaphore = xSemaphoreCreateBinary();          // セマフォの作成
+  timer = timerBegin(0, 80, true);                     // タイマーの設定（1つ目のタイマーを使用, 分周比80）
   timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数をタイマーの割り込みに登録
   timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10msごとにトリガー
   timerAlarmEnable(timer);                             // タイマーを開始
