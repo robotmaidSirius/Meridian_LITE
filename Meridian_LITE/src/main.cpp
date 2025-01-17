@@ -1,5 +1,4 @@
-#ifndef __MERIDIAN_LITE_MAIN__
-#define __MERIDIAN_LITE_MAIN__
+
 
 #define VERSION "Meridian_LITE_v1.1.1_2024_08.18" // バージョン表示
 
@@ -495,5 +494,3 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
   }
   return false;
 }
-
-#endif // __MERIDIAN_LITE_MAIN__

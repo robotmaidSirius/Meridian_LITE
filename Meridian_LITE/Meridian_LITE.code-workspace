@@ -31,9 +31,6 @@
 			".vscode": false
 		},
 		"editor.fontFamily": "Consolas, 'Courier New', monospace",
-		"editor.rulers": [
-			120
-		],
 		"cSpell.words": [],
 		"forbeslindesay-taskrunner.source": "PlatformIO"
 	}

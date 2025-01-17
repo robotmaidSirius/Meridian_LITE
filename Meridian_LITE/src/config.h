@@ -32,14 +32,14 @@
 //  サーボIDとロボット部位、軸との対応表 (KHR-3HVの例)
 //================================================================================================================
 //
-// ID    Parts/Axis　＜ICS_Left_Upper SIO1,SIO2＞
+// ID    Parts/Axis ＜ICS_Left_Upper SIO1,SIO2＞
 // [L00] 頭/ヨー
 // [L01] 左肩/ピッチ
 // [L02] 左肩/ロール
 // [L03] 左肘/ヨー
 // [L04] 左肘/ピッチ
 // [L05] -
-// ID    Parts/Axis　＜ICS_Left_Lower SIO3,SIO4＞
+// ID    Parts/Axis ＜ICS_Left_Lower SIO3,SIO4＞
 // [L06] 左股/ロール
 // [L07] 左股/ピッチ
 // [L08] 左膝/ピッチ
@@ -125,12 +125,12 @@
 #define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
 
 // シリアルモニタリング
-#define MONITOR_FRAME_DELAY       1 // シリアルモニタでフレーム遅延時間を表示（0:OFF, 1:ON）
-#define MONITOR_FLOW              0 // シリアルモニタでフローを表示（0:OFF, 1:ON）
-#define MONITOR_ERR_SERVO         0 // シリアルモニタでサーボエラーを表示（0:OFF, 1:ON）
-#define MONITOR_ERR_ALL           0 // 全経路の受信エラー率を表示
-#define MONITOR_SEQ               0 // シリアルモニタでシーケンス番号チェックを表示（0:OFF, 1:ON）
-#define MONITOR_PAD               0 // シリアルモニタでリモコンのデータを表示（0:OFF, 1:ON）
+#define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示（0:OFF, 1:ON）
+#define MONITOR_FLOW              0    // シリアルモニタでフローを表示（0:OFF, 1:ON）
+#define MONITOR_ERR_SERVO         0    // シリアルモニタでサーボエラーを表示（0:OFF, 1:ON）
+#define MONITOR_ERR_ALL           0    // 全経路の受信エラー率を表示
+#define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示（0:OFF, 1:ON）
+#define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示（0:OFF, 1:ON）
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
 
 // I2C設定, I2Cセンサ関連設定
@@ -150,8 +150,8 @@
 // JOYPAD関連設定
 #define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
 #define PAD_INTERVAL     10    // JOYPADのデータを読みに行くフレーム間隔 (※KRC-5FHでは4推奨)
-#define PAD_BUTTON_MARGE 1 // 0:JOYPADのボタンデータをMeridim受信値に論理積, 1:Meridim受信値に論理和
-#define PAD_GENERALIZE   1 // ジョイパッドの入力値をPS系に一般化する
+#define PAD_BUTTON_MARGE 1     // 0:JOYPADのボタンデータをMeridim受信値に論理積, 1:Meridim受信値に論理和
+#define PAD_GENERALIZE   1     // ジョイパッドの入力値をPS系に一般化する
 
 // ピンアサイン
 #define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
