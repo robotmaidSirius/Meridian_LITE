@@ -2,7 +2,7 @@
 #define __MERIDIAN_EEPROM_H__
 
 // ライブラリ導入
-#include "Module/i_mrd_servo.hpp"
+#include "mrd_plugin/i_mrd_servo.hpp"
 #include <EEPROM.h>
 
 // EEPROMの設定

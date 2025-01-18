@@ -10,7 +10,7 @@
 #ifndef MRD_AHRS_BNO055_HPP
 #define MRD_AHRS_BNO055_HPP
 
-#include "Module/i_mrd_ahrs.hpp"
+#include "mrd_plugin/i_mrd_ahrs.hpp"
 
 class MrdAhrsBNO055 : public I_Meridian_AHRS {
 

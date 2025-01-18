@@ -4,6 +4,7 @@
 // ヘッダファイルの読み込み
 #include "mrd_module/servo/sv_ftbrx.h"
 #include "mrd_module/servo/sv_ics.h"
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 //================================================================================================================
 //  Servo 関連の処理

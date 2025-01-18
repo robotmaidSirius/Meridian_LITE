@@ -10,7 +10,7 @@
 #ifndef MRD_SERVO_KONDO_ICS_3_5_HPP
 #define MRD_SERVO_KONDO_ICS_3_5_HPP
 
-#include "Module/i_mrd_servo.hpp"
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 class MrdServoKondoIcs35 : public I_Meridian_Servo {
 

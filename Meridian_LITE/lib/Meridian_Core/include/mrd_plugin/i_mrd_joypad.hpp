@@ -10,13 +10,15 @@
 #ifndef I_MRD_JOYPAD_HPP
 #define I_MRD_JOYPAD_HPP
 
-#include <stdint.h>
+#include "Meridim90.hpp"
 
 class I_Meridian_Joypad {
 public:
-  virtual ~I_Meridian_Joypad() = default;
+  virtual const char *get_name() = 0;
   virtual void set(uint8_t data) = 0;
   virtual uint8_t get() = 0;
+
+  virtual bool refresh(Meridim90Union &a_meridim) = 0;
 };
 
 #endif // I_MRD_JOYPAD_HPP

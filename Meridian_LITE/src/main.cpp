@@ -54,13 +54,15 @@
 #include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
-#include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/joypad/mrd_joypad_wiimote.hpp"
 #include "mrd_module/motion/mrd_move.h"
 #include "mrd_module/network/mrd_wifi.h"
 #include "mrd_module/servo/mrd_servo.h"
 
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
+
+MrdPadWiimote *joypad = new MrdPadWiimote();
 
 //------------------------------------------------------------------------------------
 //  変数
@@ -353,27 +355,11 @@ public:
 
   /// @brief マウント設定したジョイパッドのタイプをシリアルモニタに出力する.
   /// @param a_mount_pad パッドの定義(PC,MERIMOTE,BLUERETRO,SBDBT,KRR5FH,WIIMOTE)
-  void mounted_pad(int a_mount_pad) {
-    m_serial.print("Pad Receiver mounted : ");
-    switch (a_mount_pad) {
-    case WIIMOTE:
-      m_serial.println("Wiimote.");
-      break;
-    case MERIMOTE:
-      m_serial.println("Merimote.");
-      break;
-    case BLUERETRO:
-      m_serial.println("BlueRetro.");
-      break;
-    case SBDBT:
-      m_serial.println("SBDBT.");
-      break;
-    case KRR5FH:
-      m_serial.println("KRC-5FH.");
-      break;
-    default:
-      m_serial.println("None (PC).");
-      break;
+  void mounted_pad() {
+    if (NULL != joypad) {
+      m_serial.printf("Pad Receiver mounted : %d", joypad->get_name());
+    } else {
+      m_serial.println("Pad Receiver mounted : None");
     }
   }
 
@@ -538,15 +524,14 @@ void setup() {
                               flg.eeprom_protect);                  // EEPROMのリードライトテスト
 
   // SDカードの初期設定とチェック
-  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
+  mrd_sd_init(PIN_CHIPSELECT_SD);
+  mrd_sd_check();
 
   // I2Cの初期化と開始
   mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
   // I2Cスレッドの開始
-  if (MOUNT_IMUAHRS == BNO055_AHRS) {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
+  if (true == mrd_ahrs_setup(thp[0])) {
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
   }
@@ -559,12 +544,10 @@ void setup() {
   }
 
   // コントロールパッドの種類を表示
-  mrd_disp.mounted_pad(MOUNT_PAD);
-
-  // Bluetoothの開始と表示(WIIMOTE)
-  if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
-    xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
+  if (NULL != joypad) {
+    if (true == joypad->mrd_joypad_setup(thp[2])) {
+      mrd_disp.mounted_pad();
+    }
   }
 
   // UDP開始用ダミーデータの生成
@@ -594,7 +577,6 @@ void setup() {
 // MAIN LOOP
 //================================================================================================================
 void loop() {
-
   //------------------------------------------------------------------------------------
   //  [ 1 ] UDP送信
   //------------------------------------------------------------------------------------
@@ -698,7 +680,7 @@ void loop() {
 
   // @[4-1] センサ値のMeridimへの転記
   flg.imuahrs_available = false;
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+  meriput90_ahrs(s_udp_meridim, ahrs.read); // BNO055_AHRS
   flg.imuahrs_available = true;
 
   //------------------------------------------------------------------------------------
@@ -707,13 +689,13 @@ void loop() {
   mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
   // @[5-1] リモコンデータの書き込み
-  if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
+  if (NULL != joypad) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
+    pad_array.ui64val = joypad->mrd_pad_read(pad_array.ui64val);
 
     // リモコンの値をmeridimに格納する
-    meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+    joypad->meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
   }
 
   //------------------------------------------------------------------------------------
@@ -739,9 +721,9 @@ void loop() {
 
   // @[7-2] ESP32による次回動作の計算
   // 以下はリモコンの左十字キー左右でL系統0番サーボ（首部）を30度左右にふるサンプル
-  if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_RIGHT) {
+  if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == MrdPadWiimote::PadButton::PAD_RIGHT) {
     sv.ixl_tgt[0] = -30.00; // -30度
-  } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_LEFT) {
+  } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == MrdPadWiimote::PadButton::PAD_LEFT) {
     sv.ixl_tgt[0] = 30.00; // +30度
   }
 

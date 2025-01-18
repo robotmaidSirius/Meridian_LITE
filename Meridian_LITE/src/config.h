@@ -9,11 +9,6 @@
 #define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
 #define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
-// 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無 (0:なし, 1:あり)
-#define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
-#define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
-
 // 動作モード
 #define MODE_ESP32_STANDALONE 0 // ESP32をボードに挿さず動作確認（0:NO, 1:YES）
 #define MODE_UDP_RECEIVE      1 // PCからのデータ受信（0:OFF, 1:ON, 通常は1）
@@ -24,7 +19,6 @@
 #define UDP_TIMEOUT   4 // UDPの待受タイムアウト（単位ms,推奨値0）
 
 // 動作チェックモード
-#define CHECK_SD_RW     1 // 起動時のSDカードリーダーの読み書きチェック
 #define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
 
 // シリアルモニタリング

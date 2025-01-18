@@ -10,7 +10,7 @@
 #ifndef MRD_SERVO_PCA9685_HPP
 #define MRD_SERVO_PCA9685_HPP
 
-#include "Module/i_mrd_servo.hpp"
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 class MrdServoPca9685 : public I_Meridian_Servo {
 

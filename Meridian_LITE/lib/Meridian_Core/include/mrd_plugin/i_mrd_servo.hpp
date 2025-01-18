@@ -10,7 +10,7 @@
 #ifndef I_MRD_SERVO_HPP
 #define I_MRD_SERVO_HPP
 
-#include <stdint.h>
+#include "Meridim90.hpp"
 
 //-------------------------------------------------------------------------
 // サーボ設定
@@ -261,6 +261,8 @@ public:
   ServoType getServoType() {
     return _servo_type;
   }
+
+  virtual bool refresh(Meridim90Union &a_meridim) = 0;
 
 protected:
   void setServoType(ServoType type) {

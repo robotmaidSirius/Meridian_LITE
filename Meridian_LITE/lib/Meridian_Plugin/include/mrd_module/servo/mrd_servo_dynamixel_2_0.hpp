@@ -10,7 +10,7 @@
 #ifndef MRD_SERVO_DYNAMIXEL_2_0_HPP
 #define MRD_SERVO_DYNAMIXEL_2_0_HPP
 
-#include <Module/i_mrd_servo.hpp>
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 class MrdServoDynamixel_2_0 : public I_Meridian_Servo {
 public:

@@ -2,10 +2,9 @@
 #define __MERIDIAN_SERVO_KONDO_ICS_H__
 
 // ライブラリ導入
-#include "Module/i_mrd_servo.hpp"
 #include "gs2d_krs.h"
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
-
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 extern IcsHardSerialClass ics_L;
 extern IcsHardSerialClass ics_R;

@@ -10,7 +10,7 @@
 #ifndef MRD_SERVO_PWM_HPP
 #define MRD_SERVO_PWM_HPP
 
-#include "Module/i_mrd_servo.hpp"
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 class MrdServoPwm : public I_Meridian_Servo {
 public:

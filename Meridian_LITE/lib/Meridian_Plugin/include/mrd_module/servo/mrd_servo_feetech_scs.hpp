@@ -10,7 +10,7 @@
 #ifndef MRD_SERVO_FEETECH_SCS_HPP
 #define MRD_SERVO_FEETECH_SCS_HPP
 
-#include <Module/i_mrd_servo.hpp>
+#include <mrd_plugin/i_mrd_servo.hpp>
 
 class MrdServoFeetech_SCS : public I_Meridian_Servo {
 

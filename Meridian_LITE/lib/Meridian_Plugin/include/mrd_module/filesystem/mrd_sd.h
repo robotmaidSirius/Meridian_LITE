@@ -4,6 +4,10 @@
 // ライブラリ導入
 #include <SD.h> // SDカード用
 
+// 各種ハードウェアのマウント有無
+#define MOUNT_SD    1 // SDカードリーダーの有無 (0:なし, 1:あり)
+#define CHECK_SD_RW 1 // 起動時のSDカードリーダーの読み書きチェック
+
 //================================================================================================================
 //  SDメモリ 関連の処理
 //================================================================================================================
@@ -18,8 +22,8 @@
 /// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
 /// @return SDカードの初期化が成功した場合はtrueを,
 ///         失敗またはSDカードがマウントされていない場合はfalseを返す.
-bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin) {
-  if (a_sd_mount) {
+bool mrd_sd_init(int a_sd_chipselect_pin) {
+  if (MOUNT_SD) {
     Serial.print("Initializing SD card... ");
     // delay(100);
     if (!SD.begin(a_sd_chipselect_pin)) {
@@ -42,13 +46,10 @@ bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin) {
 //------------------------------------------------------------------------------------
 
 /// @brief SDカードの読み書き機能をテストする. SDカードがマウントされ,
-/// 読み書きのチェックが要求された場合のみテストを実行する.
-/// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-/// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-/// @param a_sd_check_rw SDカードの読み書きをチェックするかどうかのブール値.
+/// 読み書きのチェックが要求された場合のみテストを実行する..
 /// @return SDカードの読み書きが成功した場合はtrueを, 失敗した場合はfalseを返す.
-bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw) {
-  if (a_sd_mount && a_sd_check_rw) {
+bool mrd_sd_check() {
+  if (MOUNT_SD && CHECK_SD_RW) {
     File sd_file; // SDカード用
     sd_file = SD.open("/test.txt", FILE_WRITE);
     delay(1); // SPI安定化検証用

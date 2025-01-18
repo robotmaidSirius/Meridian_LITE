@@ -10,7 +10,7 @@
 #ifndef MRD_IMU_MPU9250_HPP
 #define MRD_IMU_MPU9250_HPP
 
-#include "Module/i_mrd_imu.hpp"
+#include "mrd_plugin/i_mrd_imu.hpp"
 
 class MrdImuMPU9250 : public I_Meridian_IMU {
 

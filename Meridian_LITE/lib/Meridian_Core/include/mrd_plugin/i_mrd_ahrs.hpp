@@ -10,7 +10,7 @@
 #ifndef I_MRD_AHRS_HPP
 #define I_MRD_AHRS_HPP
 
-#include <stdint.h>
+#include "Meridim90.hpp"
 
 class I_Meridian_AHRS {
 public:
@@ -18,6 +18,8 @@ public:
   virtual void update() = 0;
   virtual void getEuler(float &roll, float &pitch, float &yaw) = 0;
   virtual void getQuaternion(float &w, float &x, float &y, float &z) = 0;
+
+  virtual bool refresh(Meridim90Union &a_meridim) = 0;
 };
 
 #endif // I_MRD_AHRS_HPP
