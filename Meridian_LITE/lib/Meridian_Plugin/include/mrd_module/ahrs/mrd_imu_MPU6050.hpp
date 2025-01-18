@@ -26,6 +26,10 @@ public:
   }
   void getMag(float &x, float &y, float &z) override {
   }
+
+  bool refresh(Meridim90Union &a_meridim) override {
+    return true;
+  }
 };
 
 #endif // MRD_IMU_MPU6050_HPP

@@ -43,15 +43,12 @@
 #define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
 
 // JOYPAD関連設定
+#define PAD_TYPE_WIIMOTE
 #define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
-#define PAD_INTERVAL     10    // JOYPADのデータを読みに行くフレーム間隔 (※KRC-5FHでは4推奨)
 #define PAD_BUTTON_MARGE 1     // 0:JOYPADのボタンデータをMeridim受信値に論理積, 1:Meridim受信値に論理和
-#define PAD_GENERALIZE   1     // ジョイパッドの入力値をPS系に一般化する
 
 // ピンアサイン
 #define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
-#define PIN_EN_L          33 // サーボL系統のENピン
-#define PIN_EN_R          4  // サーボR系統のENピン
 #define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
 #define PIN_I2C0_SDA      22 // I2CのSDAピン
 #define PIN_I2C0_SCL      21 // I2CのSCLピン

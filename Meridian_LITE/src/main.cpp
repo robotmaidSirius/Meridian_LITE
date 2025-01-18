@@ -51,18 +51,23 @@
 
 // ヘッダファイルの読み込み
 
+#include "mrd_app/motion/mrd_move.h"
 #include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
+#include "mrd_module/network/mrd_wifi_esp32.hpp"
+#include "mrd_module/servo/mrd_servo_kondo_ics_3_5.hpp"
+
+#if defined(PAD_TYPE_WIIMOTE) // Wiiリモコンの場合
 #include "mrd_module/joypad/mrd_joypad_wiimote.hpp"
-#include "mrd_module/motion/mrd_move.h"
-#include "mrd_module/network/mrd_wifi.h"
-#include "mrd_module/servo/mrd_servo.h"
-
-IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
-IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
-
 MrdPadWiimote *joypad = new MrdPadWiimote();
+#elif defined(PAD_TYPE_KRC5FH) // KRC-5FHの場合
+#include "mrd_module/joypad/mrd_joypad_krc5fh.hpp"
+MrdJoypadKrc5fh *plugin_joypad = new MrdJoypadKrc5fh();
+#endif
+
+MrdServoKondoIcs35 *plugin_servo = new MrdServoKondoIcs35(Serial1, Serial2);
+MrdWifiESP32 *mrd_wifi = new MrdWifiESP32();
 
 //------------------------------------------------------------------------------------
 //  変数
@@ -340,13 +345,11 @@ public:
   /// @param a_ssid 接続先のSSID.
   /// @param a_fixedip 固定IPの場合の値.
   void esp_ip(bool a_flg_fixed_ip, const char *a_ssid, const char *a_fixedip) {
-    m_serial.println("WiFi successfully connected."); // WiFi接続完了通知
-    m_serial.println("PC's IP address target => " +
-                     String(WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
+    m_serial.println("WiFi successfully connected.");                      // WiFi接続完了通知
+    m_serial.println("PC's IP address target => " + String(WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
 
     if (a_flg_fixed_ip) {
-      m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) +
-                       " (*Fixed)"); // ESP32自身のIPアドレスの表示
+      m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) + " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
       m_serial.print("ESP32's IP address => "); // ESP32自身のIPアドレスの表示
       m_serial.println(WiFi.localIP().toString());
@@ -497,13 +500,12 @@ void setup() {
     sv.ixr_trim[i] = IDR_TRIM[i];
   };
 
-  // サーボUARTの通信速度の表示
-  mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
-
 // サーボ用UART設定
 #if 1
-  ics_L.begin();
-  ics_R.begin();
+  if (true == plugin_servo->begin()) { // サーボモータの通信初期設定.
+    // サーボUARTの通信速度の表示
+    mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
+  }
 #else
   mrd_servo_begin(L, MOUNT_SERVO_TYPE_L); // サーボモータの通信初期設定. Serial2
   mrd_servo_begin(R, MOUNT_SERVO_TYPE_R); // サーボモータの通信初期設定. Serial3
@@ -537,15 +539,17 @@ void setup() {
   }
 
   // WiFiの初期化と開始
-  mrd_disp.esp_wifi(WIFI_AP_SSID);
-  if (mrd_wifi_init(udp, WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
-    // wifiIPの表示
-    mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
+  if (NULL != mrd_wifi) {
+    mrd_disp.esp_wifi(WIFI_AP_SSID);
+    if (mrd_wifi->mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+      // wifiIPの表示
+      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
+    }
   }
 
   // コントロールパッドの種類を表示
   if (NULL != joypad) {
-    if (true == joypad->mrd_joypad_setup(thp[2])) {
+    if (true == joypad->mrd_joypad_setup(thp[2], Serial)) {
       mrd_disp.mounted_pad();
     }
   }
@@ -586,7 +590,9 @@ void loop() {
   if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
   {
     flg.udp_busy = true; // UDP使用中フラグをアゲる
-    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
+    if (NULL != mrd_wifi) {
+      mrd_wifi->mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE);
+    }
     flg.udp_busy = false; // UDP使用中フラグをサゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
   }
@@ -604,8 +610,12 @@ void loop() {
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp)) // 受信確認
-      {
+      if (NULL != mrd_wifi) {
+        if (mrd_wifi->mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
+        {
+          flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
+        }
+      } else {
         flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
       }
 
@@ -688,6 +698,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
+#if defined(PAD_TYPE_WIIMOTE) // Wiiリモコンの場合
   // @[5-1] リモコンデータの書き込み
   if (NULL != joypad) { // リモコンがマウントされていれば
 
@@ -697,6 +708,24 @@ void loop() {
     // リモコンの値をmeridimに格納する
     joypad->meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
   }
+#elif defined(PAD_TYPE_KRC5FH) // KRC-5FHの場合
+  if (NULL != plugin_joypad) { // リモコンがマウントされていれば
+
+    bool rcvd;
+    unsigned short krr_button;
+    int krr_analog[4];
+    if (NULL != plugin_servo) {
+      if (true == plugin_servo->ics_R->getKrrAllData(&krr_button, krr_analog)) {
+
+        // リモコンデータの読み込み
+        pad_array.ui64val = plugin_joypad->mrd_pad_read(krr_button, krr_analog);
+
+        // リモコンの値をmeridimに格納する
+        joypad->meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+      }
+    }
+  }
+#endif
 
   //------------------------------------------------------------------------------------
   //  [ 6 ] MasterCommand group2 の処理
@@ -736,8 +765,9 @@ void loop() {
 
   // @[8-1] サーボ受信値の処理
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
-    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R,
-                          sv); // サーボ動作を実行する
+    if (NULL != plugin_servo) {
+      plugin_servo->mrd_servos_drive_lite(s_udp_meridim, sv); // サーボ動作を実行する
+    }
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -774,7 +804,9 @@ void loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
+  if (NULL != plugin_servo) {
+    s_udp_meridim.ubval[MRD_ERR_l] = plugin_servo->mrd_servos_make_errcode_lite(sv);
+  }
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -865,7 +897,10 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    mrd_servo_all_off(s_udp_meridim);
+    if (NULL != plugin_servo) {
+      plugin_servo->mrd_servo_all_off(s_udp_meridim);
+    }
+    Serial.println("All servos torque off.");
     return true;
   }
 

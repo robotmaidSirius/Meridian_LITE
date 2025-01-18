@@ -26,13 +26,6 @@
 #define MOUNT_SERVO_TYPE_L 43 // L系統のコマンドサーボの種類
 #define MOUNT_SERVO_TYPE_R 43 // R系統のコマンドサーボの種類
 
-// サーボ関連設定
-#define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
-#define SERVO_BAUDRATE_R    1250000 // R系統のICSサーボの通信速度bps
-#define SERVO_TIMEOUT_L     2       // L系統のICS返信待ちのタイムアウト時間
-#define SERVO_TIMEOUT_R     2       // R系統のICS返信待ちのタイムアウト時間
-#define SERVO_LOST_ERR_WAIT 6       // 連続何フレームサーボ信号をロストしたら異常とするか
-
 // 各サーボ系統の最大サーボマウント数
 #define IXL_MAX 15 // L系統の最大サーボ数. 標準は15.
 #define IXR_MAX 15 // R系統の最大サーボ数. 標準は15.
@@ -257,6 +250,7 @@ public:
   };
 
 public:
+  virtual bool begin() = 0;
   virtual bool is_enabled() { return false; }
   ServoType getServoType() {
     return _servo_type;

@@ -4,7 +4,6 @@
 // ライブラリ導入
 #include <Adafruit_BNO055.h>            // 9軸センサBNO055用
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
-#include <Wire.h>
 
 #define IMUAHRS_STOCK    4           // MPUで移動平均を取る際の元にする時系列データの個数
 #define IMUAHRS_INTERVAL 10          // IMU/AHRSのセンサの読み取り間隔(ms)

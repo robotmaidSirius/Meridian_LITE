@@ -25,6 +25,10 @@ public:
   }
   void getQuaternion(float &w, float &x, float &y, float &z) override {
   }
+
+  bool refresh(Meridim90Union &a_meridim) override {
+    return true;
+  }
 };
 
 #endif // MRD_AHRS_BNO055_HPP
