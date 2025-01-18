@@ -2,7 +2,15 @@
 #define __MERIDIAN_EEPROM_H__
 
 // ライブラリ導入
+#include "Module/i_mrd_servo.hpp"
 #include <EEPROM.h>
+
+// EEPROMの設定
+#define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
+#define EEPROM_SET     0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
+#define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
+#define EEPROM_DUMP    0   // 起動時のEEPROM内容のダンプ表示
 
 // EEPROM読み書き用共用体
 typedef union {
@@ -12,6 +20,14 @@ typedef union {
 } UnionEEPROM;
 UnionEEPROM eeprom_write_data; // EEPROM書き込み用
 UnionEEPROM eeprom_read_data;  // EEPROM読み込み用
+
+enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
+  Bin = 0,       // BIN
+  Hex = 1,       // HEX
+  Dec = 2,       // DEC
+};
+
+#define EEPROM_STYLE BinHexDec::Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
 
 //================================================================================================================
 //  EEPROM関連の処理
@@ -33,16 +49,16 @@ bool mrd_eeprom_init(int a_eeprom_size) {
 
 /// @brief config.hにあるサーボの諸設定からEEPROM格納用の配列データを作成する.
 /// @return config.hから作成したEEPROM格納用の配列データを返す.
-UnionEEPROM mrd_eeprom_make_data_from_config() {
+UnionEEPROM mrd_eeprom_make_data_from_config(ServoParam a_sv) {
   UnionEEPROM array_tmp = {0};
   for (int i = 0; i < 15; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    array_tmp.saval[0][20 + i * 2] = short(sv.ixl_mount[i] * sv.ixl_cw[i]);
-    array_tmp.saval[0][50 + i * 2] = short(sv.ixr_mount[i] * sv.ixr_cw[i]);
+    array_tmp.saval[0][20 + i * 2] = short(a_sv.ixl_mount[i] * a_sv.ixl_cw[i]);
+    array_tmp.saval[0][50 + i * 2] = short(a_sv.ixr_mount[i] * a_sv.ixr_cw[i]);
     // 各サーボの直立デフォルト値 degree
-    array_tmp.saval[1][21 + i * 2] = mrd.float2HfShort(sv.ixl_trim[i]);
-    array_tmp.saval[1][51 + i * 2] = mrd.float2HfShort(sv.ixr_trim[i]);
+    array_tmp.saval[1][21 + i * 2] = mrd.float2HfShort(a_sv.ixl_trim[i]);
+    array_tmp.saval[1][51 + i * 2] = mrd.float2HfShort(a_sv.ixr_trim[i]);
   };
   return array_tmp;
 }
@@ -62,20 +78,23 @@ UnionEEPROM mrd_eeprom_read() {
 /// @param a_data EEPROM用の配列データ.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return 終了時にtrueを返す.
-bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, int a_bhd) {
+bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, BinHexDec a_bhd) {
   int len_tmp = EEPROM.length(); // EEPROMの長さ
   Serial.print("EEPROM Length ");
   Serial.print(len_tmp); // EEPROMの長さ表示
   Serial.println("byte, 16bit Dump;");
   for (int i = 0; i < 270; i++) // 読み込むデータはshort型で作成
   {
+#if 1
+    Serial.print(a_data.sval[i], a_bhd);
+#else
     if (a_bhd == 0) {
-      Serial.print(a_data.sval[i], BIN);
     } else if (a_bhd == 1) {
       Serial.print(a_data.sval[i], HEX);
     } else {
       Serial.print(a_data.sval[i], DEC);
     }
+#endif
     if ((i == 89) or (i == 179) or (i == 269)) {
       Serial.println();
     } else {
@@ -89,7 +108,7 @@ bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, int a_bhd) {
 /// @param a_do_dump 実施するか否か.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return 終了時にtrueを返す.
-bool mrd_eeprom_dump_at_boot(bool a_do_dump, int a_bhd) {
+bool mrd_eeprom_dump_at_boot(bool a_do_dump, BinHexDec a_bhd) {
   if (a_do_dump) {
     mrd_eeprom_dump_to_serial(mrd_eeprom_read(), a_bhd);
     return true;
@@ -101,11 +120,11 @@ bool mrd_eeprom_dump_at_boot(bool a_do_dump, int a_bhd) {
 /// @param a_write_data EEPROM書き込み用の配列データ.
 /// @param a_flg_protect EEPROMの書き込み許可があるかどうかのブール値.
 /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, 書き込まなかった場合はfalseを返す.
-bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect) {
+bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, bool eeprom_protect) {
   if (a_flg_protect) { // EEPROM書き込み実施フラグをチェック
     return false;
   }
-  if (flg.eeprom_protect) // config.hのEEPROM書き込みプロテクトをチェック
+  if (eeprom_protect) // config.hのEEPROM書き込みプロテクトをチェック
   {
     Serial.println("EEPROM is protected. To unprotect, please set 'EEPROM_PROTECT' to false.");
     return false;
@@ -145,7 +164,7 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect) {
 /// @param a_protect EEPROMの書き込み許可があるかどうかのブール値.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, それ以外はfalseを返す.
-bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, int a_bhd) {
+bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, BinHexDec a_bhd, bool eeprom_protect) {
   if (!a_do) // EEPROMの読み書きチェックを実施するか
   {
     return false;
@@ -155,7 +174,7 @@ bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_pro
   Serial.println("Try to write EEPROM: ");
   mrd_eeprom_dump_to_serial(a_write_data, a_bhd); // 書き込み内容をダンプ表示
 
-  if (mrd_eeprom_write(a_write_data, a_protect)) {
+  if (mrd_eeprom_write(a_write_data, a_protect, eeprom_protect)) {
     Serial.println("...Write OK.");
   } else {
     Serial.println("...Write failed.");

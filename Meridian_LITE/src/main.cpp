@@ -50,9 +50,7 @@
 #include "Board/meridian_board_lite_for_esp32.hpp"
 
 // ヘッダファイルの読み込み
-#include "main.h"
 
-#include "Meridim90.hpp" // Meridim90
 #include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
@@ -87,6 +85,7 @@ Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型,
 Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
 Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
+ServoParam sv;
 // シーケンス番号理用の変数
 struct MrdSq {
   int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
@@ -123,6 +122,31 @@ struct MrdMonitor {
   bool pad = MONITOR_PAD;             // リモコンのデータを表示
 };
 MrdMonitor monitor;
+
+// フラグ用変数
+struct MrdFlags {
+  bool imuahrs_available = true;            // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
+  bool udp_board_passive = false;           // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
+  bool count_frame_reset = false;           // フレーム管理時計をリセットする
+  bool stop_board_during = false;           // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
+  bool eeprom_write_mode = false;           // EEPROMへの書き込みモード.
+  bool eeprom_read_mode = false;            // EEPROMからの読み込みモード.
+  bool eeprom_protect = EEPROM_PROTECT;     // EEPROMの書き込みプロテクト.
+  bool eeprom_load = EEPROM_LOAD;           // 起動時にEEPROMの内容を読み込む
+  bool eeprom_set = EEPROM_SET;             // 起動時にEEPROMに規定値をセット
+  bool sdcard_write_mode = false;           // SDCARDへの書き込みモード.
+  bool sdcard_read_mode = false;            // SDCARDからの読み込みモード.
+  bool wire0_init = false;                  // I2C 0系統の初期化合否
+  bool wire1_init = false;                  // I2C 1系統の初期化合否
+  bool bt_busy = false;                     // Bluetoothの受信中フラグ（UDPコンフリクト回避用）
+  bool spi_rcvd = true;                     // SPIのデータ受信判定
+  bool udp_rcvd = false;                    // UDPのデータ受信判定
+  bool udp_busy = false;                    // UDPスレッドでの受信中フラグ（送信抑制）
+  bool udp_receive_mode = MODE_UDP_RECEIVE; // PCからのデータ受信実施（0:OFF, 1:ON, 通常は1）
+  bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）
+  bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
+};
+MrdFlags flg;
 
 /// @brief count_timerを保護しつつ1ずつインクリメント
 void IRAM_ATTR frame_timer() {
@@ -505,9 +529,13 @@ void setup() {
   mrd_disp.servo_mounts_2lines(sv);
 
   // EEPROMの開始, ダンプ表示
-  mrd_eeprom_init(EEPROM_SIZE);                                                                                   // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);                                                             // 内容のダンプ表示
-  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE); // EEPROMのリードライトテスト
+  mrd_eeprom_init(EEPROM_SIZE);                                     // EEPROMの初期化
+  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);               // 内容のダンプ表示
+  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(sv), //
+                              CHECK_EEPROM_RW,                      //
+                              EEPROM_PROTECT,                       //
+                              EEPROM_STYLE,                         //
+                              flg.eeprom_protect);                  // EEPROMのリードライトテスト
 
   // SDカードの初期設定とチェック
   mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
@@ -669,7 +697,9 @@ void loop() {
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
+  flg.imuahrs_available = false;
   meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+  flg.imuahrs_available = true;
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り

@@ -9,9 +9,9 @@
 #define UDP_RESV_PORT 22224          // このESP32のポート番号
 
 // ESP32のIPアドレスを固定する場合は下記の4項目を設定
-#define MODE_FIXED_IP    0                  // IPアドレスを固定するか（0:NO, 1:YES）
-#define FIXED_IP_ADDR    "192. 168. 1. xx"  // ESP32のIPアドレスを固定時のESPのIPアドレス
-#define FIXED_IP_GATEWAY "192. 168. 1. xx"  // ESP32のIPアドレスを固定時のルーターのゲートウェイ
-#define FIXED_IP_SUBNET  "255. 255. 255. 0" // ESP32のIPアドレスを固定時のサブネット
+#define MODE_FIXED_IP    0               // IPアドレスを固定するか（0:NO, 1:YES）
+#define FIXED_IP_ADDR    "192.168.1.xx"  // ESP32のIPアドレスを固定時のESPのIPアドレス
+#define FIXED_IP_GATEWAY "192.168.1.xx"  // ESP32のIPアドレスを固定時のルーターのゲートウェイ
+#define FIXED_IP_SUBNET  "255.255.255.0" // ESP32のIPアドレスを固定時のサブネット
 
 #endif // __MERIDIAN_KEYS_H__

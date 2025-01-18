@@ -3,8 +3,7 @@
 
 // ライブラリ導入
 #include "mrd_module/servo/sv_ics.h"
-#include <ESP32Wiimote.h>       // Wiiコントローラー
-#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+#include <ESP32Wiimote.h> // Wiiコントローラー
 
 const int PAD_LEN = 5; // リモコン用配列の長さ
 
