@@ -52,18 +52,34 @@
 // ヘッダファイルの読み込み
 
 #include "mrd_app/motion/mrd_move.h"
-#include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
 #include "mrd_module/network/mrd_wifi_esp32.hpp"
 #include "mrd_module/servo/mrd_servo_kondo_ics_3_5.hpp"
 
+#if defined(AHRS_TYPE_MPU9250) // MPU9250の場合
+#include "mrd_module/ahrs/mrd_imu_MPU9250.hpp"
+I_Meridian_AHRS *plugin_ahrs = new MrdImuMPU9250();
+#elif defined(AHRS_TYPE_BNO055) // BNO055の場合
+#include "mrd_module/ahrs/mrd_ahrs_BNO055.hpp"
+I_Meridian_AHRS *plugin_ahrs = new MrdAhrsBNO055();
+#elif defined(AHRS_TYPE_MPU6050) // BNO055の場合
+#include "mrd_module/ahrs/mrd_imu_MPU6050.hpp"
+I_Meridian_AHRS *plugin_ahrs = new MrdImuMPU6050();
+#else
+#include "mrd_plugin/i_mrd_ahrs.hpp"
+I_Meridian_AHRS *plugin_ahrs = NULL;
+#endif
+
 #if defined(PAD_TYPE_WIIMOTE) // Wiiリモコンの場合
 #include "mrd_module/joypad/mrd_joypad_wiimote.hpp"
-MrdPadWiimote *joypad = new MrdPadWiimote();
+MrdPadWiimote *plugin_joypad = new MrdPadWiimote();
 #elif defined(PAD_TYPE_KRC5FH) // KRC-5FHの場合
 #include "mrd_module/joypad/mrd_joypad_krc5fh.hpp"
 MrdJoypadKrc5fh *plugin_joypad = new MrdJoypadKrc5fh();
+#else
+#include <mrd_plugin/i_mrd_joypad.hpp>
+I_Meridian_Joypad *plugin_joypad = NULL;
 #endif
 
 MrdServoKondoIcs35 *plugin_servo = new MrdServoKondoIcs35(Serial1, Serial2);
@@ -101,12 +117,11 @@ struct MrdSq {
 MrdSq mrdsq;
 // タイマー管理用の変数
 struct MrdTimer {
-  long frame_ms = FRAME_DURATION;                                   // 1フレームあたりの単位時間(ms)
-  int count_loop = 0;                                               // サイン計算用の循環カウンタ
-  int count_loop_dlt = 2;                                           // サイン計算用の循環カウンタを1フレームにいくつ進めるか
-  int count_loop_max = 359999;                                      // 循環カウンタの最大値
-  unsigned long count_frame = 0;                                    // メインフレームのカウント
-  int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
+  long frame_ms = FRAME_DURATION; // 1フレームあたりの単位時間(ms)
+  int count_loop = 0;             // サイン計算用の循環カウンタ
+  int count_loop_dlt = 2;         // サイン計算用の循環カウンタを1フレームにいくつ進めるか
+  int count_loop_max = 359999;    // 循環カウンタの最大値
+  unsigned long count_frame = 0;  // メインフレームのカウント
 };
 MrdTimer tmr;
 // エラーカウント用
@@ -359,8 +374,8 @@ public:
   /// @brief マウント設定したジョイパッドのタイプをシリアルモニタに出力する.
   /// @param a_mount_pad パッドの定義(PC,MERIMOTE,BLUERETRO,SBDBT,KRR5FH,WIIMOTE)
   void mounted_pad() {
-    if (NULL != joypad) {
-      m_serial.printf("Pad Receiver mounted : %d", joypad->get_name());
+    if (NULL != plugin_joypad) {
+      m_serial.printf("Pad Receiver mounted : %d", plugin_joypad->get_name());
     } else {
       m_serial.println("Pad Receiver mounted : None");
     }
@@ -530,12 +545,17 @@ void setup() {
   mrd_sd_check();
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  if (NULL != plugin_ahrs) {
+    if (true == plugin_ahrs->setup()) {
+      // mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
-  // I2Cスレッドの開始
-  if (true == mrd_ahrs_setup(thp[0])) {
-    Serial.println("Core0 thread for BNO055 start.");
-    delay(10);
+      // I2Cスレッドの開始
+      if (true == plugin_ahrs->begin()) {
+        // if (true == mrd_ahrs_setup(thp[0])) {
+        Serial.println("Core0 thread for BNO055 start.");
+        delay(10);
+      }
+    }
   }
 
   // WiFiの初期化と開始
@@ -548,8 +568,8 @@ void setup() {
   }
 
   // コントロールパッドの種類を表示
-  if (NULL != joypad) {
-    if (true == joypad->mrd_joypad_setup(thp[2], Serial)) {
+  if (NULL != plugin_joypad) {
+    if (true == plugin_joypad->mrd_joypad_setup(thp[2], Serial)) {
       mrd_disp.mounted_pad();
     }
   }
@@ -690,7 +710,7 @@ void loop() {
 
   // @[4-1] センサ値のMeridimへの転記
   flg.imuahrs_available = false;
-  meriput90_ahrs(s_udp_meridim, ahrs.read); // BNO055_AHRS
+  plugin_ahrs->refresh(s_udp_meridim); // センサー値の更新
   flg.imuahrs_available = true;
 
   //------------------------------------------------------------------------------------
@@ -698,18 +718,19 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
-#if defined(PAD_TYPE_WIIMOTE) // Wiiリモコンの場合
   // @[5-1] リモコンデータの書き込み
-  if (NULL != joypad) { // リモコンがマウントされていれば
+  if (NULL != plugin_joypad) {
+    // リモコンがマウントされていれば
+#if defined(PAD_TYPE_WIIMOTE)
+    // Wiiリモコンの場合
 
     // リモコンデータの読み込み
-    pad_array.ui64val = joypad->mrd_pad_read(pad_array.ui64val);
+    joypad->pad_array.ui64val = joypad->mrd_pad_read(joypad->pad_array.ui64val);
 
     // リモコンの値をmeridimに格納する
-    joypad->meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
-  }
-#elif defined(PAD_TYPE_KRC5FH) // KRC-5FHの場合
-  if (NULL != plugin_joypad) { // リモコンがマウントされていれば
+    joypad->meriput90_pad(s_udp_meridim, joypad->pad_array, PAD_BUTTON_MARGE);
+#elif defined(PAD_TYPE_KRC5FH)
+    // KRC-5FHの場合
 
     bool rcvd;
     unsigned short krr_button;
@@ -718,14 +739,14 @@ void loop() {
       if (true == plugin_servo->ics_R->getKrrAllData(&krr_button, krr_analog)) {
 
         // リモコンデータの読み込み
-        pad_array.ui64val = plugin_joypad->mrd_pad_read(krr_button, krr_analog);
+        plugin_joypad->pad_array.ui64val = plugin_joypad->mrd_pad_read(krr_button, krr_analog);
 
         // リモコンの値をmeridimに格納する
-        joypad->meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+        plugin_joypad->meriput90_pad(s_udp_meridim, plugin_joypad->pad_array, PAD_BUTTON_MARGE);
       }
     }
-  }
 #endif
+  }
 
   //------------------------------------------------------------------------------------
   //  [ 6 ] MasterCommand group2 の処理
@@ -750,9 +771,9 @@ void loop() {
 
   // @[7-2] ESP32による次回動作の計算
   // 以下はリモコンの左十字キー左右でL系統0番サーボ（首部）を30度左右にふるサンプル
-  if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == MrdPadWiimote::PadButton::PAD_RIGHT) {
+  if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == 0x20) {
     sv.ixl_tgt[0] = -30.00; // -30度
-  } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == MrdPadWiimote::PadButton::PAD_LEFT) {
+  } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == 0x80) {
     sv.ixl_tgt[0] = 30.00; // +30度
   }
 
@@ -908,9 +929,13 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_SENSOR_YAW_CALIB) {
-    ahrs.yaw_origin = ahrs.yaw_source;
-    Serial.println("cmd: yaw reset.");
-    return true;
+    if (nullptr != plugin_ahrs) {
+      if (true == plugin_ahrs->reset()) {
+        Serial.println("cmd: yaw reset.");
+        return true;
+      }
+    }
+    return false;
   }
 
   // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に（SSH的な動作）

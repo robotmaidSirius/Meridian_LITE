@@ -2,5 +2,21 @@
     "cSpell.words": [
         "EEPROM",
         "Meridim"
-    ]
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "lib/ESP32Wiimote": true,
+        "lib/gs2d": true,
+        "lib/IcsClass_V210": true,
+    }
 }

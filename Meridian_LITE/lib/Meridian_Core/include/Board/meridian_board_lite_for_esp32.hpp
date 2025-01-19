@@ -11,6 +11,19 @@
 #define MERIDIAN_BOARD_LITE_FOR_ESP32_HPP
 
 #include "meridian_core.hpp"
+#if 0
+#include "mrd_plugin/i_mrd_ahrs.hpp"
+#include "mrd_plugin/i_mrd_eeprom.hpp"
+#include "mrd_plugin/i_mrd_gpio_in.hpp"
+#include "mrd_plugin/i_mrd_gpio_out.hpp"
+#include "mrd_plugin/i_mrd_i2c.hpp"
+#include "mrd_plugin/i_mrd_joypad.hpp"
+#include "mrd_plugin/i_mrd_sd.hpp"
+#include "mrd_plugin/i_mrd_servo.hpp"
+#include "mrd_plugin/i_mrd_wifi.hpp"
+#endif
+
+#define I2C0_SPEED 400000 // I2Cの速度（400kHz推奨）
 
 //================================================================================================================
 //  MERIDIAN - LITE - ESP32の配線

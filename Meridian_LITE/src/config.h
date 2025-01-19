@@ -1,8 +1,13 @@
 #ifndef __MERIDIAN_CONFIG__
 #define __MERIDIAN_CONFIG__
 
+#if 0
+#define AHRS_TYPE_BNO055
+#define PAD_TYPE_KRC5FH
+#endif
+
 //-------------------------------------------------------------------------
-//  各種設定
+//   各種設定
 //-------------------------------------------------------------------------
 
 // Meridimの基本設定
@@ -31,7 +36,6 @@
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
 
 // I2C設定, I2Cセンサ関連設定
-#define I2C0_SPEED 400000 // I2Cの速度（400kHz推奨）
 // #define I2C1_SPEED 100000  // I2Cの速度（100kHz推奨?）
 // #define I2C1_MERIMOTE_ADDR 0x58 // MerimoteのI2Cアドレス
 
@@ -43,15 +47,14 @@
 #define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
 
 // JOYPAD関連設定
-#define PAD_TYPE_WIIMOTE
 #define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
 #define PAD_BUTTON_MARGE 1     // 0:JOYPADのボタンデータをMeridim受信値に論理積, 1:Meridim受信値に論理和
+
+// AHRS関連設定
 
 // ピンアサイン
 #define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
 #define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
-#define PIN_I2C0_SDA      22 // I2CのSDAピン
-#define PIN_I2C0_SCL      21 // I2CのSCLピン
 #define PIN_LED_BT        26 // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
 
 #endif // __MERIDIAN_CONFIG__

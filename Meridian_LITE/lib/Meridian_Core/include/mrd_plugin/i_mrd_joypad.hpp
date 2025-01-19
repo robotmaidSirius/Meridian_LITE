@@ -27,8 +27,9 @@ public:
                                                    // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
   } PadUnion;
 
-protected:
 public:
+  virtual bool setup() = 0;
+
   virtual const char *get_name() = 0;
   virtual void set(uint8_t data) = 0;
   virtual uint8_t get() = 0;

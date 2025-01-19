@@ -18,7 +18,6 @@
 ////
 
 ESP32Wiimote wiimote;
-I_Meridian_Joypad::PadUnion pad_array = {0}; // pad値の格納用配列
 
 // リモコン受信ボタンデータの変換テーブル
 constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
@@ -111,6 +110,9 @@ void Core0_BT_r(void *args) { // サブCPU(Core0)で実行するプログラム
 }
 
 class MrdPadWiimote : public I_Meridian_Joypad {
+public:
+  const int pad_interval = PAD_INTERVAL; // JOYPADのデータを読みに行くフレーム間隔
+  PadUnion pad_array = {0};              // pad値の格納用配列
 
 public:
   MrdPadWiimote() {
@@ -280,5 +282,6 @@ public:
     return true;
   }
 };
+#undef PAD_INTERVAL
 
 #endif // MRD_PAD_WIIMOTE_HPP

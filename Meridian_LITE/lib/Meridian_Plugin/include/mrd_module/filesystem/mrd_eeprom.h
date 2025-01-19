@@ -85,16 +85,7 @@ bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, BinHexDec a_bhd) {
   Serial.println("byte, 16bit Dump;");
   for (int i = 0; i < 270; i++) // 読み込むデータはshort型で作成
   {
-#if 1
     Serial.print(a_data.sval[i], a_bhd);
-#else
-    if (a_bhd == 0) {
-    } else if (a_bhd == 1) {
-      Serial.print(a_data.sval[i], HEX);
-    } else {
-      Serial.print(a_data.sval[i], DEC);
-    }
-#endif
     if ((i == 89) or (i == 179) or (i == 269)) {
       Serial.println();
     } else {
@@ -108,9 +99,9 @@ bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, BinHexDec a_bhd) {
 /// @param a_do_dump 実施するか否か.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return 終了時にtrueを返す.
-bool mrd_eeprom_dump_at_boot(bool a_do_dump, BinHexDec a_bhd) {
+bool mrd_eeprom_dump_at_boot(bool a_do_dump) {
   if (a_do_dump) {
-    mrd_eeprom_dump_to_serial(mrd_eeprom_read(), a_bhd);
+    mrd_eeprom_dump_to_serial(mrd_eeprom_read(), EEPROM_STYLE);
     return true;
   }
   return false;
@@ -164,7 +155,7 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, bool eeprom_
 /// @param a_protect EEPROMの書き込み許可があるかどうかのブール値.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, それ以外はfalseを返す.
-bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, BinHexDec a_bhd, bool eeprom_protect) {
+bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect) {
   if (!a_do) // EEPROMの読み書きチェックを実施するか
   {
     return false;
@@ -172,7 +163,7 @@ bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_pro
 
   // EEPROM書き込みを実行
   Serial.println("Try to write EEPROM: ");
-  mrd_eeprom_dump_to_serial(a_write_data, a_bhd); // 書き込み内容をダンプ表示
+  mrd_eeprom_dump_to_serial(a_write_data, EEPROM_STYLE); // 書き込み内容をダンプ表示
 
   if (mrd_eeprom_write(a_write_data, a_protect, eeprom_protect)) {
     Serial.println("...Write OK.");
@@ -184,7 +175,7 @@ bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_pro
   // EEPROM読み込みを実行
   Serial.println("Read EEPROM: ");
   UnionEEPROM read_data_tmp = mrd_eeprom_read();
-  mrd_eeprom_dump_to_serial(read_data_tmp, a_bhd); // 読み込み内容をダンプ表示
+  mrd_eeprom_dump_to_serial(read_data_tmp, EEPROM_STYLE); // 読み込み内容をダンプ表示
   Serial.println("...Read completed.");
 
   return true;

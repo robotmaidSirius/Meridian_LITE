@@ -119,8 +119,28 @@ public:
     return pre_val_tmp;
   }
 
-private:
+  bool mrd_joypad_setup(TaskHandle_t &pvCreatedTask, HardwareSerial &a_serial) {
+    return true;
+  }
+  bool meriput90_pad(Meridim90Union &a_meridim, PadUnion a_pad_array, bool a_marge) {
+
+    // ボタンデータの処理 (マージ or 上書き)
+    if (a_marge) {
+      a_meridim.usval[MRD_PAD_BUTTONS] |= a_pad_array.usval[0];
+    } else {
+      a_meridim.usval[MRD_PAD_BUTTONS] = a_pad_array.usval[0];
+    }
+
+    // アナログ入力データの処理 (上書きのみ)
+    for (int i = 1; i < 4; i++) {
+      a_meridim.usval[MRD_PAD_BUTTONS + i] = a_pad_array.usval[i];
+    }
+    return true;
+  }
+
+public:
   const int pad_interval = 4; // JOYPADのデータを読みに行くフレーム間隔
+  PadUnion pad_array = {0};   // pad値の格納用配列
 };
 
 #endif // MRD_JOYPAD_KRR5FH_HPP

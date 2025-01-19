@@ -32,6 +32,7 @@
 		},
 		"editor.fontFamily": "Consolas, 'Courier New', monospace",
 		"cSpell.words": [],
-		"forbeslindesay-taskrunner.source": "PlatformIO"
+		"forbeslindesay-taskrunner.source": "PlatformIO",
+		"platformio-ide.disablePIOHomeStartup": false
 	}
 }
