@@ -1,7 +1,7 @@
 #ifndef __MERIDIAN_CONFIG__
 #define __MERIDIAN_CONFIG__
 
-#if 0
+#if 1
 #define AHRS_TYPE_BNO055
 #define PAD_TYPE_KRC5FH
 #endif

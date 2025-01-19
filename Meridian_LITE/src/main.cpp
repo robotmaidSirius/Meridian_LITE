@@ -533,11 +533,10 @@ void setup() {
 
   // EEPROMの開始, ダンプ表示
   mrd_eeprom_init(EEPROM_SIZE);                                     // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);               // 内容のダンプ表示
+  mrd_eeprom_dump_at_boot(EEPROM_DUMP);                             // 内容のダンプ表示
   mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(sv), //
                               CHECK_EEPROM_RW,                      //
                               EEPROM_PROTECT,                       //
-                              EEPROM_STYLE,                         //
                               flg.eeprom_protect);                  // EEPROMのリードライトテスト
 
   // SDカードの初期設定とチェック

@@ -155,7 +155,7 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, bool eeprom_
 /// @param a_protect EEPROMの書き込み許可があるかどうかのブール値.
 /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
 /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, それ以外はfalseを返す.
-bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect) {
+bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, bool eeprom_protect) {
   if (!a_do) // EEPROMの読み書きチェックを実施するか
   {
     return false;

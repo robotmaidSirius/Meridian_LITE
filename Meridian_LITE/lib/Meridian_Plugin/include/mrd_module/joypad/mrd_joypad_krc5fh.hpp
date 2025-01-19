@@ -23,7 +23,9 @@ public:
   }
   ~MrdJoypadKrc5fh() {
   }
-
+  bool setup() override {
+    return true;
+  }
   const char *get_name() override {
     return "KRC-5FH";
   }
