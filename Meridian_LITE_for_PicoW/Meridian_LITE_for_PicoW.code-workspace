@@ -42,7 +42,10 @@
 		"editor.rulers": [
 			120
 		],
-		"cSpell.words": [],
+		"cSpell.words": [
+			"interp",
+			"stdlib"
+		],
 		"forbeslindesay-taskrunner.source": "PlatformIO"
 	}
 }

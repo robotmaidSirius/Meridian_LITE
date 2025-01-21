@@ -1,5 +1,11 @@
 {
     "cSpell.words": [
-        "Meridim"
+        "btstack",
+        "fireflake",
+        "interp",
+        "Meridim",
+        "multicore",
+        "stdlib",
+        "STREQUAL"
     ]
 }
