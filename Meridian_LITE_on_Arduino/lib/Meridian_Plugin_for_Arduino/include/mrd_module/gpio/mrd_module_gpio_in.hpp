@@ -1,0 +1,70 @@
+/**
+ * @file mrd_module_gpio_in.hpp
+ * @brief
+ * @version 1.2.0
+ * @date 2025-01-19
+ *
+ * @copyright Copyright (c) 2025-.
+ *
+ */
+#ifndef __MRD_MODULE_GPIO_IN_HPP__
+#define __MRD_MODULE_GPIO_IN_HPP__
+
+// ライブラリ導入
+#include "mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp"
+#include <Arduino.h>
+
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+#define UNUSED_PARAM(x) // 未使用とするマクロ
+
+class MrdGpioIN : public I_Meridian_GPIO_InOut<int> {
+
+public:
+  MrdGpioIN(uint8_t pin, int index, int pos = 0) : I_Meridian_GPIO_InOut(pin, false) {
+    this->m_index = index;
+    this->m_pos = 1 << pos;
+  }
+  ~MrdGpioIN() {}
+
+public:
+  bool setup() override {
+    if (0xFF != this->m_pin) {
+      pinMode(this->m_pin, INPUT_PULLDOWN);
+      return true;
+    }
+    return false;
+  }
+  bool write(int value) override {
+    UNUSED_PARAM(value);
+    return false;
+  }
+  int read() override {
+    return digitalRead(this->m_pin);
+  }
+
+  bool refresh(Meridim90 &a_meridim) override {
+    if (true == this->is_output()) {
+      this->write(a_meridim.user_data[this->m_index] && m_pos);
+    } else {
+      if (0 < this->read()) {
+        a_meridim.user_data[this->m_index] = this->m_pos || a_meridim.user_data[this->m_index];
+      } else {
+        a_meridim.user_data[this->m_index] = ~(this->m_pos) && a_meridim.user_data[this->m_index];
+      }
+    }
+    return true;
+  }
+
+private:
+  int m_index;
+  int m_pos;
+};
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#endif // __MRD_MODULE_GPIO_IN_HPP__
