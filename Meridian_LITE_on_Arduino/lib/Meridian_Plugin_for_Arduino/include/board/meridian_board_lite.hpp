@@ -13,69 +13,37 @@
 #include "meridian_core.hpp"
 using namespace meridian::core::meridim;
 
+#include "pins/meridian_board_lite_pins.hpp"
+#include "settins/meridian_board_lite_setting.hpp"
+
 #include "mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp"
 #include "mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp"
-
-////////////////////////////////////////////////////
-// SETTINGS
-////////////////////////////////////////////////////
-#ifndef MERIDIAN_BOARD_LITE_SETTINGS_I2C_MAX
-#define MERIDIAN_BOARD_LITE_SETTINGS_I2C_MAX (4)
-#endif
-
-////////////////////////////////////////////////////
-// PINS
-////////////////////////////////////////////////////
-// GPIO
-#define PINS_ANALOG_IN_1 (34)
-#define PINS_ANALOG_IN_2 (35)
-#define PINS_GPIO_1      (25)
-#define PINS_GPIO_2      (26)
-
-// SERVO
-#define PINS_SERVO_1_EN (33)
-#define PINS_SERVO_1_TX (32)
-#define PINS_SERVO_1_RX (27)
-
-#define PINS_SERVO_2_EN (4)
-#define PINS_SERVO_2_TX (16)
-#define PINS_SERVO_2_RX (17)
-
-// I2C
-#define PINS_I2C_SCL (22)
-#define PINS_I2C_SDA (21)
-
-// SPI
-#define PINS_SPI_MISO (19)
-#define PINS_SPI_MOSI (23)
-#define PINS_SPI_SCK  (18)
-#define PINS_SPI_CS1  (15)
-#define PINS_SPI_CS2  (5)
-
-////////////////////////////////////////////////////
-// Other
-////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////
-////////////////////////////////////////////////////
+#include "mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp"
+#include "mrd_modules/mrd_plugin/i_mrd_plugin_spi.hpp"
 
 namespace meridian {
 namespace board {
 namespace meridian_board_lite {
 using namespace meridian::modules::plugin;
-const int MERIDIAN_BOARD_LITE_GPIO_NUM = 4;
+const int MERIDIAN_BOARD_LITE_ANALOG_NUM = 2;
+const int MERIDIAN_BOARD_LITE_GPIO_NUM = 2;
 const int MERIDIAN_BOARD_LITE_I2C_NUM = MERIDIAN_BOARD_LITE_SETTINGS_I2C_MAX;
 
 struct mrd_entity {
 public:
+  I_Meridian_GPIO_InOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM];
   I_Meridian_GPIO_InOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];
-  I_Meridian_I2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM] = {nullptr};
+  I_Meridian_I2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];
+  I_Meridian_SPI *spi_outside;
+  I_Meridian_SPI *spi_inside;
+  I_Meridian_Servo *servo_left;
+  I_Meridian_Servo *servo_right;
 };
 
 struct mrd_parameters {
 public:
-  unsigned int interval_ms;
-  unsigned int i2c_speed = 400000; //! I2Cの速度（400kHz推奨）
+  unsigned int interval_ms = 10;
+  unsigned int i2c_speed = 400000UL; //! I2Cの速度（400kHz推奨）
 };
 
 bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param);

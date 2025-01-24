@@ -10,6 +10,7 @@
 
 #include "board/meridian_board_lite.hpp"
 #include <Arduino.h>
+#include <Wire.h>
 
 namespace meridian {
 namespace board {
@@ -19,19 +20,41 @@ using namespace meridian::core::meridim;
 Meridim90 meridim90;
 mrd_entity *entity = nullptr;
 mrd_parameters param;
-mrd_parameters param_default = {
-    .interval_ms = 10,
-};
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
-  if (nullptr == a_param) {
-    param = param_default;
-  } else {
+  //////////////////////////////////////////////////////////
+  // Initialize the shared memory
+  //////////////////////////////////////////////////////////
+  if (nullptr != a_param) {
     param = *a_param;
   }
   entity = a_entity;
+  //////////////////////////////////////////////////////////
+  // Start connecter
+  //////////////////////////////////////////////////////////
+  // Setting I2C
+  bool flag_ic2_begin = false;
+  if (nullptr != entity) {
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+      if (nullptr != entity->gpio[i]) {
+        flag_ic2_begin = true;
+        break;
+      }
+    }
+  }
+  if (true == flag_ic2_begin) {
+    if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
+      Wire.begin();
+    } else {
+      Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
+    }
+    Wire.setClock(param.i2c_speed);
+  }
+
+  //////////////////////////////////////////////////////////
+  // Setup
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
@@ -57,6 +80,9 @@ Meridim90 mrd_input() {
   if (0 != result) {
     log_e(EXIT_FAILURE, result, "can not unlock");
   }
+
+  //////////////////////////////////////////////////////////
+  // Refresh
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
@@ -87,6 +113,9 @@ bool mrd_output(Meridim90 &mrd_meridim) {
   if (0 != result) {
     log_e(EXIT_FAILURE, result, "can not unlock");
   }
+
+  //////////////////////////////////////////////////////////
+  // Refresh
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {

@@ -1,5 +1,5 @@
 /**
- * @file i_mrd_communication.hpp
+ * @file i_mrd_conversation.hpp
  * @brief
  * @version 1.2.0
  * @date 2025-01-22
@@ -15,13 +15,14 @@
 namespace meridian {
 namespace core {
 namespace communication {
+using namespace meridian::core::meridim;
 
-class I_Meridian_Communication {
+class I_Meridian_Conversation {
 public:
   virtual bool setup() = 0;
 
-  virtual bool received(meridim::Meridim90 &a_meridim) = 0;
-  virtual bool send(meridim::Meridim90 &a_meridim) = 0;
+  virtual bool received(Meridim90 &a_meridim) = 0;
+  virtual bool send(Meridim90 &a_meridim) = 0;
 
   virtual bool with_skip() = 0;
 };

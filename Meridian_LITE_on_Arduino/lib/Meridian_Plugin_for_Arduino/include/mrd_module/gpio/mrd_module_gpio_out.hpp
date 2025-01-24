@@ -19,9 +19,10 @@ namespace plugin {
 
 class MrdGpioOut : public I_Meridian_GPIO_InOut<int> {
 public:
-  MrdGpioOut(uint8_t pin, int index, int pos = 0) : I_Meridian_GPIO_InOut(pin, true) {
-    this->m_index = index;
-    this->m_pos = 1 << pos;
+  MrdGpioOut(uint8_t pin, uint8_t index, uint8_t pos = 0) : I_Meridian_GPIO_InOut(pin, true) {
+    assert(0 <= index && index < 10);
+    this->m_index = index + (pos / 8);
+    this->m_pos = 1 << (pos % 8);
   }
   ~MrdGpioOut() {}
 
