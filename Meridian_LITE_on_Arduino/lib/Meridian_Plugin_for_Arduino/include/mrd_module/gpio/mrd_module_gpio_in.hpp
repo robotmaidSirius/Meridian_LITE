@@ -20,10 +20,10 @@ namespace plugin {
 
 #define UNUSED_PARAM(x) // 未使用とするマクロ
 
-class MrdGpioIN : public I_Meridian_GPIO_InOut<int> {
+class MrdGpioIN : public IMeridianGPIOInOut<int> {
 
 public:
-  MrdGpioIN(uint8_t pin, int index, int pos = 0) : I_Meridian_GPIO_InOut(pin, false) {
+  MrdGpioIN(uint8_t pin, int index, int pos = 0) : IMeridianGPIOInOut(pin, false) {
     this->m_index = index;
     this->m_pos = 1 << pos;
   }

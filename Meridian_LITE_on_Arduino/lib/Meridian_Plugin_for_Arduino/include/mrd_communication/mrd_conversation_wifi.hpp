@@ -16,7 +16,7 @@
 namespace meridian {
 namespace communication {
 
-class MRD_Conversation_Wifi : public meridian::core::communication::I_Meridian_Conversation {
+class MRD_Conversation_Wifi : public meridian::core::communication::IMeridianConversation {
 
 public:
   MRD_Conversation_Wifi() {

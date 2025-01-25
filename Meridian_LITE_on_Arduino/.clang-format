@@ -19,7 +19,7 @@ AlignConsecutiveMacros: true
 #    例) mrd_wire0_init, MCMD_SENSOR_YAW_CALIB
 # 2. meridianオリジナルの関数は先頭に mrd_ をつける.
 # 3. 関数をライブラリやクラスに昇格する際は, _の区切りでカテゴライズする.
-#    例）　mrd_wire0_init → mrd_wire0.init
+#    例)  mrd_wire0_init → mrd_wire0.init
 
 # <ドキュメンテーションコメント>
 # 関数などの解説には下記のように///を使用する.
@@ -54,4 +54,4 @@ AlignConsecutiveMacros: true
 # IXR_     L系統のサーボパラメータ
 # IXL_     R系統のサーボパラメータ
 # IXC_     C系統のサーボパラメータ
-# MRD_　　　Meridim90の配列キー（例外ありconfig.h参照）
+# MRD_     Meridim90の配列キー（例外ありconfig.h参照）

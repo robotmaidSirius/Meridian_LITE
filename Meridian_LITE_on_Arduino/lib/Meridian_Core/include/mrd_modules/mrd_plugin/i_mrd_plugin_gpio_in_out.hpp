@@ -17,9 +17,9 @@ namespace modules {
 namespace plugin {
 
 template <typename TYPE>
-class I_Meridian_GPIO_InOut : public I_Meridian_Plugin {
+class IMeridianGPIOInOut : public IMeridianPlugin {
 public:
-  I_Meridian_GPIO_InOut(uint8_t pin, bool is_output = true) {
+  IMeridianGPIOInOut(uint8_t pin, bool is_output = true) {
     this->m_pin = pin;
     this->m_is_output = is_output;
   }

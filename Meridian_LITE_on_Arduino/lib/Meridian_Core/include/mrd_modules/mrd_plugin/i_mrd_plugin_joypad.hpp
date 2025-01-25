@@ -16,7 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class I_Meridian_Joypad : public I_Meridian_Plugin {
+class IMeridianJoypad : public IMeridianPlugin {
 public:
   enum hat_t {
     N = 0,

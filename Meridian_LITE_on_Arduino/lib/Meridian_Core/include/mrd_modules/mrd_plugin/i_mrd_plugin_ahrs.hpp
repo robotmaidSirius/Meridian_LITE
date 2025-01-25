@@ -17,7 +17,7 @@ namespace modules {
 namespace plugin {
 
 template <typename TYPE_ACC, typename TYPE_GYRO, typename TYPE_MAG>
-class I_Meridian_AHRS : public I_Meridian_Plugin {
+class IMeridianAHRS : public IMeridianPlugin {
 public:
   // Acceleration
   struct ACC_vector3 {

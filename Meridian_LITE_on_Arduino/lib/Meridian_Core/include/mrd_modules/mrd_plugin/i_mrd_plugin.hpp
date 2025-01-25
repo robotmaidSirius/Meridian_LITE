@@ -17,7 +17,7 @@ namespace modules {
 namespace plugin {
 using namespace meridian::core::meridim;
 
-class I_Meridian_Plugin {
+class IMeridianPlugin {
 public:
   virtual bool setup() = 0;
   virtual bool refresh(Meridim90 &a_meridim) = 0;

@@ -1,12 +1,18 @@
 {
     "cSpell.words": [
         "AHRS",
+        "DYNAMIXEL",
         "EEPROM",
         "FEETECH",
+        "FUTABA",
         "hipjoint",
         "Joypad",
+        "KONDO",
+        "MCMD",
         "MERIDIANFLOW",
         "Meridim",
-        "wiimote"
+        "PROPO",
+        "wiimote",
+        "XBUS"
     ]
 }

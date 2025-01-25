@@ -21,7 +21,8 @@
 /// @param a_err_cnt サーボのエラーカウント
 /// @param a_stat サーボのステータス
 /// @param ics サーボクラスのインスタンス
-float mrd_servo_process_ics(int a_servo_id, int a_cmnd, float a_tgt, float a_tgt_past, int a_trim,
+float mrd_servo_process_ics(int a_servo_id, //
+                            int a_cmnd, float a_tgt, float a_tgt_past, int a_trim,
                             int a_cw, int &a_err_cnt, uint16_t &a_stat, IcsHardSerialClass &ics) {
   int val_tmp = 0;
   if (a_cmnd == 1) { // コマンドが1ならPos指定

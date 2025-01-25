@@ -16,7 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class I_Meridian_EEPROM : public I_Meridian_Plugin {
+class IMeridianEEPROM : public IMeridianPlugin {
 public:
   virtual bool write(uint16_t address, uint8_t data) = 0;
   virtual uint8_t read(uint16_t address) = 0;

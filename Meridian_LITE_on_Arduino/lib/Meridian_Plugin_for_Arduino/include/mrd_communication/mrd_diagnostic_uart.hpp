@@ -17,7 +17,7 @@ namespace meridian {
 namespace core {
 namespace communication {
 
-class MRD_Diagnostic_Uart : public meridian::core::communication::I_Meridian_Diagnostic {
+class MRD_Diagnostic_Uart : public meridian::core::communication::IMeridianDiagnostic {
 public:
   MRD_Diagnostic_Uart(HardwareSerial serial, uint32_t baudrate = 115200) {
     this->_serial = &serial;

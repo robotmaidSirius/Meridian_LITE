@@ -20,7 +20,7 @@ namespace core {
 namespace communication {
 using namespace meridian::core::meridim;
 
-class I_Meridian_Diagnostic {
+class IMeridianDiagnostic {
 public:
   // @brief Define log level
   typedef enum output_log_level_t {

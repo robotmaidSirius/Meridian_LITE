@@ -16,7 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class I_Meridian_SPI : public I_Meridian_Plugin {
+class IMeridianSPI : public IMeridianPlugin {
 public:
 };
 

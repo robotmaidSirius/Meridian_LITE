@@ -17,7 +17,7 @@ namespace core {
 namespace communication {
 using namespace meridian::core::meridim;
 
-class I_Meridian_Conversation {
+class IMeridianConversation {
 public:
   virtual bool setup() = 0;
 

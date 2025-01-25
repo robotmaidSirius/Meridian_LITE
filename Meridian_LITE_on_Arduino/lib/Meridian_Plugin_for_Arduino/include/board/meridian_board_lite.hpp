@@ -31,13 +31,13 @@ const int MERIDIAN_BOARD_LITE_I2C_NUM = MERIDIAN_BOARD_LITE_SETTINGS_I2C_MAX;
 
 struct mrd_entity {
 public:
-  I_Meridian_GPIO_InOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM];
-  I_Meridian_GPIO_InOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];
-  I_Meridian_I2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];
-  I_Meridian_SPI *spi_outside;
-  I_Meridian_SPI *spi_inside;
-  I_Meridian_Servo *servo_left;
-  I_Meridian_Servo *servo_right;
+  IMeridianGPIOInOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM];
+  IMeridianGPIOInOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];
+  IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];
+  IMeridianSPI *spi_outside;
+  IMeridianSPI *spi_inside;
+  IMeridianServo *servo_left;
+  IMeridianServo *servo_right;
 };
 
 struct mrd_parameters {

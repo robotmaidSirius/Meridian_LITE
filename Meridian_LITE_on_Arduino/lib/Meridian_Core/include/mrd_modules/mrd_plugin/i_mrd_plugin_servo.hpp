@@ -16,7 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class I_Meridian_Servo : public I_Meridian_Plugin {
+class IMeridianServo : public IMeridianPlugin {
 public:
   virtual const char *get_name() { return "Unknow"; };
 

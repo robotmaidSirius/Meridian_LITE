@@ -16,7 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class I_Meridian_I2C : public I_Meridian_Plugin {
+class IMeridianI2C : public IMeridianPlugin {
 public:
   virtual void write(uint8_t address, uint8_t data) = 0;
   virtual uint8_t read(uint8_t address) = 0;
