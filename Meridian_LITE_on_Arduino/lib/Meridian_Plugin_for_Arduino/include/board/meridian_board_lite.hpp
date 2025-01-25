@@ -16,6 +16,8 @@ using namespace meridian::core::meridim;
 #include "pins/meridian_board_lite_pins.hpp"
 #include "settins/meridian_board_lite_setting.hpp"
 
+#include "mrd_communication/i_mrd_conversation.hpp"
+#include "mrd_communication/i_mrd_diagnostic.hpp"
 #include "mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp"
 #include "mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp"
 #include "mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp"
@@ -24,24 +26,37 @@ using namespace meridian::core::meridim;
 namespace meridian {
 namespace board {
 namespace meridian_board_lite {
+using namespace meridian::core::communication;
 using namespace meridian::modules::plugin;
+
 const int MERIDIAN_BOARD_LITE_ANALOG_NUM = 2;
 const int MERIDIAN_BOARD_LITE_GPIO_NUM = 2;
 const int MERIDIAN_BOARD_LITE_I2C_NUM = MERIDIAN_BOARD_LITE_SETTINGS_I2C_MAX;
 
 struct mrd_entity {
 public:
-  IMeridianGPIOInOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM];
-  IMeridianGPIOInOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];
-  IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];
-  IMeridianSPI *spi_outside;
-  IMeridianSPI *spi_inside;
-  IMeridianServo *servo_left;
-  IMeridianServo *servo_right;
+  struct mrd_communication {
+  public:
+    IMeridianConversation *con;
+    IMeridianDiagnostic *diag;
+  };
+  struct mrd_plugin {
+  public:
+    IMeridianGPIOInOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM];
+    IMeridianGPIOInOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];
+    IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];
+    IMeridianSPI *spi_outside;
+    IMeridianSPI *spi_inside;
+    IMeridianServo *servo_left;
+    IMeridianServo *servo_right;
+  };
+
+public:
+  mrd_communication communication;
+  mrd_plugin plugin;
 };
 
 struct mrd_parameters {
-public:
   unsigned int interval_ms = 10;
   unsigned int i2c_speed = 400000UL; //! I2Cの速度（400kHz推奨）
 };

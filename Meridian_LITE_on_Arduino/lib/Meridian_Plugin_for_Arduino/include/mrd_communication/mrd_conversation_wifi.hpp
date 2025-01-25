@@ -14,12 +14,13 @@
 #include "mrd_communication/i_mrd_conversation.hpp"
 
 namespace meridian {
+namespace core {
 namespace communication {
 
-class MRD_Conversation_Wifi : public meridian::core::communication::IMeridianConversation {
+class MrdConversationWifi : public meridian::core::communication::IMeridianConversation {
 
 public:
-  MRD_Conversation_Wifi() {
+  MrdConversationWifi() {
   };
 
   bool setup() override {
@@ -37,9 +38,20 @@ public:
   bool isConnected() {
     return true;
   };
+  bool received(Meridim90 &a_meridim) {
+    return true;
+  }
+  bool send(Meridim90 &a_meridim) {
+    return true;
+  }
+
+  bool with_skip() {
+    return true;
+  };
 };
 
 } // namespace communication
+} // namespace core
 } // namespace meridian
 
 #endif // MRD_CONVERSATION_WIFI_HPP

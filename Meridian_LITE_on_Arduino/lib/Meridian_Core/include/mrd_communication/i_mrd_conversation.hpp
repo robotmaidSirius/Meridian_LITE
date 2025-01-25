@@ -11,6 +11,7 @@
 #define I_MRD_COMMUNICATION_HPP
 
 #include "Meridim90.hpp"
+#include "i_mrd_diagnostic.hpp"
 
 namespace meridian {
 namespace core {
@@ -25,6 +26,12 @@ public:
   virtual bool send(Meridim90 &a_meridim) = 0;
 
   virtual bool with_skip() = 0;
+
+public:
+  void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+
+protected:
+  IMeridianDiagnostic *a_diag;
 };
 
 } // namespace communication

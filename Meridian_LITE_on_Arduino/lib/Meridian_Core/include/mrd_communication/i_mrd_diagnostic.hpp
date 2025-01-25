@@ -42,7 +42,7 @@ protected:
   virtual size_t message(OUTPUT_LOG_LEVEL level, const char *message) = 0;
 
 public:
-  char *get_text_level(OUTPUT_LOG_LEVEL level) {
+  const char *get_text_level(OUTPUT_LOG_LEVEL level) {
     switch (level) {
     case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_ALL:
       return "---";

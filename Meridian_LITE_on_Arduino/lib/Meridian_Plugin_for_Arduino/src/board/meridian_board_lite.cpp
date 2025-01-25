@@ -34,11 +34,38 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   //////////////////////////////////////////////////////////
   // Start connecter
   //////////////////////////////////////////////////////////
+  // Setting Serial
+  if (PINS_DEFAULT_SERIAL0_RX != -1 && PINS_DEFAULT_SERIAL0_TX != -1) {
+    if (PINS_DEFAULT_SERIAL0_RX == SOC_RX0 && PINS_DEFAULT_SERIAL0_TX == SOC_TX0) {
+      Serial.begin(PINS_DEFAULT_SERIAL0_BAUD, PINS_DEFAULT_SERIAL0_CONFIG);
+    } else {
+      Serial.begin(PINS_DEFAULT_SERIAL0_BAUD, PINS_DEFAULT_SERIAL0_CONFIG, PINS_DEFAULT_SERIAL0_RX, PINS_DEFAULT_SERIAL0_TX);
+    }
+  }
+#if SOC_UART_NUM > 1
+  if (PINS_DEFAULT_SERIAL1_RX != -1 && PINS_DEFAULT_SERIAL1_TX != -1) {
+    if (PINS_DEFAULT_SERIAL1_RX == RX1 && PINS_DEFAULT_SERIAL1_TX == TX1) {
+      Serial1.begin(PINS_DEFAULT_SERIAL1_BAUD, PINS_DEFAULT_SERIAL1_CONFIG);
+    } else {
+      Serial1.begin(PINS_DEFAULT_SERIAL1_BAUD, PINS_DEFAULT_SERIAL1_CONFIG, PINS_DEFAULT_SERIAL1_RX, PINS_DEFAULT_SERIAL1_TX);
+    }
+  }
+#endif
+#if SOC_UART_NUM > 2
+  if (PINS_DEFAULT_SERIAL2_RX != -1 && PINS_DEFAULT_SERIAL2_TX != -1) {
+    if (PINS_DEFAULT_SERIAL2_RX == RX2 && PINS_DEFAULT_SERIAL2_TX == TX2) {
+      Serial2.begin(PINS_DEFAULT_SERIAL2_BAUD, PINS_DEFAULT_SERIAL2_CONFIG);
+    } else {
+      Serial2.begin(PINS_DEFAULT_SERIAL2_BAUD, PINS_DEFAULT_SERIAL2_CONFIG, PINS_DEFAULT_SERIAL2_RX, PINS_DEFAULT_SERIAL2_TX);
+    }
+  }
+#endif
+
   // Setting I2C
   bool flag_ic2_begin = false;
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-      if (nullptr != entity->gpio[i]) {
+      if (nullptr != entity->plugin.gpio[i]) {
         flag_ic2_begin = true;
         break;
       }
@@ -58,8 +85,8 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->gpio[i]) {
-        entity->gpio[i]->setup();
+      if (nullptr != entity->plugin.gpio[i]) {
+        entity->plugin.gpio[i]->setup();
       }
     }
   }
@@ -86,9 +113,9 @@ Meridim90 mrd_input() {
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->gpio[i]) {
-        if (true != entity->gpio[i]->is_output()) {
-          entity->gpio[i]->refresh(a_meridim90);
+      if (nullptr != entity->plugin.gpio[i]) {
+        if (true != entity->plugin.gpio[i]->is_output()) {
+          entity->plugin.gpio[i]->refresh(a_meridim90);
         }
       }
     }
@@ -119,9 +146,9 @@ bool mrd_output(Meridim90 &mrd_meridim) {
   //////////////////////////////////////////////////////////
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->gpio[i]) {
-        if (true == entity->gpio[i]->is_output()) {
-          entity->gpio[i]->refresh(mrd_meridim);
+      if (nullptr != entity->plugin.gpio[i]) {
+        if (true == entity->plugin.gpio[i]->is_output()) {
+          entity->plugin.gpio[i]->refresh(mrd_meridim);
         }
       }
     }
