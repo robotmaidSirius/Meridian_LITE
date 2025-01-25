@@ -18,7 +18,7 @@
 mrd_entity entity = {
     .communication = {
         .con = new MrdConversationWifi(),
-        .diag = new MrdDiagnosticUart(Serial, 115200),
+        .diag = new MrdDiagnosticUart(Serial, BOARD_SETTING_DEFAULT_SERIAL0_BAUD),
     },
     .plugin = {
         .analog = {
@@ -35,8 +35,8 @@ mrd_entity entity = {
             nullptr,
             nullptr,
         },
-        .spi_outside = nullptr,
-        .spi_inside = nullptr,
+        .spi_sd_card = nullptr,
+        .spi = nullptr,
         .servo_left = nullptr,
         .servo_right = nullptr,
     },

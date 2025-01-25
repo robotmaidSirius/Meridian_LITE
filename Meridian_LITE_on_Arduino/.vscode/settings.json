@@ -3,6 +3,8 @@
         "AHRS",
         "DYNAMIXEL",
         "EEPROM",
+        "electroniccats",
+        "espressif",
         "FEETECH",
         "FUTABA",
         "hipjoint",

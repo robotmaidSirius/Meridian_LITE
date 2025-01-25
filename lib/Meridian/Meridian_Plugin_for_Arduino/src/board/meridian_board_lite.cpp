@@ -37,26 +37,26 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   // Setting Serial
   if (PINS_DEFAULT_SERIAL0_RX != -1 && PINS_DEFAULT_SERIAL0_TX != -1) {
     if (PINS_DEFAULT_SERIAL0_RX == SOC_RX0 && PINS_DEFAULT_SERIAL0_TX == SOC_TX0) {
-      Serial.begin(PINS_DEFAULT_SERIAL0_BAUD, PINS_DEFAULT_SERIAL0_CONFIG);
+      Serial.begin(BOARD_SETTING_DEFAULT_SERIAL0_BAUD, BOARD_SETTING_DEFAULT_SERIAL0_CONFIG);
     } else {
-      Serial.begin(PINS_DEFAULT_SERIAL0_BAUD, PINS_DEFAULT_SERIAL0_CONFIG, PINS_DEFAULT_SERIAL0_RX, PINS_DEFAULT_SERIAL0_TX);
+      Serial.begin(BOARD_SETTING_DEFAULT_SERIAL0_BAUD, BOARD_SETTING_DEFAULT_SERIAL0_CONFIG, PINS_DEFAULT_SERIAL0_RX, PINS_DEFAULT_SERIAL0_TX);
     }
   }
 #if SOC_UART_NUM > 1
   if (PINS_DEFAULT_SERIAL1_RX != -1 && PINS_DEFAULT_SERIAL1_TX != -1) {
     if (PINS_DEFAULT_SERIAL1_RX == RX1 && PINS_DEFAULT_SERIAL1_TX == TX1) {
-      Serial1.begin(PINS_DEFAULT_SERIAL1_BAUD, PINS_DEFAULT_SERIAL1_CONFIG);
+      Serial1.begin(BOARD_SETTING_DEFAULT_SERIAL1_BAUD, BOARD_SETTING_DEFAULT_SERIAL1_CONFIG);
     } else {
-      Serial1.begin(PINS_DEFAULT_SERIAL1_BAUD, PINS_DEFAULT_SERIAL1_CONFIG, PINS_DEFAULT_SERIAL1_RX, PINS_DEFAULT_SERIAL1_TX);
+      Serial1.begin(BOARD_SETTING_DEFAULT_SERIAL1_BAUD, BOARD_SETTING_DEFAULT_SERIAL1_CONFIG, PINS_DEFAULT_SERIAL1_RX, PINS_DEFAULT_SERIAL1_TX);
     }
   }
 #endif
 #if SOC_UART_NUM > 2
   if (PINS_DEFAULT_SERIAL2_RX != -1 && PINS_DEFAULT_SERIAL2_TX != -1) {
     if (PINS_DEFAULT_SERIAL2_RX == RX2 && PINS_DEFAULT_SERIAL2_TX == TX2) {
-      Serial2.begin(PINS_DEFAULT_SERIAL2_BAUD, PINS_DEFAULT_SERIAL2_CONFIG);
+      Serial2.begin(BOARD_SETTING_DEFAULT_SERIAL2_BAUD, BOARD_SETTING_DEFAULT_SERIAL2_CONFIG);
     } else {
-      Serial2.begin(PINS_DEFAULT_SERIAL2_BAUD, PINS_DEFAULT_SERIAL2_CONFIG, PINS_DEFAULT_SERIAL2_RX, PINS_DEFAULT_SERIAL2_TX);
+      Serial2.begin(BOARD_SETTING_DEFAULT_SERIAL2_BAUD, BOARD_SETTING_DEFAULT_SERIAL2_CONFIG, PINS_DEFAULT_SERIAL2_RX, PINS_DEFAULT_SERIAL2_TX);
     }
   }
 #endif
@@ -105,7 +105,7 @@ Meridim90 mrd_input() {
   }
   result = pthread_mutex_unlock(&mutex);
   if (0 != result) {
-    log_e(EXIT_FAILURE, result, "can not unlock");
+    log_e("[%d] %s", result, "can not unlock");
   }
 
   //////////////////////////////////////////////////////////
@@ -138,7 +138,7 @@ bool mrd_output(Meridim90 &mrd_meridim) {
   }
   result = pthread_mutex_unlock(&mutex);
   if (0 != result) {
-    log_e(EXIT_FAILURE, result, "can not unlock");
+    log_e("[%d] %s", result, "can not unlock");
   }
 
   //////////////////////////////////////////////////////////
