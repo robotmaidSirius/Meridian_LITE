@@ -19,15 +19,14 @@
 #include "keys.h"
 #include "main.h"
 
-#include "mrd_bt_pad.h"
-#include "mrd_disp.h"
-#include "mrd_eeprom.h"
-#include "mrd_move.h"
-#include "mrd_sd.h"
-#include "mrd_servo.h"
+#include "mrd_communication/mrd_disp.h"
+#include "mrd_communication/mrd_wifi.h"
+#include "mrd_module/ahrs/mrd_wire0.h"
+#include "mrd_module/filesystem/mrd_eeprom.h"
+#include "mrd_module/filesystem/mrd_sd.h"
+#include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/servo/mrd_servo.h"
 #include "mrd_util.h"
-#include "mrd_wifi.h"
-#include "mrd_wire0.h"
 
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
