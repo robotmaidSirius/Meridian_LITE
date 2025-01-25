@@ -3,6 +3,14 @@
 		{
 			"name": "Meridian_LITE_on_Arduino",
 			"path": "."
+		},
+		{
+			"name": "Meridian_Core\\lib",
+			"path": "./../lib/Meridian/Meridian_Core"
+		},
+		{
+			"name": "Meridian_Plugin_for_Arduino\\lib",
+			"path": "./../lib/Meridian/Meridian_Plugin_for_Arduino"
 		}
 	],
 	"settings": {
