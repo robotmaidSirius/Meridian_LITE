@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef MERIDIM90_HPP
-#define MERIDIM90_HPP
+#ifndef __MERIDIM90_HPP__
+#define __MERIDIM90_HPP__
 
 #include <stdint.h>
 
@@ -182,4 +182,4 @@ struct Meridim90 {
 } // namespace core
 } // namespace meridian
 
-#endif // MERIDIM90_HPP
+#endif // __MERIDIM90_HPP__

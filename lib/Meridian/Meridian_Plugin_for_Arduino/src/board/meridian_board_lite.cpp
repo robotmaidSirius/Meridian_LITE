@@ -7,7 +7,6 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-
 #include "board/meridian_board_lite.hpp"
 #include <Arduino.h>
 #include <Wire.h>
@@ -23,7 +22,8 @@ mrd_parameters param;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
+bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
+  bool result = true;
   //////////////////////////////////////////////////////////
   // Initialize the shared memory
   //////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   }
   entity = a_entity;
   //////////////////////////////////////////////////////////
-  // Start connecter
+  // Arduino Setup
   //////////////////////////////////////////////////////////
   // Setting Serial
   if (PINS_DEFAULT_SERIAL0_RX != -1 && PINS_DEFAULT_SERIAL0_TX != -1) {
@@ -60,6 +60,21 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
     }
   }
 #endif
+  if (nullptr != entity) {
+    if (nullptr != entity->communication.diag) {
+      result = entity->communication.diag->setup();
+    } else {
+      result = false;
+    }
+    if (false == result) {
+      entity->communication.diag = new IMeridianDiagnostic();
+      entity->communication.diag->setup();
+      result = true;
+    }
+    entity->communication.diag->printf(
+        result ? IMeridianDiagnostic::OUTPUT_LOG_LEVEL::LEVEL_INFO : IMeridianDiagnostic::OUTPUT_LOG_LEVEL::LEVEL_ERROR,
+        "[%s] Setup/communication::diagnostic", result ? "Succeeded" : "Failed");
+  }
 
   // Setting I2C
   bool flag_ic2_begin = false;
@@ -73,88 +88,218 @@ bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   }
   if (true == flag_ic2_begin) {
     if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
-      Wire.begin();
+      result &= Wire.begin();
     } else {
-      Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
+      result &= Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
     }
-    Wire.setClock(param.i2c_speed);
+    result &= Wire.setClock(param.i2c_speed);
   }
+  // Setting SPI
+  // SPI.begin();
 
   //////////////////////////////////////////////////////////
-  // Setup
+  // Setup Communication
   //////////////////////////////////////////////////////////
-  if (nullptr != entity) {
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->plugin.gpio[i]) {
-        entity->plugin.gpio[i]->setup();
+  if (true == result) {
+    if (nullptr != entity) {
+      if (nullptr != entity->communication.con) {
+        entity->communication.con->set_diagnostic(*entity->communication.diag);
+        result &= entity->communication.con->setup();
+      }
+      entity->communication.diag->log_debug("[%s] Setup/communication::conversation", result ? "Succeeded" : "Failed");
+    }
+
+    //////////////////////////////////////////////////////////
+    // Setup Plugin
+    //////////////////////////////////////////////////////////
+    if (nullptr != entity) {
+      for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+        if (nullptr != entity->plugin.gpio[i]) {
+          entity->plugin.gpio[i]->set_diagnostic(*entity->communication.diag);
+          result &= entity->plugin.gpio[i]->setup();
+          entity->communication.diag->log_debug("[%s] Setup/plugin::gpio[%d]", result ? "Succeeded" : "Failed", i);
+        }
+      }
+      for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+        if (nullptr != entity->plugin.analog[i]) {
+          entity->plugin.analog[i]->set_diagnostic(*entity->communication.diag);
+          result &= entity->plugin.analog[i]->setup();
+          entity->communication.diag->log_debug("[%s] Setup/plugin::analog[%d]", result ? "Succeeded" : "Failed", i);
+        }
+      }
+      for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+        if (nullptr != entity->plugin.i2c[i]) {
+          entity->plugin.i2c[i]->set_diagnostic(*entity->communication.diag);
+          result &= entity->plugin.i2c[i]->setup();
+          entity->communication.diag->log_debug("[%s] Setup/plugin::i2c[%d]", result ? "Succeeded" : "Failed", i);
+        }
+      }
+      if (nullptr != entity->plugin.spi_sd_card) {
+        entity->plugin.spi_sd_card->set_diagnostic(*entity->communication.diag);
+        result &= entity->plugin.spi_sd_card->setup();
+        entity->communication.diag->log_debug("[%s] Setup/plugin::spi_sd_card", result ? "Succeeded" : "Failed");
+      }
+      if (nullptr != entity->plugin.spi) {
+        entity->plugin.spi->set_diagnostic(*entity->communication.diag);
+        result &= entity->plugin.spi->setup();
+        entity->communication.diag->log_debug("[%s] Setup/plugin::spi", result ? "Succeeded" : "Failed");
+      }
+      if (nullptr != entity->plugin.servo_left) {
+        entity->plugin.servo_left->set_diagnostic(*entity->communication.diag);
+        result &= entity->plugin.servo_left->setup();
+        entity->communication.diag->log_debug("[%s] Setup/plugin::servo_left", result ? "Succeeded" : "Failed");
+      }
+      if (nullptr != entity->plugin.servo_right) {
+        entity->plugin.servo_right->set_diagnostic(*entity->communication.diag);
+        result &= entity->plugin.servo_right->setup();
+        entity->communication.diag->log_debug("[%s] Setup/plugin::servo_right", result ? "Succeeded" : "Failed");
       }
     }
   }
-  return true;
+  entity->communication.diag->log_debug("[%s] Setup", result ? "Succeeded" : "Failed");
+  return result;
 }
 
 Meridim90 mrd_input() {
   static Meridim90 a_meridim90;
-  int result = 0;
   //////////////////////////////////////////////////////////
   // Copy the data from the shared memory
   //////////////////////////////////////////////////////////
-  result = pthread_mutex_lock(&mutex);
-  if (0 == result) {
+  int result_lock = pthread_mutex_lock(&mutex);
+  if (0 == result_lock) {
     memcpy(&a_meridim90, &meridim90, sizeof(Meridim90));
   }
-  result = pthread_mutex_unlock(&mutex);
-  if (0 != result) {
-    log_e("[%d] %s", result, "can not unlock");
+  result_lock = pthread_mutex_unlock(&mutex);
+  if (0 != result_lock) {
+    log_e("[%d] %s", result_lock, "can not unlock");
   }
-
-  //////////////////////////////////////////////////////////
-  // Refresh
-  //////////////////////////////////////////////////////////
+  bool result = true;
   if (nullptr != entity) {
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->plugin.gpio[i]) {
-        if (true != entity->plugin.gpio[i]->is_output()) {
-          entity->plugin.gpio[i]->refresh(a_meridim90);
-        }
+    //////////////////////////////////////////////////////////
+    // Input Communication
+    //////////////////////////////////////////////////////////
+    if (nullptr != entity->communication.con) {
+      result &= entity->communication.con->received(a_meridim90);
+    }
+    //////////////////////////////////////////////////////////
+    // Input Plugin
+    //////////////////////////////////////////////////////////
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+      if (nullptr != entity->plugin.analog[i]) {
+        result &= entity->plugin.analog[i]->input(a_meridim90);
       }
     }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+      if (nullptr != entity->plugin.gpio[i]) {
+        result &= entity->plugin.gpio[i]->input(a_meridim90);
+      }
+    }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+      if (nullptr != entity->plugin.i2c[i]) {
+        result &= entity->plugin.i2c[i]->input(a_meridim90);
+      }
+    }
+    if (nullptr != entity->plugin.servo_left) {
+      result &= entity->plugin.servo_left->input(a_meridim90);
+    }
+    if (nullptr != entity->plugin.servo_right) {
+      result &= entity->plugin.servo_right->input(a_meridim90);
+    }
+    if (nullptr != entity->plugin.spi) {
+      result &= entity->plugin.spi->input(a_meridim90);
+    }
+    if (nullptr != entity->plugin.spi_sd_card) {
+      result &= entity->plugin.spi_sd_card->input(a_meridim90);
+    }
   }
-
-  //////////////////////////////////////////////////////////
   return a_meridim90;
 }
-bool mrd_control(Meridim90 &mrd_meridim) {
-  return true;
-}
-bool mrd_output(Meridim90 &mrd_meridim) {
-  int result = 0;
+bool mrd_processing(Meridim90 &a_meridim90) {
+  bool result = true;
   //////////////////////////////////////////////////////////
-  // Copy the data to the shared memory
+  // Processing Plugin
   //////////////////////////////////////////////////////////
-  result = pthread_mutex_lock(&mutex);
-  if (0 == result) {
-    memcpy(&meridim90, &mrd_meridim, sizeof(Meridim90));
-  }
-  result = pthread_mutex_unlock(&mutex);
-  if (0 != result) {
-    log_e("[%d] %s", result, "can not unlock");
-  }
-
-  //////////////////////////////////////////////////////////
-  // Refresh
-  //////////////////////////////////////////////////////////
-  if (nullptr != entity) {
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (nullptr != entity->plugin.gpio[i]) {
-        if (true == entity->plugin.gpio[i]->is_output()) {
-          entity->plugin.gpio[i]->refresh(mrd_meridim);
-        }
-      }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+    if (nullptr != entity->plugin.analog[i]) {
+      result &= entity->plugin.analog[i]->processing(a_meridim90);
     }
   }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+    if (nullptr != entity->plugin.gpio[i]) {
+      result &= entity->plugin.gpio[i]->processing(a_meridim90);
+    }
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+    if (nullptr != entity->plugin.i2c[i]) {
+      result &= entity->plugin.i2c[i]->processing(a_meridim90);
+    }
+  }
+  if (nullptr != entity->plugin.servo_left) {
+    result &= entity->plugin.servo_left->processing(a_meridim90);
+  }
+  if (nullptr != entity->plugin.servo_right) {
+    result &= entity->plugin.servo_right->processing(a_meridim90);
+  }
+  if (nullptr != entity->plugin.spi) {
+    result &= entity->plugin.spi->processing(a_meridim90);
+  }
+  if (nullptr != entity->plugin.spi_sd_card) {
+    result &= entity->plugin.spi_sd_card->processing(a_meridim90);
+  }
+  return result;
+}
+bool mrd_output(Meridim90 &a_meridim90) {
+  bool result = true;
   //////////////////////////////////////////////////////////
-  return true;
+  // Output Plugin
+  //////////////////////////////////////////////////////////
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+    if (nullptr != entity->plugin.analog[i]) {
+      result &= entity->plugin.analog[i]->output(a_meridim90);
+    }
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+    if (nullptr != entity->plugin.gpio[i]) {
+      result &= entity->plugin.gpio[i]->output(a_meridim90);
+    }
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+    if (nullptr != entity->plugin.i2c[i]) {
+      result &= entity->plugin.i2c[i]->output(a_meridim90);
+    }
+  }
+  if (nullptr != entity->plugin.servo_left) {
+    result &= entity->plugin.servo_left->output(a_meridim90);
+  }
+  if (nullptr != entity->plugin.servo_right) {
+    result &= entity->plugin.servo_right->output(a_meridim90);
+  }
+  if (nullptr != entity->plugin.spi) {
+    result &= entity->plugin.spi->output(a_meridim90);
+  }
+  if (nullptr != entity->plugin.spi_sd_card) {
+    result &= entity->plugin.spi_sd_card->output(a_meridim90);
+  }
+  if (true == result) {
+    //////////////////////////////////////////////////////////
+    // Output Communication
+    //////////////////////////////////////////////////////////
+    if (nullptr != entity->communication.con) {
+      result &= entity->communication.con->send(a_meridim90);
+    }
+    //////////////////////////////////////////////////////////
+    // Copy the data to the shared memory
+    //////////////////////////////////////////////////////////
+    int result_lock = pthread_mutex_lock(&mutex);
+    if (0 == result_lock) {
+      memcpy(&meridim90, &a_meridim90, sizeof(Meridim90));
+    }
+    result_lock = pthread_mutex_unlock(&mutex);
+    if (0 != result_lock) {
+      log_e("[%d] %s", result_lock, "can not unlock");
+    }
+  }
+  return result;
 }
 
 } // namespace meridian_board_lite

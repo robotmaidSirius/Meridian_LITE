@@ -18,7 +18,9 @@
 mrd_entity entity = {
     .communication = {
         .con = new MrdConversationWifi(),
-        .diag = new MrdDiagnosticUart(Serial, BOARD_SETTING_DEFAULT_SERIAL0_BAUD),
+        .diag = new MrdDiagnosticUart(&Serial,
+                                      BOARD_SETTING_DEFAULT_SERIAL0_BAUD,
+                                      MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG),
     },
     .plugin = {
         .analog = {
@@ -43,15 +45,22 @@ mrd_entity entity = {
 };
 
 void setup() {
-  mrd_parameters param;
-  param.interval_ms = 10;
-  param.i2c_speed = 400000UL;
-
-  bool result = mrd_setup(&entity, &param);
+  if (false == board_setup(&entity, new mrd_parameters())) {
+    while (true) {
+      log_e("Board setup failed.");
+      delay(1000);
+    }
+  }
 }
 
 void loop() {
+  // データの取得
   Meridim90 mrd_meridim = mrd_input();
-  bool result = mrd_control(mrd_meridim);
+
+  // 変換処理
+  bool result = mrd_processing(mrd_meridim);
+
+  // 出力処理
   result &= mrd_output(mrd_meridim);
+  delay(1000);
 }

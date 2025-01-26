@@ -23,7 +23,7 @@ namespace plugin {
 class MrdGpioIN : public IMeridianGPIOInOut<int> {
 
 public:
-  MrdGpioIN(uint8_t pin, int index, int pos = 0) : IMeridianGPIOInOut(pin, false) {
+  MrdGpioIN(uint8_t pin, int index, int pos = 0) : IMeridianGPIOInOut(pin) {
     this->m_index = index;
     this->m_pos = 1 << pos;
   }
@@ -32,7 +32,7 @@ public:
 public:
   bool setup() override {
     if (0xFF != this->m_pin) {
-      pinMode(this->m_pin, INPUT_PULLDOWN);
+      pinMode(this->m_pin, INPUT_PULLUP);
       return true;
     }
     return false;
@@ -45,16 +45,20 @@ public:
     return digitalRead(this->m_pin);
   }
 
-  bool refresh(Meridim90 &a_meridim) override {
-    if (true == this->is_output()) {
-      this->write(a_meridim.user_data[this->m_index] && m_pos);
+  bool input(Meridim90 &a_meridim) override {
+    if (0 < this->read()) {
+      a_meridim.user_data[this->m_index] = this->m_pos | a_meridim.user_data[this->m_index];
     } else {
-      if (0 < this->read()) {
-        a_meridim.user_data[this->m_index] = this->m_pos || a_meridim.user_data[this->m_index];
-      } else {
-        a_meridim.user_data[this->m_index] = ~(this->m_pos) && a_meridim.user_data[this->m_index];
-      }
+      a_meridim.user_data[this->m_index] = ~(this->m_pos) & a_meridim.user_data[this->m_index];
     }
+    return true;
+  }
+  bool processing(Meridim90 &a_meridim) override {
+    // Do nothing
+    return true;
+  }
+  bool output(Meridim90 &a_meridim) override {
+    // Do nothing
     return true;
   }
 

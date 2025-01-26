@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_COM_DIAGNOSTIC_HPP
-#define I_MRD_COM_DIAGNOSTIC_HPP
+#ifndef __I_MRD_COM_DIAGNOSTIC_HPP__
+#define __I_MRD_COM_DIAGNOSTIC_HPP__
 
 #include "Meridim90.hpp"
 #include <stdarg.h>
@@ -24,43 +24,43 @@ class IMeridianDiagnostic {
 public:
   // @brief Define log level
   typedef enum output_log_level_t {
-    OUTPUT_LOG_LEVEL_ALL,     /*!< Any logging levels that have been configured are logged at this log level. */
-    OUTPUT_LOG_LEVEL_TRACE,   /*!< The TRACE log level records all of the application's behaviour details. Its purpose is primarily diagnostic, and it is more granular and finer than the DEBUG log level. */
-    OUTPUT_LOG_LEVEL_DEBUG,   /*!< You are providing diagnostic information in a thorough manner with DEBUG. It's long and contains more information than you'll need when using the application. */
-    OUTPUT_LOG_LEVEL_INFO,    /*!< INFO messages are similar to how applications normally behave. */
-    OUTPUT_LOG_LEVEL_MESSAGE, /*!< When This log level signals operational messages. */
-    OUTPUT_LOG_LEVEL_WARN,    /*!< When an unexpected application issue has been identified, the WARN log level is used.  This indicates that you are unsure if the issue will recur or not. At this time, you may not notice any negative effects on your application. */
-    OUTPUT_LOG_LEVEL_ERROR,   /*!< This log level is used when a serious issue is preventing the application's functionalities from functioning properly. */
-    OUTPUT_LOG_LEVEL_FATAL,   /*!< The FATAL level of logging indicates that the application's situation is critical, such as when a critical function fails. */
-    OUTPUT_LOG_LEVEL_OFF      /*!< Nothing is logged at this level of logging. */
+    LEVEL_ALL,     /*!< Any logging levels that have been configured are logged at this log level. */
+    LEVEL_TRACE,   /*!< The TRACE log level records all of the application's behaviour details. Its purpose is primarily diagnostic, and it is more granular and finer than the DEBUG log level. */
+    LEVEL_DEBUG,   /*!< You are providing diagnostic information in a thorough manner with DEBUG. It's long and contains more information than you'll need when using the application. */
+    LEVEL_INFO,    /*!< INFO messages are similar to how applications normally behave. */
+    LEVEL_MESSAGE, /*!< When This log level signals operational messages. */
+    LEVEL_WARN,    /*!< When an unexpected application issue has been identified, the WARN log level is used.  This indicates that you are unsure if the issue will recur or not. At this time, you may not notice any negative effects on your application. */
+    LEVEL_ERROR,   /*!< This log level is used when a serious issue is preventing the application's functionalities from functioning properly. */
+    LEVEL_FATAL,   /*!< The FATAL level of logging indicates that the application's situation is critical, such as when a critical function fails. */
+    LEVEL_OFF      /*!< Nothing is logged at this level of logging. */
   } OUTPUT_LOG_LEVEL;
 
 public:
-  virtual bool setup() = 0;
+  virtual bool setup() { return false; }
 
 protected:
-  virtual size_t message(OUTPUT_LOG_LEVEL level, const char *message) = 0;
+  virtual size_t message(OUTPUT_LOG_LEVEL level, const char *message) { return 0; }
 
 public:
   const char *get_text_level(OUTPUT_LOG_LEVEL level) {
     switch (level) {
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_ALL:
+    case OUTPUT_LOG_LEVEL::LEVEL_ALL:
       return "---";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_TRACE:
+    case OUTPUT_LOG_LEVEL::LEVEL_TRACE:
       return "TRA";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_DEBUG:
+    case OUTPUT_LOG_LEVEL::LEVEL_DEBUG:
       return "DEB";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_INFO:
+    case OUTPUT_LOG_LEVEL::LEVEL_INFO:
       return "INF";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_MESSAGE:
+    case OUTPUT_LOG_LEVEL::LEVEL_MESSAGE:
       return "MES";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_WARN:
+    case OUTPUT_LOG_LEVEL::LEVEL_WARN:
       return "WAR";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_ERROR:
+    case OUTPUT_LOG_LEVEL::LEVEL_ERROR:
       return "ERR";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_FATAL:
+    case OUTPUT_LOG_LEVEL::LEVEL_FATAL:
       return "FAT";
-    case OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_OFF:
+    case OUTPUT_LOG_LEVEL::LEVEL_OFF:
       return "OFF";
     default:
       return "UNK";
@@ -73,49 +73,49 @@ public:
   void log_trace(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_TRACE, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_TRACE, format, arg);
     va_end(arg);
   }
   void log_debug(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_DEBUG, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_DEBUG, format, arg);
     va_end(arg);
   }
   void log_info(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_INFO, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_INFO, format, arg);
     va_end(arg);
   }
   void log_message(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_MESSAGE, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_MESSAGE, format, arg);
     va_end(arg);
   }
   void log_warn(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_WARN, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_WARN, format, arg);
     va_end(arg);
   }
   void log_error(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_ERROR, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_ERROR, format, arg);
     va_end(arg);
   }
   void log_fatal(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    log_printf(OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_FATAL, format, arg);
+    printf(OUTPUT_LOG_LEVEL::LEVEL_FATAL, format, arg);
     va_end(arg);
   }
-  size_t log_printf(OUTPUT_LOG_LEVEL level, const char *format, ...) {
+  size_t printf(OUTPUT_LOG_LEVEL level, const char *format, ...) {
     if (true == this->_output_log) {
       if (this->_level <= level) {
-        char loc_buf[64];
+        char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
         va_list arg;
         va_list copy;
@@ -148,12 +148,13 @@ public:
   }
 
 private:
-  bool _output_log = true;                                           /*!< Output control flag   */
-  OUTPUT_LOG_LEVEL _level = OUTPUT_LOG_LEVEL::OUTPUT_LOG_LEVEL_INFO; /*!< Output Level */
+  bool _output_log = false;                               /*!< Output control flag   */
+  OUTPUT_LOG_LEVEL _level = OUTPUT_LOG_LEVEL::LEVEL_INFO; /*!< Output Level */
+  const int _BUFFER_SIZE = 128;
 };
 
 } // namespace communication
 } // namespace core
 } // namespace meridian
 
-#endif // I_MRD_COM_DIAGNOSTIC_HPP
+#endif // __I_MRD_COM_DIAGNOSTIC_HPP__

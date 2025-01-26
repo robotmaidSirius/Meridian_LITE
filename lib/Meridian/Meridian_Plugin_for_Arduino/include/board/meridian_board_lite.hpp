@@ -66,11 +66,11 @@ struct mrd_parameters {
   unsigned int ics_r_speed = BOARD_SETTING_DEFAULT_SERIAL2_BAUD; ///< ICS_Lの速度（1.25MHz推奨）
 };
 
-bool mrd_setup(mrd_entity *a_entity, mrd_parameters *a_param);
+bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param);
 
 Meridim90 mrd_input();
-bool mrd_control(Meridim90 &mrd_meridim);
-bool mrd_output(Meridim90 &mrd_meridim);
+bool mrd_processing(Meridim90 &a_meridim90);
+bool mrd_output(Meridim90 &a_meridim90);
 
 } // namespace meridian_board_lite
 } // namespace board

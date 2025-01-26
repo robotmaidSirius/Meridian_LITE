@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_SD_HPP
-#define I_MRD_PLUGIN_SD_HPP
+#ifndef __I_MRD_PLUGIN_SD_HPP__
+#define __I_MRD_PLUGIN_SD_HPP__
 
 #include "i_mrd_plugin.hpp"
 
@@ -26,4 +26,4 @@ public:
 } // namespace modules
 } // namespace meridian
 
-#endif // I_MRD_PLUGIN_SD_HPP
+#endif // __I_MRD_PLUGIN_SD_HPP__

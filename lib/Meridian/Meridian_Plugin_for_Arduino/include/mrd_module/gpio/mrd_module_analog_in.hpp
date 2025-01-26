@@ -22,7 +22,7 @@ namespace plugin {
 
 class MrdAnalogIn : public IMeridianGPIOInOut<int> {
 public:
-  MrdAnalogIn(uint8_t pin, int index) : IMeridianGPIOInOut(pin, false) {
+  MrdAnalogIn(uint8_t pin, int index) : IMeridianGPIOInOut(pin) {
     this->m_index = index;
   }
   ~MrdAnalogIn() {}
@@ -43,12 +43,16 @@ public:
     return analogRead(this->m_pin);
   }
 
-  bool refresh(Meridim90 &a_meridim) override {
-    if (true == this->is_output()) {
-      this->write(a_meridim.user_data[this->m_index]);
-    } else {
-      a_meridim.user_data[this->m_index] = this->read();
-    }
+  bool input(Meridim90 &a_meridim) override {
+    a_meridim.user_data[this->m_index] = this->read();
+    return true;
+  }
+  bool processing(Meridim90 &a_meridim) override {
+    // Do nothing
+    return true;
+  }
+  bool output(Meridim90 &a_meridim) override {
+    // Do nothing
     return true;
   }
 

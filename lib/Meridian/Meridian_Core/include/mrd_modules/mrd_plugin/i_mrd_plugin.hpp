@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_HPP
-#define I_MRD_PLUGIN_HPP
+#ifndef __I_MRD_PLUGIN_HPP__
+#define __I_MRD_PLUGIN_HPP__
 
 #include "Meridim90.hpp"
 #include "mrd_communication/i_mrd_diagnostic.hpp"
@@ -22,7 +22,9 @@ using namespace meridian::core::communication;
 class IMeridianPlugin {
 public:
   virtual bool setup() = 0;
-  virtual bool refresh(Meridim90 &a_meridim) = 0;
+  virtual bool input(Meridim90 &a_meridim) = 0;
+  virtual bool processing(Meridim90 &a_meridim) = 0;
+  virtual bool output(Meridim90 &a_meridim) = 0;
 
 public:
   void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
@@ -35,4 +37,4 @@ protected:
 } // namespace modules
 } // namespace meridian
 
-#endif // I_MRD_PLUGIN_HPP
+#endif // __I_MRD_PLUGIN_HPP__

@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef MERIDIAN_CORE_HPP
-#define MERIDIAN_CORE_HPP
+#ifndef __MERIDIAN_CORE_HPP__
+#define __MERIDIAN_CORE_HPP__
 
 #include "Meridim90.hpp"
 
@@ -68,4 +68,4 @@ void mrd_timeout_reset();
 } // namespace core
 } // namespace meridian
 
-#endif // MERIDIAN_CORE_HPP
+#endif // __MERIDIAN_CORE_HPP__

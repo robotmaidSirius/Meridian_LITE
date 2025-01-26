@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_COMMUNICATION_HPP
-#define I_MRD_COMMUNICATION_HPP
+#ifndef __I_MRD_COMMUNICATION_HPP__
+#define __I_MRD_COMMUNICATION_HPP__
 
 #include "Meridim90.hpp"
 #include "i_mrd_diagnostic.hpp"
@@ -38,4 +38,4 @@ protected:
 } // namespace core
 } // namespace meridian
 
-#endif // I_MRD_COMMUNICATION_HPP
+#endif // __I_MRD_COMMUNICATION_HPP__
