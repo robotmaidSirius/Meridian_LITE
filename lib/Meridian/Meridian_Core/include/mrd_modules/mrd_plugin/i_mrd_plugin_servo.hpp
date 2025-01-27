@@ -19,9 +19,6 @@ namespace plugin {
 class IMeridianServo : public IMeridianPlugin {
 public:
   virtual const char *get_name() { return "Unknow"; };
-
-  virtual bool write(int a_id, int value) = 0;
-  virtual int read(int a_id) = 0;
 };
 
 } // namespace plugin

@@ -1,5 +1,5 @@
 /**
- * @file i_mrd_communication_wifi.cpp
+ * @file i_mrd_conversation.cpp
  * @brief
  * @version 1.2.0
  * @date 2025-01-22
@@ -7,4 +7,4 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#include "mrd_communication/i_mrd_communication_wifi.hpp"
+#include "mrd_communication/i_mrd_conversation.hpp"

@@ -23,17 +23,39 @@
 
 #include "mrd_communication/mrd_conversation_wifi.hpp"
 #include "mrd_communication/mrd_disp.h"
-#include "mrd_communication/mrd_wifi.h"
-#include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_module_eeprom.hpp"
 #include "mrd_module/filesystem/mrd_module_sd.hpp"
 #include "mrd_module/pad/mrd_bt_pad.h"
-#include "mrd_module/servo/mrd_servo.h"
+#include "mrd_module/servo/mrd_module_servo_ics.hpp"
 #include "mrd_util.h"
 
 // ライブラリ導入
 #include <Arduino.h>
 
+//================================================================================================================
+//================================================================================================================
+// シリアルモニタリング
+#define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示(0:OFF, 1:ON)
+#define MONITOR_FLOW              0    // シリアルモニタでフローを表示(0:OFF, 1:ON)
+#define MONITOR_ERR_SERVO         0    // シリアルモニタでサーボエラーを表示(0:OFF, 1:ON)
+#define MONITOR_ERR_ALL           0    // 全経路の受信エラー率を表示
+#define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示(0:OFF, 1:ON)
+#define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示(0:OFF, 1:ON)
+#define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
+
+//================================================================================================================
+
+// モニタリング設定
+struct MrdMonitor {
+  bool flow = MONITOR_FLOW;           // フローを表示
+  bool all_err = MONITOR_ERR_ALL;     // 全経路の受信エラー率を表示
+  bool servo_err = MONITOR_ERR_SERVO; // サーボエラーを表示
+  bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
+  bool pad = MONITOR_PAD;             // リモコンのデータを表示
+};
+MrdMonitor monitor;
+
+//================================================================================================================
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
@@ -59,13 +81,10 @@ void IRAM_ATTR frame_timer() {
 MrdEEPROM _eeprom;
 MrdSdCard _sd_card;
 MrdConversationWifi _comm;
+MrdServoICS _servo_l;
+MrdServoICS _servo_r;
 
 void test_setup() {
-
-  // BT接続確認用LED設定
-  pinMode(PIN_LED_BT, OUTPUT);
-  digitalWrite(PIN_LED_BT, HIGH);
-
   // シリアルモニターの設定
   // シリアルモニターの確立待ち
   unsigned long start_time = millis();
@@ -90,45 +109,27 @@ void test_setup() {
     sv.ixr_trim[i] = IDR_TRIM[i];
   };
 
-  // サーボUARTの通信速度の表示
-  mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
-
   // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L);         // サーボモータの通信初期設定. Serial2
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R);         // サーボモータの通信初期設定. Serial3
-  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
+  _servo_l.mrd_servo_begin(L, MOUNT_SERVO_TYPE_L); // サーボモータの通信初期設定. Serial2
+  _servo_r.mrd_servo_begin(R, MOUNT_SERVO_TYPE_R); // サーボモータの通信初期設定. Serial3
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
 
   // EEPROMの開始, ダンプ表示
-  mrd_eeprom_init(EEPROM_SIZE);                                   // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);             // 内容のダンプ表示
-  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), // EEPROMのリードライトテスト
-                              CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
-
-  // SDカードの初期設定とチェック
-  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
-
-  // I2Cの初期化と開始
-  mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
-
-  // I2Cスレッドの開始
-  if (MOUNT_IMUAHRS == BNO055_AHRS) {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
-    Serial.println("Core0 thread for BNO055 start.");
-    delay(10);
+  MrdEEPROM::UnionEEPROM array_tmp = {0};
+  for (int i = 0; i < 15; i++) {
+    // 各サーボのマウントありなし(0:サーボなし, +:サーボあり順転, -:サーボあり逆転)
+    // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
+    array_tmp.saval[0][20 + i * 2] = short(sv.ixl_mount[i] * sv.ixl_cw[i]);
+    array_tmp.saval[0][50 + i * 2] = short(sv.ixr_mount[i] * sv.ixr_cw[i]);
+    // 各サーボの直立デフォルト値 degree
+    array_tmp.saval[1][21 + i * 2] = mrd.float2HfShort(sv.ixl_trim[i]);
+    array_tmp.saval[1][51 + i * 2] = mrd.float2HfShort(sv.ixr_trim[i]);
   }
+  _eeprom.eeprom_setup = array_tmp; // EEPROMの設定値をセット
 
-  // WiFiの初期化と開始
-  _comm.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
-  if (_comm.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT)) {
-    // wifiIPの表示
-    mrd_disp.esp_wifi(WIFI_AP_SSID);
-    mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
-  }
+  _eeprom.setup();
 
   // Bluetoothの開始と表示(WIIMOTE)
   if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
@@ -202,8 +203,7 @@ void test_loop() {
     // @[2-4a] エラービット14番(ESP32のPCからのUDP受信エラー検出)をサゲる
     mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
 
-  } else // チェックサムがNGならバッファから転記せず前回のデータを使用する
-  {
+  } else { // チェックサムがNGならバッファから転記せず前回のデータを使用する
 
     // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
     mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
@@ -293,8 +293,9 @@ void test_loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STDALONE) {                                                         // サーボ処理を行うかどうか
-    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
+  if (!MODE_ESP32_STDALONE) {                                                                  // サーボ処理を行うかどうか
+    _servo_l.mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
+    _servo_r.mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -331,7 +332,8 @@ void test_loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_l.mrd_servos_make_errcode_lite(sv);
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_r.mrd_servos_make_errcode_lite(sv);
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -422,7 +424,8 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    mrd_servo_all_off(s_udp_meridim);
+    _servo_l.mrd_servo_all_off(s_udp_meridim);
+    _servo_r.mrd_servo_all_off(s_udp_meridim);
     return true;
   }
 

@@ -26,18 +26,6 @@ public:
   //  起動時メッセージ
   //------------------------------------------------------------------------------------
 
-  /// @brief マウント設定したサーボのbpsをシリアルモニタに出力する.
-  /// @param a_servo_l L系統のサーボbps.
-  /// @param a_servo_r R系統のサーボbps.
-  void servo_bps_2lines(int a_servo_l, int a_servo_r) {
-    m_serial.print("Set UART_L ");
-    m_serial.print(a_servo_l);
-    m_serial.println(" bps");
-    m_serial.print("Set UART_R ");
-    m_serial.print(a_servo_r);
-    m_serial.println(" bps");
-  }
-
   /// @brief 指定されたUARTラインのサーボIDを表示する.
   /// @param a_label UARTラインのラベル.
   /// @param a_max サーボの最大数.
@@ -70,65 +58,6 @@ public:
   /// @param a_ssid 接続先のSSID.
   void esp_wifi(const char *a_ssid) {
     m_serial.println("WiFi connecting to => " + String(a_ssid)); // WiFi接続完了通知
-  }
-
-  /// @brief 指定されたUARTラインとサーボタイプに基づいてサーボの通信プロトコルを表示する.
-  /// @param a_line UART通信ライン(L, R, またはC).
-  /// @param a_servo_type サーボのタイプを示す整数値.
-  /// @return サーボがサポートされている場合はtrueを, サポートされていない場合はfalseを返す.
-  bool servo_protocol(UartLine a_line, int a_servo_type) {
-    if (a_servo_type > 0) {
-      m_serial.print("Set UART_");
-      m_serial.print(mrd_get_line_name(a_line));
-      m_serial.print(" protocol : ");
-
-      switch (a_servo_type) {
-      case 1:
-        m_serial.print("single PWM");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 11:
-        m_serial.print("I2C_PCA9685 to PWM");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 21:
-        m_serial.print("RSxTTL (FUTABA)");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 31:
-        m_serial.print("DYNAMIXEL Protocol 1.0");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 32:
-        m_serial.print("DYNAMIXEL Protocol 2.0");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 43:
-        m_serial.println("ICS3.5/3.6(KONDO,KRS)");
-        break;
-      case 44:
-        m_serial.print("PMX(KONDO)");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 51:
-        m_serial.print("XBUS(JR PROPO)");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 61:
-        m_serial.print("STS(FEETECH)");
-        m_serial.println(" - Not supported yet.");
-        break;
-      case 62:
-        m_serial.print("SCS(FEETECH)");
-        m_serial.println(" - Not supported yet.");
-        break;
-      default:
-        m_serial.println(" Not defined. ");
-        break;
-      }
-      return true;
-    }
-    return false;
   }
 
   /// @brief wifiの接続完了メッセージと各IPアドレスを出力する.

@@ -79,25 +79,8 @@
 #define UDP_TIMEOUT 4 // UDPの待受タイムアウト (単位ms,推奨値0)
 
 // EEPROMの設定
-#define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
-#define EEPROM_SET     0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
-#define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
-#define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
-#define EEPROM_DUMP    0   // 起動時のEEPROM内容のダンプ表示
-#define EEPROM_STYLE   Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
-
-// 動作チェックモード
-#define CHECK_SD_RW     1 // 起動時のSDカードリーダーの読み書きチェック
-#define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
-
-// シリアルモニタリング
-#define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示(0:OFF, 1:ON)
-#define MONITOR_FLOW              0    // シリアルモニタでフローを表示(0:OFF, 1:ON)
-#define MONITOR_ERR_SERVO         0    // シリアルモニタでサーボエラーを表示(0:OFF, 1:ON)
-#define MONITOR_ERR_ALL           0    // 全経路の受信エラー率を表示
-#define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示(0:OFF, 1:ON)
-#define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示(0:OFF, 1:ON)
-#define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
+#define EEPROM_SET  0 // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_LOAD 0 // 起動時にEEPROMの内容を諸設定にロードする(未導入)
 
 // PC接続関連設定
 #define SERIAL_PC_TIMEOUT 2000 // PCとのシリアル接続確立タイムアウト(ms)
@@ -109,13 +92,12 @@
 #define PAD_GENERALIZE   1     // ジョイパッドの入力値をPS系に一般化する
 
 // ピンアサイン
-#define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
-#define PIN_EN_L          33 // サーボL系統のENピン
-#define PIN_EN_R          4  // サーボR系統のENピン
-#define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
-#define PIN_I2C0_SDA      22 // I2CのSDAピン
-#define PIN_I2C0_SCL      21 // I2CのSCLピン
-#define PIN_LED_BT        26 // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
+#define PIN_ERR_LED  25 // LED用 処理が時間内に収まっていない場合に点灯
+#define PIN_EN_L     33 // サーボL系統のENピン
+#define PIN_EN_R     4  // サーボR系統のENピン
+#define PIN_I2C0_SDA 22 // I2CのSDAピン
+#define PIN_I2C0_SCL 21 // I2CのSCLピン
+#define PIN_LED_BT   26 // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
 
 //-------------------------------------------------------------------------
 // サーボ設定

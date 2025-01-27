@@ -118,6 +118,7 @@ struct ButtonInfo {
 
   // Status
   bool linked;
+  bool enabled;
   const int version = 20250119;
 };
 } // namespace pad
@@ -129,6 +130,14 @@ public:
 public:
   pad::ButtonInfo buttons;
   bool isConnected() { return this->buttons.linked; };
+  bool disable() {
+    this->buttons.enabled = false;
+    return this->buttons.enabled;
+  };
+  bool enable() {
+    this->buttons.enabled = true;
+    return this->buttons.enabled;
+  };
 };
 
 } // namespace plugin

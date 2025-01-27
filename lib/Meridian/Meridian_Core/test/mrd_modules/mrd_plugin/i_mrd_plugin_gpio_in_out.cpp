@@ -1,5 +1,5 @@
 /**
- * @file i_mrd_plugin_gpio_inout.cpp
+ * @file i_mrd_plugin_gpio_in_out.cpp
  * @brief
  * @version 1.2.0
  * @date 2025-01-22

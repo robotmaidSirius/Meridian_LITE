@@ -23,6 +23,7 @@ public:
     this->m_pin = pin;
   }
 
+public:
   virtual bool write(TYPE value) = 0;
   virtual TYPE read() = 0;
 

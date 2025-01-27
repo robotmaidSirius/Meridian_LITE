@@ -18,11 +18,16 @@ namespace plugin {
 
 class IMeridianI2C : public IMeridianPlugin {
 public:
+  IMeridianI2C(uint8_t address) {
+    this->m_address = address;
+  }
+
+public:
   virtual void write(uint8_t address, uint8_t data) = 0;
   virtual uint8_t read(uint8_t address) = 0;
 
 protected:
-  uint8_t m_id;
+  uint8_t m_address;
 };
 
 } // namespace plugin
