@@ -21,6 +21,7 @@
 #include "keys.h"
 #include "main.h"
 
+#include "mrd_communication/mrd_conversation_wifi.hpp"
 #include "mrd_communication/mrd_disp.h"
 #include "mrd_communication/mrd_wifi.h"
 #include "mrd_module/ahrs/mrd_wire0.h"
@@ -30,12 +31,12 @@
 #include "mrd_module/servo/mrd_servo.h"
 #include "mrd_util.h"
 
+// ライブラリ導入
+#include <Arduino.h>
+
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
-
-// ライブラリ導入
-#include <Arduino.h>
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -55,6 +56,10 @@ void IRAM_ATTR frame_timer() {
 //================================================================================================================
 //  SETUP
 //================================================================================================================
+MrdEEPROM _eeprom;
+MrdSdCard _sd_card;
+MrdConversationWifi _comm;
+
 void test_setup() {
 
   // BT接続確認用LED設定
@@ -118,14 +123,12 @@ void test_setup() {
   }
 
   // WiFiの初期化と開始
-  mrd_disp.esp_wifi(WIFI_AP_SSID);
-  if (mrd_wifi_init(udp, WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+  _comm.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
+  if (_comm.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT)) {
     // wifiIPの表示
+    mrd_disp.esp_wifi(WIFI_AP_SSID);
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
-
-  // コントロールパッドの種類を表示
-  mrd_disp.mounted_pad(MOUNT_PAD);
 
   // Bluetoothの開始と表示(WIIMOTE)
   if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
@@ -141,7 +144,7 @@ void test_setup() {
 
   // タイマーの設定
   timer_semaphore = xSemaphoreCreateBinary();          // セマフォの作成
-  timer = timerBegin(0, 80, true);                     // タイマーの設定（1つ目のタイマーを使用, 分周比80）
+  timer = timerBegin(0, 80, true);                     // タイマーの設定(1つ目のタイマーを使用, 分周比80)
   timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数をタイマーの割り込みに登録
   timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10msごとにトリガー
   timerAlarmEnable(timer);                             // タイマーを開始
@@ -162,36 +165,17 @@ void test_setup() {
 void test_loop() {
 
   //------------------------------------------------------------------------------------
-  //  [ 1 ] UDP送信
-  //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[1]", monitor.flow); // デバグ用フロー表示
-
-  // @[1-1] UDP送信の実行
-  if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
-  {
-    flg.udp_busy = true; // UDP使用中フラグをアゲる
-    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
-    flg.udp_busy = false; // UDP使用中フラグをサゲる
-    flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
-  }
-
-  //------------------------------------------------------------------------------------
   //  [ 2 ] UDP受信
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[2]", monitor.flow); // デバグ用フロー表示
 
   // @[2-1] UDPの受信待ち受けループ
-  if (flg.udp_receive_mode) // UDPの受信実施フラグの確認（モード確認）
-  {
+  if (flg.udp_receive_mode) { // UDPの受信実施フラグの確認(モード確認)
     unsigned long start_tmp = millis();
     flg.udp_busy = true;  // UDP使用中フラグをアゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
-      // UDP受信処理
-      if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp)) // 受信確認
-      {
-        flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
-      }
+      flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
 
       // タイムアウト抜け処理
       unsigned long current_tmp = millis();
@@ -250,20 +234,12 @@ void test_loop() {
   }
 
   //------------------------------------------------------------------------------------
-  //  [ 3 ] MastarCommand group1 の処理
+  //  [ 3 ] MasterCommand group1 の処理
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[3]", monitor.flow); // デバグ用フロー表示
 
-  // @[3-1] MastarCommand group1 の処理
+  // @[3-1] MasterCommand group1 の処理
   execute_master_command_1(s_udp_meridim, flg.meridim_rcvd);
-
-  //------------------------------------------------------------------------------------
-  //  [ 4 ] センサー類読み取り
-  //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
-
-  // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
@@ -302,7 +278,7 @@ void test_loop() {
   }
 
   // @[7-2] ESP32による次回動作の計算
-  // 以下はリモコンの左十字キー左右でL系統0番サーボ（首部）を30度左右にふるサンプル
+  // 以下はリモコンの左十字キー左右でL系統0番サーボ(首部)を30度左右にふるサンプル
   if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_RIGHT) {
     sv.ixl_tgt[0] = -30.00; // -30度
   } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_LEFT) {
@@ -418,7 +394,7 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
     return true;
   }
 
-  // コマンド:MCMD_BOARD_TRANSMIT_ACTIVE (10005) UDP受信の通信周期制御をボード側主導に（デフォルト）
+  // コマンド:MCMD_BOARD_TRANSMIT_ACTIVE (10005) UDP受信の通信周期制御をボード側主導に(デフォルト)
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_ACTIVE) {
     flg.udp_board_passive = false; // UDP送信をアクティブモードに
     flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
@@ -452,14 +428,7 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[1] サーボオン 通常動作
 
-  // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
-  if (a_meridim.sval[MRD_MASTER] == MCMD_SENSOR_YAW_CALIB) {
-    ahrs.yaw_origin = ahrs.yaw_source;
-    Serial.println("cmd: yaw reset.");
-    return true;
-  }
-
-  // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に（SSH的な動作）
+  // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に(SSH的な動作)
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_PASSIVE) {
     flg.udp_board_passive = true; // UDP送信をパッシブモードに
     flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット

@@ -136,42 +136,14 @@ public:
   /// @param a_ssid 接続先のSSID.
   /// @param a_fixedip 固定IPの場合の値.
   void esp_ip(bool a_flg_fixed_ip, const char *a_ssid, const char *a_fixedip) {
-    m_serial.println("WiFi successfully connected."); // WiFi接続完了通知
-    m_serial.println("PC's IP address target => " +
-                     String(WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
+    m_serial.println("WiFi successfully connected.");                      // WiFi接続完了通知
+    m_serial.println("PC's IP address target => " + String(WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
 
     if (a_flg_fixed_ip) {
-      m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) +
-                       " (*Fixed)"); // ESP32自身のIPアドレスの表示
+      m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) + " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
       m_serial.print("ESP32's IP address => "); // ESP32自身のIPアドレスの表示
       m_serial.println(WiFi.localIP().toString());
-    }
-  }
-
-  /// @brief マウント設定したジョイパッドのタイプをシリアルモニタに出力する.
-  /// @param a_mount_pad パッドの定義(PC,MERIMOTE,BLUERETRO,SBDBT,KRR5FH,WIIMOTE)
-  void mounted_pad(int a_mount_pad) {
-    m_serial.print("Pad Receiver mounted : ");
-    switch (a_mount_pad) {
-    case WIIMOTE:
-      m_serial.println("Wiimote.");
-      break;
-    case MERIMOTE:
-      m_serial.println("Merimote.");
-      break;
-    case BLUERETRO:
-      m_serial.println("BlueRetro.");
-      break;
-    case SBDBT:
-      m_serial.println("SBDBT.");
-      break;
-    case KRR5FH:
-      m_serial.println("KRC-5FH.");
-      break;
-    default:
-      m_serial.println("None (PC).");
-      break;
     }
   }
 

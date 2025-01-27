@@ -32,14 +32,14 @@
 //  サーボIDとロボット部位、軸との対応表 (KHR-3HVの例)
 //================================================================================================================
 //
-// ID    Parts/Axis　＜ICS_Left_Upper SIO1,SIO2＞
+// ID    Parts/Axis ＜ICS_Left_Upper SIO1,SIO2＞
 // [L00] 頭/ヨー
 // [L01] 左肩/ピッチ
 // [L02] 左肩/ロール
 // [L03] 左肘/ヨー
 // [L04] 左肘/ピッチ
 // [L05] -
-// ID    Parts/Axis　＜ICS_Left_Lower SIO3,SIO4＞
+// ID    Parts/Axis ＜ICS_Left_Lower SIO3,SIO4＞
 // [L06] 左股/ロール
 // [L07] 左股/ピッチ
 // [L08] 左膝/ピッチ
@@ -68,7 +68,6 @@
 #define FRAME_DURATION 10 // 1フレームあたりの単位時間(単位ms)
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD  1      // SDカードリーダーの有無 (0:なし, 1:あり)
 #define MOUNT_PAD KRR5FH // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
 // 動作モード
@@ -100,15 +99,8 @@
 #define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示(0:OFF, 1:ON)
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
 
-// I2C設定, I2Cセンサ関連設定
-#define I2C0_SPEED 400000 // I2Cの速度 (400kHz推奨)
-
-// SPI設定
-#define SPI0_SPEED 6000000 // SPI通信の速度(6000000kHz推奨)
-
 // PC接続関連設定
-#define SERIAL_PC_BPS     115200 // PCとのシリアル速度(モニタリング表示用)
-#define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
+#define SERIAL_PC_TIMEOUT 2000 // PCとのシリアル接続確立タイムアウト(ms)
 
 // JOYPAD関連設定
 #define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
@@ -318,33 +310,6 @@ float IDR_TRIM[IXR_MAX] = {
 };
 
 //-------------------------------------------------------------------------
-//  固定値, マスターコマンド定義
-//-------------------------------------------------------------------------
-// 固定値, マスターコマンド定義
-#define MCMD_TORQUE_ALL_OFF         0      // すべてのサーボトルクをオフにする(脱力)
-#define MCMD_DUMMY_DATA             -32768 // SPI送受信用のダミーデータ判定用
-#define MCMD_TEST_VALUE             -32767 // テスト用の仮設変数
-#define MCMD_SENSOR_YAW_CALIB       10002  // センサの推定ヨー軸を現在値センターとしてリセット
-#define MCMD_SENSOR_ALL_CALIB       10003  // センサの3軸について現在値を原点としてリセット
-#define MCMD_ERR_CLEAR_SERVO_ID     10004  // 通信エラーのサーボのIDをクリア(MRD_ERR_l)
-#define MCMD_BOARD_TRANSMIT_ACTIVE  10005  // ボードが定刻で送信を行うモード(PC側が受信待ち)
-#define MCMD_BOARD_TRANSMIT_PASSIVE 10006  // ボードが受信を待ち返信するモード(PC側が定刻送信)
-#define MCMD_FRAMETIMER_RESET       10007  // フレームタイマーを現在時刻にリセット
-#define MCMD_BOARD_STOP_DURING      10008  // ボードの末端処理を[MRD_STOP_FRAMES]ミリ秒止める
-#define MCMD_EEPROM_ENTER_WRITE     10009  // EEPROM書き込みモードのスタート
-#define MCMD_EEPROM_EXIT_WRITE      10010  // EEPROM書き込みモードの終了
-#define MCMD_EEPROM_ENTER_READ      10011  // EEPROM読み出しモードのスタート
-#define MCMD_EEPROM_EXIT_READ       10012  // EEPROM読み出しモードの終了
-#define MCMD_SDCARD_ENTER_WRITE     10013  // SDCARD書き込みモードのスタート
-#define MCMD_SDCARD_EXIT_WRITE      10014  // SDCARD書き込みモードの終了
-#define MCMD_SDCARD_ENTER_READ      10015  // SDCARD読み出しモードのスタート
-#define MCMD_SDCARD_EXIT_READ       10016  // SDCARD読み出しモードの終了
-#define MCMD_EEPROM_SAVE_TRIM       10101  // 現在の姿勢をトリム値としてサーボに書き込む
-#define MCMD_EEPROM_LOAD_TRIM       10102  // EEPROMのトリム値をサーボに反映する
-#define MCMD_NAK                    32766  // コマンド実行の失敗を応答
-#define MCMD_ACK                    32767  // コマンド実行の成功を応答
-
-//-------------------------------------------------------------------------
 //  Meridim90 配列アクセス対応キー
 //-------------------------------------------------------------------------
 #define MRD_MASTER        0  // マスターコマンド
@@ -441,15 +406,5 @@ float IDR_TRIM[IXR_MAX] = {
 #define MRD_USERDATA_87 87 // ユーザー定義用
 // #define MRD_ERR         88 // エラーコード (MRDM_LEN - 2)
 // #define MRD_CKSM        89 // チェックサム (MRDM_LEN - 1)
-
-// エラービット MRD_ERR_CODEの上位8bit分
-#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
-#define ERRBIT_14_PC_ESP       14 // PC → ESP32 のUDP受信エラー
-#define ERRBIT_13_ESP_TSY      13 // ESP32 → TeensyのSPI受信エラー
-#define ERRBIT_12_TSY_ESP      12 // Teensy → ESP32 のSPI受信エラー
-#define ERRBIT_11_BOARD_DELAY  11 // Teensy or ESP32の処理ディレイ (末端で捕捉)
-#define ERRBIT_10_UDP_ESP_SKIP 10 // PC → ESP32 のUDPフレームスキップエラー
-#define ERRBIT_9_BOARD_SKIP    9  // PC → ESP32 → Teensy のフレームスキップエラー(末端で捕捉)
-#define ERRBIT_8_PC_SKIP       8  // Teensy → ESP32 → PC のフレームスキップエラー(末端で捕捉)
 
 #endif // __MERIDIAN_CONFIG__

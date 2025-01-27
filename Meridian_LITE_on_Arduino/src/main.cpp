@@ -8,6 +8,7 @@
  *
  */
 #include "app/sample_app.hpp"
+#include "keys.h"
 #include <board/meridian_board_lite.hpp>
 //////////////////////////////////////////////////////////////////////////
 // mrd_communication
@@ -44,12 +45,14 @@
 //////////////////////////////////////////////////////////////////////////
 // 使用するモジュールの設定
 //////////////////////////////////////////////////////////////////////////
+MrdConversationWifi con_wifi;
+MrdDiagnosticUart diag_uart(&Serial,
+                            BOARD_SETTING_DEFAULT_SERIAL0_BAUD,
+                            MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG);
 mrd_entity entity = {
     .communication = {
-        .con = new MrdConversationWifi(),
-        .diag = new MrdDiagnosticUart(&Serial,
-                                      BOARD_SETTING_DEFAULT_SERIAL0_BAUD,
-                                      MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG),
+        .con = &con_wifi,
+        .diag = &diag_uart,
     },
     .plugin = {
         .analog = {
@@ -104,10 +107,20 @@ void setup() {
   if (true == board_setup(&entity, new mrd_parameters())) {
     result = sample_app_setup(entity);
   }
+  con_wifi.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
+  result = con_wifi.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT);
+
   if (false == result) {
     while (true) {
       log_e("Board setup failed.");
       delay(1000);
+    }
+  }
+  //////////////////////
+  diag_uart.log_info("This machine IP: %s\n", con_wifi.get_ip_address());
+  for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
+    if (0 != con_wifi.target[i].port) {
+      diag_uart.log_info("  Send Target[%s:%d]\n", con_wifi.target[i].ip.toString().c_str(), con_wifi.target[i].port);
     }
   }
 }

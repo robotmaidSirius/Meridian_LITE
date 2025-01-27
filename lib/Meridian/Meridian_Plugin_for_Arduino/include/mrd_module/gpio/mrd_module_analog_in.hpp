@@ -11,8 +11,8 @@
 #define __MRD_MODULE_ANALOG_HPP__
 
 // ライブラリ導入
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp"
 #include <Arduino.h>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
 
 namespace meridian {
 namespace modules {

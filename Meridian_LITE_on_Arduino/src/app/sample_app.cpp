@@ -130,6 +130,7 @@ bool sample_app_setup(mrd_entity &entity) {
   return true;
 }
 #define BOARD_ENABLE_LED 1
+#define TEST_ENABLE_LOG  0
 bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
 
   // LED Test
@@ -139,8 +140,10 @@ bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
   test_led_entity(mrd_meridim, entity);
 #endif
 
+#if TEST_ENABLE_LOG
   // Log Test
   test_log(mrd_meridim, entity);
+#endif
 
   return true;
 }

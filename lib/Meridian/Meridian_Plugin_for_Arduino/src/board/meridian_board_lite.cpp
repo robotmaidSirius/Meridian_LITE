@@ -301,7 +301,8 @@ Meridim90 mrd_input() {
     // Input Communication
     //////////////////////////////////////////////////////////
     if (nullptr != entity->communication.con) {
-      result &= entity->communication.con->received(a_meridim90);
+      // TODO: 通信処理は失敗してもOK
+      entity->communication.con->received(a_meridim90);
     }
     //////////////////////////////////////////////////////////
     // Input Plugin

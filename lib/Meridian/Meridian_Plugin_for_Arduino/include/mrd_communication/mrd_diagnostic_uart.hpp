@@ -10,8 +10,8 @@
 #ifndef MRD_DIAGNOSTIC_UART_HPP
 #define MRD_DIAGNOSTIC_UART_HPP
 
-#include "mrd_communication/i_mrd_diagnostic.hpp"
 #include <Arduino.h>
+#include <mrd_communication/i_mrd_diagnostic.hpp>
 
 namespace meridian {
 namespace core {
