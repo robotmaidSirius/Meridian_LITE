@@ -71,46 +71,207 @@ public:
   void disable() { this->_output_log = false; }
 
   void log_trace(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_TRACE, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_TRACE, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_debug(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_DEBUG, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_DEBUG, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_info(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_INFO, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_INFO, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_message(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_MESSAGE, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_MESSAGE, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_warn(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_WARN, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_WARN, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_error(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_ERROR, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_ERROR, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   void log_fatal(const char *format, ...) {
+    char loc_buf[this->_BUFFER_SIZE];
+    char *message = loc_buf;
     va_list arg;
+    va_list copy;
     va_start(arg, format);
-    printf(OUTPUT_LOG_LEVEL::LEVEL_FATAL, format, arg);
+    va_copy(copy, arg);
+    int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if (len < 0) {
+      va_end(arg);
+      return;
+    }
+    if ((unsigned long long)len >= sizeof(loc_buf)) {
+      message = (char *)malloc(len + 1);
+      if (message == NULL) {
+        va_end(arg);
+        return;
+      }
+      len = vsnprintf(message, len + 1, format, arg);
+    }
     va_end(arg);
+
+    this->message(OUTPUT_LOG_LEVEL::LEVEL_FATAL, message);
+    if (message != loc_buf) {
+      free(message);
+    }
+    return;
   }
   size_t printf(OUTPUT_LOG_LEVEL level, const char *format, ...) {
     if (true == this->_output_log) {
