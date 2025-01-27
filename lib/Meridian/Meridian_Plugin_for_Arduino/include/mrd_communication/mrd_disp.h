@@ -26,39 +26,6 @@ public:
   //  起動時メッセージ
   //------------------------------------------------------------------------------------
 
-  /// @brief 指定されたミリ秒数だけキャパシタの充電プロセスを示すメッセージを表示する.
-  /// @param a_mill 充電プロセスの期間を秒単位で指定.
-  void charging(int a_mill) {
-    m_serial.print("Charging the capacitor.");
-    for (int i = 0; i < a_mill; i++) {
-      if (i % 100 == 0) { // 100msごとにピリオドを表示
-        m_serial.print(".");
-      }
-      delay(1);
-    }
-    m_serial.println();
-  }
-
-  /// @brief システムのバージョン情報と通信速度の設定を表示するためのメッセージを出力する.
-  /// @param a_version バージョン情報.
-  /// @param a_pc_speed PCとのUSBシリアル通信速度.
-  /// @param a_spi_speed SPIの通信速度.
-  /// @param a_i2c0_speed I2C0の通信速度.
-  void hello_lite_esp(String a_version, int a_pc_speed, int a_spi_speed, int a_i2c0_speed) {
-    m_serial.println();
-    m_serial.print("Hi, This is ");
-    m_serial.println(a_version);
-    m_serial.print("Set PC-USB ");
-    m_serial.print(a_pc_speed);
-    m_serial.println(" bps");
-    m_serial.print("Set SPI0   ");
-    m_serial.print(a_spi_speed);
-    m_serial.println(" bps");
-    m_serial.print("Set i2c0   ");
-    m_serial.print(a_i2c0_speed);
-    m_serial.println(" bps");
-  }
-
   /// @brief マウント設定したサーボのbpsをシリアルモニタに出力する.
   /// @param a_servo_l L系統のサーボbps.
   /// @param a_servo_r R系統のサーボbps.

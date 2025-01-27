@@ -74,10 +74,15 @@ void loop() {
 
   // アプリ処理
   bool result = sample_app_loop(mrd_meridim, entity);
+  if (false == result) {
+    log_e("======== application failed.");
+  }
 
   // 出力処理
   result &= mrd_output(mrd_meridim);
-
+  if (false == result) {
+    log_e("======== output failed.");
+  }
   // 待機
   delay(mrd_delay());
 }

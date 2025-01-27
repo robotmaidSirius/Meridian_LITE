@@ -60,11 +60,11 @@ public:
 
 /// @brief "meridian Board -LITE-"の動作パラメータ
 struct mrd_parameters {
-  unsigned int interval_ms = BOARD_SETTING_DEFAULT_INTERVAL_MS;  ///< メインループのインターバル (10ms推奨)
-  uint32_t i2c_speed = BOARD_SETTING_DEFAULT_I2C_SPEED;          ///< I2Cの速度 (400kHz推奨)
-  unsigned int ics_l_speed = BOARD_SETTING_DEFAULT_SERIAL1_BAUD; ///< ICS_Lの速度 (1.25MHz推奨)
-  unsigned int ics_r_speed = BOARD_SETTING_DEFAULT_SERIAL2_BAUD; ///< ICS_Lの速度 (1.25MHz推奨)
-  uint32_t spi_speed = BOARD_SETTING_DEFAULT_SPI_SPEED;          ///< SPIの速度 (6000000kHz推奨)
+  unsigned int interval_ms = BOARD_SETTING_DEFAULT_INTERVAL_MS; ///< メインループのインターバル (10ms推奨)
+  uint32_t i2c_speed = BOARD_SETTING_DEFAULT_I2C_SPEED;         ///< I2Cの速度 (400kHz推奨)
+  uint32_t ics_l_speed = BOARD_SETTING_DEFAULT_SERIAL1_BAUD;    ///< ICS_Lの速度 (1.25MHz推奨)
+  uint32_t ics_r_speed = BOARD_SETTING_DEFAULT_SERIAL2_BAUD;    ///< ICS_Lの速度 (1.25MHz推奨)
+  uint32_t spi_speed = BOARD_SETTING_DEFAULT_SPI_SPEED;         ///< SPIの速度 (6000000kHz推奨)
 };
 
 bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param);

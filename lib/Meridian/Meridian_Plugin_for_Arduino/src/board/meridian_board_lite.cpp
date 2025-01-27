@@ -23,6 +23,68 @@ mrd_parameters param;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+//////////////////////////////////////////////////////////////////////////
+// 内部関数
+//////////////////////////////////////////////////////////////////////////
+
+// 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
+void hello_meridian_board_lite() {
+  bool output_log = true;
+  if (nullptr == entity) {
+    output_log = false;
+  }
+  if (true == output_log) {
+    entity->communication.diag->log_info("Hi, This is %s(%s) %s.", PLUGIN_BOARD_NAME, PLUGIN_NAME, PLUGIN_VERSION);
+    // Meridian Core
+    entity->communication.diag->log_info("  Debug port: %s (%d bps)", entity->communication.diag->type_name(), BOARD_SETTING_DEFAULT_SERIAL0_BAUD);
+    entity->communication.diag->log_info("  Communication: %s", (nullptr != entity->communication.con) ? entity->communication.con->type_name() : "No");
+
+    // Meridian Plugin
+    entity->communication.diag->log_info("  Mounted Plugin");
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+      entity->communication.diag->log_info("    Analog[%d] : %s", i, (nullptr != entity->plugin.analog[i]) ? "Yes" : "No");
+    }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+      entity->communication.diag->log_info("    DAC[%d] : %s", i, (nullptr != entity->plugin.gpio[i]) ? "Yes" : "No");
+    }
+    entity->communication.diag->log_info("    I2C: %u bps", param.i2c_speed);
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+      entity->communication.diag->log_info("      I2C[%d] : %s", i, (nullptr != entity->plugin.i2c[i]) ? "Yes" : "No");
+    }
+    entity->communication.diag->log_info("    SPI: %u bps", param.spi_speed);
+    entity->communication.diag->log_info("      SD-CARD : %s", (nullptr != entity->plugin.spi_sd_card) ? "Yes" : "No");
+    entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? "Yes" : "No");
+    entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? "Yes" : "No", param.ics_l_speed);
+    entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? "Yes" : "No", param.ics_r_speed);
+  }
+}
+
+/// @brief 指定された時間だけ待機する関数
+void boot_standby(bool output_log = true) {
+  if (nullptr == entity) {
+    output_log = false;
+  }
+  if (true == output_log) {
+    entity->communication.diag->log_info("Charging the capacitor.");
+  }
+  for (int i = 0; i < BOARD_SETTING_MOUNTED_BOOT_STANDBY; i++) {
+    if (0 == (i % 100)) {
+      // 100msごとにピリオドを表示
+      if (true == output_log) {
+        entity->communication.diag->log(".");
+      }
+    }
+    delay(1);
+  }
+  if (true == output_log) {
+    entity->communication.diag->log("\n");
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// 公開関数
+//////////////////////////////////////////////////////////////////////////
+
 bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   bool result = true;
   //////////////////////////////////////////////////////////
@@ -99,6 +161,12 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   SPI.setFrequency(param.spi_speed);
 
   //////////////////////////////////////////////////////////
+  // Booting
+  //////////////////////////////////////////////////////////
+  // ボード搭載のコンデンサの充電時間として待機
+  boot_standby();
+
+  //////////////////////////////////////////////////////////
   // Setup Communication
   //////////////////////////////////////////////////////////
   if (true == result) {
@@ -157,7 +225,11 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       }
     }
   }
-  entity->communication.diag->log_debug("[%s] Setup", result ? "Succeeded" : "Failed");
+  if (true == result) {
+    hello_meridian_board_lite();
+  } else {
+    entity->communication.diag->log_fatal("Failed setup");
+  }
   return result;
 }
 

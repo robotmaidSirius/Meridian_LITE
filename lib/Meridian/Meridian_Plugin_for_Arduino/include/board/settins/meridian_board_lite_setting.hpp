@@ -10,9 +10,22 @@
 #ifndef __MERIDIAN_BOARD_LITE_SETTINGS_HPP__
 #define __MERIDIAN_BOARD_LITE_SETTINGS_HPP__
 
+/// @brief プラグインの名前
+#define PLUGIN_NAME "Meridian_Plugin_for_Arduino"
+/// @brief ボードの名前
+#define PLUGIN_BOARD_NAME "Meridian Board -LITE-"
+/// @brief プラグインのバージョン
+#define PLUGIN_VERSION "v1.2.0"
+
 ////////////////////////////////////////////////////
 // SETTINGS
 ////////////////////////////////////////////////////
+#ifndef BOARD_SETTING_MOUNTED_BOOT_STANDBY
+/// @brief 起動時の待機時間[ms]
+/// @details ボード搭載のコンデンサの充電時間として待機時間です。
+#define BOARD_SETTING_MOUNTED_BOOT_STANDBY (200)
+#endif
+
 #ifndef BOARD_SETTING_DEFAULT_INTERVAL_MS
 /// @brief デフォルトの周期[ms]
 #define BOARD_SETTING_DEFAULT_INTERVAL_MS (10)

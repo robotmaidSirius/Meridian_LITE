@@ -20,12 +20,11 @@ using namespace meridian::core::meridim;
 
 class IMeridianConversation {
 public:
+  virtual const char *type_name() { return "None"; };
   virtual bool setup() = 0;
 
   virtual bool received(Meridim90 &a_meridim) = 0;
   virtual bool send(Meridim90 &a_meridim) = 0;
-
-  virtual bool with_skip() = 0;
 
 public:
   void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }

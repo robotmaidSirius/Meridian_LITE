@@ -22,6 +22,7 @@ class MrdConversationWifi : public meridian::core::communication::IMeridianConve
 public:
   MrdConversationWifi() {
   };
+  const char *type_name() override { return "Wifi"; };
 
   bool setup() override {
     return true;
@@ -44,10 +45,6 @@ public:
   bool send(Meridim90 &a_meridim) {
     return true;
   }
-
-  bool with_skip() {
-    return true;
-  };
 };
 
 } // namespace communication

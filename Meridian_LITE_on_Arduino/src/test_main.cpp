@@ -3,6 +3,8 @@
 
 #define VERSION "Meridian_LITE_v1.1.1_2024_08.18" // バージョン表示
 
+#include <board/meridian_board_lite.hpp>
+
 /// @file    Meridian_LITE_for_ESP32/src/main.cpp
 /// @brief   Meridian is a system that smartly realizes the digital twin of a robot.
 /// @details Meridian_LITE for Meridian Board -LITE- with ESP32DecKitC.
@@ -68,12 +70,6 @@ void test_setup() {
 
   // ピンモードの設定
   pinMode(PIN_ERR_LED, OUTPUT); // エラー通知用LED
-
-  // ボード搭載のコンデンサの充電時間として待機
-  mrd_disp.charging(CHARGE_TIME);
-
-  // 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
-  mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
 
   // サーボ値の初期設定
   sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //

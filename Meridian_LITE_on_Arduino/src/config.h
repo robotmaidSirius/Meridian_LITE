@@ -64,9 +64,8 @@
 //-------------------------------------------------------------------------
 
 // Meridimの基本設定
-#define MRDM_LEN       90  // Meridim配列の長さ設定(デフォルトは90)
-#define FRAME_DURATION 10  // 1フレームあたりの単位時間(単位ms)
-#define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間(単位ms)
+#define MRDM_LEN       90 // Meridim配列の長さ設定(デフォルトは90)
+#define FRAME_DURATION 10 // 1フレームあたりの単位時間(単位ms)
 
 // 各種ハードウェアのマウント有無
 #define MOUNT_SD  1      // SDカードリーダーの有無 (0:なし, 1:あり)
