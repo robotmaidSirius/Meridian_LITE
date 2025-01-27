@@ -24,7 +24,9 @@ public:
     this->m_index = index + (pos / 8);
     this->m_pos = 1 << (pos % 8);
   }
-  ~MrdGpioOut() {}
+  ~MrdGpioOut() {
+    // Do nothing
+  }
 
 public:
   bool setup() override {
@@ -35,24 +37,21 @@ public:
     return false;
   }
   bool write(int value) override {
-    m_flag = (0 < value) ? true : false;
+    this->m_flag = (0 < value) ? true : false;
     return true;
   }
   int read() override {
-    return m_flag ? 1 : 0;
+    return this->m_flag ? 1 : 0;
   }
 
   bool input(Meridim90 &a_meridim) override {
     // Do nothing
     return true;
   }
-  bool processing(Meridim90 &a_meridim) override {
-    // Do nothing
-    return true;
-  }
+
   bool output(Meridim90 &a_meridim) override {
     digitalWrite(this->m_pin, m_flag ? HIGH : LOW);
-    if (true == m_flag) {
+    if (true == this->m_flag) {
       a_meridim.user_data[this->m_index] = this->m_pos | a_meridim.user_data[this->m_index];
     } else {
       a_meridim.user_data[this->m_index] = ~(this->m_pos) & a_meridim.user_data[this->m_index];

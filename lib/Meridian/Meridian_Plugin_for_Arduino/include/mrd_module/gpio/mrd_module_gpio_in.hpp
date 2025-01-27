@@ -27,7 +27,9 @@ public:
     this->m_index = index;
     this->m_pos = 1 << pos;
   }
-  ~MrdGpioIN() {}
+  ~MrdGpioIN() {
+    // Do nothing
+  }
 
 public:
   bool setup() override {
@@ -53,10 +55,7 @@ public:
     }
     return true;
   }
-  bool processing(Meridim90 &a_meridim) override {
-    // Do nothing
-    return true;
-  }
+
   bool output(Meridim90 &a_meridim) override {
     // Do nothing
     return true;

@@ -9,6 +9,7 @@
  */
 #include "board/meridian_board_lite.hpp"
 #include <Arduino.h>
+#include <SPI.h>
 #include <Wire.h>
 
 namespace meridian {
@@ -95,7 +96,7 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
     result &= Wire.setClock(param.i2c_speed);
   }
   // Setting SPI
-  // SPI.begin();
+  SPI.setFrequency(param.spi_speed);
 
   //////////////////////////////////////////////////////////
   // Setup Communication
@@ -214,40 +215,6 @@ Meridim90 mrd_input() {
   }
   return a_meridim90;
 }
-bool mrd_processing(Meridim90 &a_meridim90) {
-  bool result = true;
-  //////////////////////////////////////////////////////////
-  // Processing Plugin
-  //////////////////////////////////////////////////////////
-  for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
-    if (nullptr != entity->plugin.analog[i]) {
-      result &= entity->plugin.analog[i]->processing(a_meridim90);
-    }
-  }
-  for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-    if (nullptr != entity->plugin.gpio[i]) {
-      result &= entity->plugin.gpio[i]->processing(a_meridim90);
-    }
-  }
-  for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-    if (nullptr != entity->plugin.i2c[i]) {
-      result &= entity->plugin.i2c[i]->processing(a_meridim90);
-    }
-  }
-  if (nullptr != entity->plugin.servo_left) {
-    result &= entity->plugin.servo_left->processing(a_meridim90);
-  }
-  if (nullptr != entity->plugin.servo_right) {
-    result &= entity->plugin.servo_right->processing(a_meridim90);
-  }
-  if (nullptr != entity->plugin.spi) {
-    result &= entity->plugin.spi->processing(a_meridim90);
-  }
-  if (nullptr != entity->plugin.spi_sd_card) {
-    result &= entity->plugin.spi_sd_card->processing(a_meridim90);
-  }
-  return result;
-}
 bool mrd_output(Meridim90 &a_meridim90) {
   bool result = true;
   //////////////////////////////////////////////////////////
@@ -300,6 +267,10 @@ bool mrd_output(Meridim90 &a_meridim90) {
     }
   }
   return result;
+}
+
+int mrd_delay() {
+  return 1000;
 }
 
 } // namespace meridian_board_lite

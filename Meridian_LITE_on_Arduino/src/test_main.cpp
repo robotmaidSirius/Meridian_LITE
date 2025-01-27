@@ -60,7 +60,6 @@ void test_setup() {
   digitalWrite(PIN_LED_BT, HIGH);
 
   // シリアルモニターの設定
-  Serial.begin(SERIAL_PC_BPS);
   // シリアルモニターの確立待ち
   unsigned long start_time = millis();
   while (!Serial && (millis() - start_time < SERIAL_PC_TIMEOUT)) { // タイムアウトもチェック

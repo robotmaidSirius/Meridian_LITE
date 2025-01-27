@@ -40,7 +40,7 @@ bool mrd_eeprom_init(int a_eeprom_size) {
 UnionEEPROM mrd_eeprom_make_data_from_config() {
   UnionEEPROM array_tmp = {0};
   for (int i = 0; i < 15; i++) {
-    // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
+    // 各サーボのマウントありなし(0:サーボなし, +:サーボあり順転, -:サーボあり逆転)
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
     array_tmp.saval[0][20 + i * 2] = short(sv.ixl_mount[i] * sv.ixl_cw[i]);
     array_tmp.saval[0][50 + i * 2] = short(sv.ixr_mount[i] * sv.ixr_cw[i]);
@@ -137,7 +137,7 @@ bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect) {
     EEPROM.commit(); // 書き込みを確定する
     Serial.print("Value updated ");
     return true;
-  }else{
+  } else {
     Serial.print("Same value ");
   }
   return false;

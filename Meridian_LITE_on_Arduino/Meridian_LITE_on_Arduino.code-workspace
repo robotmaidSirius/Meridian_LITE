@@ -64,7 +64,15 @@
 			"initializer_list": "cpp",
 			"istream": "cpp",
 			"ostream": "cpp",
-			"*.tcc": "cpp"
+			"*.tcc": "cpp",
+			"chrono": "cpp",
+			"format": "cpp",
+			"forward_list": "cpp",
+			"list": "cpp",
+			"xhash": "cpp",
+			"xstring": "cpp",
+			"xtree": "cpp",
+			"xutility": "cpp"
 		}
 	}
 }

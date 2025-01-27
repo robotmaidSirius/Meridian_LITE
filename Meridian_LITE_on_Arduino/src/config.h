@@ -59,57 +59,26 @@
 // [R09] 右足首/ピッチ
 // [R10] 右足首/ロール
 
-//================================================================================================================
-//  Meridim90配列 一覧表
-//================================================================================================================
-//
-// [00]      マスターコマンド デフォルトは90 で配列数も同時に示す
-// [01]      シーケンス番号
-// [02]-[04] IMU/AHRS:acc＿x,acc＿y,acc＿z    加速度x,y,z
-// [05]-[07] IMU/AHRS:gyro＿x,gyro＿y,gyro＿z ジャイロx,y,z
-// [08]-[10] IMU/AHRS:mag＿x,mag＿y,mag＿z    磁気コンパスx,y,z
-// [11]      IMU/AHRS:temp                   温度
-// [12]-[14] IMU/AHRS:DMP ROLL,PITCH,YAW     DMP推定値 ロール,ピッチ,ヨー
-// [15]      ボタンデータ1
-// [16]      ボタンアナログ1（Stick Left）
-// [17]      ボタンアナログ2（Stick Right）
-// [18]      ボタンアナログ3（L2,R2 アナログ）
-// [19]      モーション設定（フレーム数）
-// [20]      サーボID LO  コマンド
-// [21]      サーボID LO  データ値
-// [...]     ...
-// [48]      サーボID L14 コマンド
-// [49]      サーボID L14 データ値
-// [50]      サーボID RO  コマンド
-// [51]      サーボID RO  データ値
-// [...]     ...
-// [78]      サーボID R14 コマンド
-// [79]      サーボID R14 データ値
-// [80]-[MRDM_LEN-3] free (Meridim90では[87]まで)
-// [MRDM_LEN-2] ERROR CODE
-// [MRDM_LEN-1] チェックサム
-
 //-------------------------------------------------------------------------
 //  各種設定
 //-------------------------------------------------------------------------
 
 // Meridimの基本設定
-#define MRDM_LEN       90  // Meridim配列の長さ設定（デフォルトは90）
-#define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
-#define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
+#define MRDM_LEN       90  // Meridim配列の長さ設定(デフォルトは90)
+#define FRAME_DURATION 10  // 1フレームあたりの単位時間(単位ms)
+#define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間(単位ms)
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無 (0:なし, 1:あり)
-#define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
-#define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
+#define MOUNT_SD  1      // SDカードリーダーの有無 (0:なし, 1:あり)
+#define MOUNT_PAD KRR5FH // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
 // 動作モード
-#define MODE_ESP32_STDALONE 0 // ESP32をボードに挿さず動作確認（0:NO, 1:YES）
-#define MODE_UDP_RECEIVE    1 // PCからのデータ受信（0:OFF, 1:ON, 通常は1）
-#define MODE_UDP_SEND       1 // PCへのデータ送信（0:OFF, 1:ON, 通常は1）
+#define MODE_ESP32_STDALONE 0 // ESP32をボードに挿さず動作確認 (0:NO, 1:YES)
+#define MODE_UDP_RECEIVE    1 // PCからのデータ受信 (0:OFF, 1:ON, 通常は1)
+#define MODE_UDP_SEND       1 // PCへのデータ送信 (0:OFF, 1:ON, 通常は1)
 
 // Wifiの設定(SSID,パスワード等は別途keys.hで指定)
-#define UDP_TIMEOUT 4 // UDPの待受タイムアウト（単位ms,推奨値0）
+#define UDP_TIMEOUT 4 // UDPの待受タイムアウト (単位ms,推奨値0)
 
 // EEPROMの設定
 #define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
@@ -124,26 +93,22 @@
 #define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
 
 // シリアルモニタリング
-#define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示（0:OFF, 1:ON）
-#define MONITOR_FLOW              0    // シリアルモニタでフローを表示（0:OFF, 1:ON）
-#define MONITOR_ERR_SERVO         0    // シリアルモニタでサーボエラーを表示（0:OFF, 1:ON）
+#define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示(0:OFF, 1:ON)
+#define MONITOR_FLOW              0    // シリアルモニタでフローを表示(0:OFF, 1:ON)
+#define MONITOR_ERR_SERVO         0    // シリアルモニタでサーボエラーを表示(0:OFF, 1:ON)
 #define MONITOR_ERR_ALL           0    // 全経路の受信エラー率を表示
-#define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示（0:OFF, 1:ON）
-#define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示（0:OFF, 1:ON）
+#define MONITOR_SEQ               0    // シリアルモニタでシーケンス番号チェックを表示(0:OFF, 1:ON)
+#define MONITOR_PAD               0    // シリアルモニタでリモコンのデータを表示(0:OFF, 1:ON)
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
 
 // I2C設定, I2Cセンサ関連設定
-#define I2C0_SPEED       400000 // I2Cの速度（400kHz推奨）
-#define IMUAHRS_INTERVAL 10     // IMU/AHRSのセンサの読み取り間隔(ms)
-#define IMUAHRS_STOCK    4      // MPUで移動平均を取る際の元にする時系列データの個数
-// #define I2C1_SPEED 100000  // I2Cの速度（100kHz推奨?）
-// #define I2C1_MERIMOTE_ADDR 0x58 // MerimoteのI2Cアドレス
+#define I2C0_SPEED 400000 // I2Cの速度 (400kHz推奨)
 
 // SPI設定
-#define SPI0_SPEED 6000000 // SPI通信の速度（6000000kHz推奨）
+#define SPI0_SPEED 6000000 // SPI通信の速度(6000000kHz推奨)
 
 // PC接続関連設定
-#define SERIAL_PC_BPS     115200 // PCとのシリアル速度（モニタリング表示用）
+#define SERIAL_PC_BPS     115200 // PCとのシリアル速度(モニタリング表示用)
 #define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
 
 // JOYPAD関連設定
@@ -357,14 +322,14 @@ float IDR_TRIM[IXR_MAX] = {
 //  固定値, マスターコマンド定義
 //-------------------------------------------------------------------------
 // 固定値, マスターコマンド定義
-#define MCMD_TORQUE_ALL_OFF         0      // すべてのサーボトルクをオフにする（脱力）
+#define MCMD_TORQUE_ALL_OFF         0      // すべてのサーボトルクをオフにする(脱力)
 #define MCMD_DUMMY_DATA             -32768 // SPI送受信用のダミーデータ判定用
 #define MCMD_TEST_VALUE             -32767 // テスト用の仮設変数
 #define MCMD_SENSOR_YAW_CALIB       10002  // センサの推定ヨー軸を現在値センターとしてリセット
 #define MCMD_SENSOR_ALL_CALIB       10003  // センサの3軸について現在値を原点としてリセット
 #define MCMD_ERR_CLEAR_SERVO_ID     10004  // 通信エラーのサーボのIDをクリア(MRD_ERR_l)
-#define MCMD_BOARD_TRANSMIT_ACTIVE  10005  // ボードが定刻で送信を行うモード（PC側が受信待ち）
-#define MCMD_BOARD_TRANSMIT_PASSIVE 10006  // ボードが受信を待ち返信するモード（PC側が定刻送信）
+#define MCMD_BOARD_TRANSMIT_ACTIVE  10005  // ボードが定刻で送信を行うモード(PC側が受信待ち)
+#define MCMD_BOARD_TRANSMIT_PASSIVE 10006  // ボードが受信を待ち返信するモード(PC側が定刻送信)
 #define MCMD_FRAMETIMER_RESET       10007  // フレームタイマーを現在時刻にリセット
 #define MCMD_BOARD_STOP_DURING      10008  // ボードの末端処理を[MRD_STOP_FRAMES]ミリ秒止める
 #define MCMD_EEPROM_ENTER_WRITE     10009  // EEPROM書き込みモードのスタート

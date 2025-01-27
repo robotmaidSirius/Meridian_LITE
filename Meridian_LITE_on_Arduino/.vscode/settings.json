@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "AHRS",
+        "BLUERETRO",
         "DYNAMIXEL",
         "EEPROM",
         "electroniccats",
@@ -13,7 +14,10 @@
         "MCMD",
         "MERIDIANFLOW",
         "Meridim",
+        "MERIMOTE",
+        "Nunchuk",
         "PROPO",
+        "SBDBT",
         "wiimote",
         "XBUS"
     ]

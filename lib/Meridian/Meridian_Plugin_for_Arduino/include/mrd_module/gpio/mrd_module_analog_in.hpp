@@ -25,7 +25,9 @@ public:
   MrdAnalogIn(uint8_t pin, int index) : IMeridianGPIOInOut(pin) {
     this->m_index = index;
   }
-  ~MrdAnalogIn() {}
+  ~MrdAnalogIn() {
+    // Do nothing
+  }
 
 public:
   bool setup() override {
@@ -37,6 +39,7 @@ public:
   }
   bool write(int value) override {
     UNUSED_PARAM(value);
+    // Do nothing
     return false;
   }
   int read() override {
@@ -47,10 +50,7 @@ public:
     a_meridim.user_data[this->m_index] = this->read();
     return true;
   }
-  bool processing(Meridim90 &a_meridim) override {
-    // Do nothing
-    return true;
-  }
+
   bool output(Meridim90 &a_meridim) override {
     // Do nothing
     return true;

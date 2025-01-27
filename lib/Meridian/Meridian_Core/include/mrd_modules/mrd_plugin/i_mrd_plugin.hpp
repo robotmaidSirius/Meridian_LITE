@@ -23,7 +23,6 @@ class IMeridianPlugin {
 public:
   virtual bool setup() = 0;
   virtual bool input(Meridim90 &a_meridim) = 0;
-  virtual bool processing(Meridim90 &a_meridim) = 0;
   virtual bool output(Meridim90 &a_meridim) = 0;
 
 public:
