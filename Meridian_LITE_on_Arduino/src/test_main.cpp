@@ -24,9 +24,9 @@
 #include "mrd_communication/mrd_disp.h"
 #include "mrd_communication/mrd_wifi.h"
 #include "mrd_module/ahrs/mrd_wire0.h"
-#include "mrd_module/filesystem/mrd_eeprom.h"
-#include "mrd_module/filesystem/mrd_sd.h"
-#include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/filesystem/mrd_module_eeprom.hpp"
+#include "mrd_module/filesystem/mrd_module_sd.hpp"
+#include "mrd_module/pad/mrd_bt_pad.h"
 #include "mrd_module/servo/mrd_servo.h"
 #include "mrd_util.h"
 

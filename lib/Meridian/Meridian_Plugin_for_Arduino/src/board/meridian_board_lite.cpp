@@ -37,25 +37,27 @@ void hello_meridian_board_lite() {
     entity->communication.diag->log_info("Hi, This is %s(%s) %s.", PLUGIN_BOARD_NAME, PLUGIN_NAME, PLUGIN_VERSION);
     // Meridian Core
     entity->communication.diag->log_info("  Debug port: %s (%d bps)", entity->communication.diag->type_name(), BOARD_SETTING_DEFAULT_SERIAL0_BAUD);
-    entity->communication.diag->log_info("  Communication: %s", (nullptr != entity->communication.con) ? entity->communication.con->type_name() : "No");
+    entity->communication.diag->log_info("  Communication: %s", (nullptr != entity->communication.con) ? entity->communication.con->type_name() : "--");
 
     // Meridian Plugin
     entity->communication.diag->log_info("  Mounted Plugin");
     for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
-      entity->communication.diag->log_info("    Analog[%d] : %s", i, (nullptr != entity->plugin.analog[i]) ? "Yes" : "No");
+      entity->communication.diag->log_info("    Analog[%d] : %s", i, (nullptr != entity->plugin.analog[i]) ? "Yes" : "--");
     }
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      entity->communication.diag->log_info("    DAC[%d] : %s", i, (nullptr != entity->plugin.gpio[i]) ? "Yes" : "No");
+      entity->communication.diag->log_info("    DAC[%d] : %s", i, (nullptr != entity->plugin.gpio[i]) ? "Yes" : "--");
     }
     entity->communication.diag->log_info("    I2C: %u bps", param.i2c_speed);
     for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-      entity->communication.diag->log_info("      I2C[%d] : %s", i, (nullptr != entity->plugin.i2c[i]) ? "Yes" : "No");
+      entity->communication.diag->log_info("      I2C[%d] : %s", i, (nullptr != entity->plugin.i2c[i]) ? "Yes" : "--");
     }
+    entity->communication.diag->log_info("    EEPROM : %s", (nullptr != entity->plugin.eeprom) ? "Yes" : "--");
+    entity->communication.diag->log_info("    SD-CARD : %s", (nullptr != entity->plugin.sd_card) ? "Yes" : "--");
     entity->communication.diag->log_info("    SPI: %u bps", param.spi_speed);
-    entity->communication.diag->log_info("      SD-CARD : %s", (nullptr != entity->plugin.spi_sd_card) ? "Yes" : "No");
-    entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? "Yes" : "No");
-    entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? "Yes" : "No", param.ics_l_speed);
-    entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? "Yes" : "No", param.ics_r_speed);
+    entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? "Yes" : "--");
+    entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? "Yes" : "--", param.ics_l_speed);
+    entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? "Yes" : "--", param.ics_r_speed);
+    entity->communication.diag->log_info("    Pad : %s ", (nullptr != entity->plugin.pad) ? entity->plugin.pad->type_name() : "--");
   }
 }
 
@@ -87,6 +89,7 @@ void boot_standby(bool output_log = true) {
 
 bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   bool result = true;
+  bool result_tmp = true;
   //////////////////////////////////////////////////////////
   // Initialize the shared memory
   //////////////////////////////////////////////////////////
@@ -143,7 +146,7 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   bool flag_ic2_begin = false;
   if (nullptr != entity) {
     for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-      if (nullptr != entity->plugin.gpio[i]) {
+      if (nullptr != entity->plugin.i2c[i]) {
         flag_ic2_begin = true;
         break;
       }
@@ -151,12 +154,17 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   }
   if (true == flag_ic2_begin) {
     if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
-      result &= Wire.begin();
+      result_tmp = Wire.begin();
     } else {
-      result &= Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
+      result_tmp = Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
     }
-    result &= Wire.setClock(param.i2c_speed);
+    result_tmp &= Wire.setClock(param.i2c_speed);
+    result &= result_tmp;
+    if (false == result_tmp) {
+      entity->communication.diag->log_error("Failed to setup I2C");
+    }
   }
+
   // Setting SPI
   SPI.setFrequency(param.spi_speed);
 
@@ -170,12 +178,16 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   // Setup Communication
   //////////////////////////////////////////////////////////
   if (true == result) {
+    result_tmp = false;
     if (nullptr != entity) {
       if (nullptr != entity->communication.con) {
         entity->communication.con->set_diagnostic(*entity->communication.diag);
-        result &= entity->communication.con->setup();
+        result_tmp = entity->communication.con->setup();
+        result &= result_tmp;
       }
-      entity->communication.diag->log_debug("[%s] Setup/communication::conversation", result ? "Succeeded" : "Failed");
+    }
+    if (false == result_tmp) {
+      entity->communication.diag->log_fatal("Failed to Setup/communication::conversation");
     }
 
     //////////////////////////////////////////////////////////
@@ -185,43 +197,80 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
         if (nullptr != entity->plugin.gpio[i]) {
           entity->plugin.gpio[i]->set_diagnostic(*entity->communication.diag);
-          result &= entity->plugin.gpio[i]->setup();
-          entity->communication.diag->log_debug("[%s] Setup/plugin::gpio[%d]", result ? "Succeeded" : "Failed", i);
+          result_tmp = entity->plugin.gpio[i]->setup();
+          result &= result_tmp;
+          if (false == result_tmp) {
+            entity->communication.diag->log_error("Failed to Setup/plugin::gpio[%d]", i);
+          }
         }
       }
       for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
         if (nullptr != entity->plugin.analog[i]) {
           entity->plugin.analog[i]->set_diagnostic(*entity->communication.diag);
-          result &= entity->plugin.analog[i]->setup();
-          entity->communication.diag->log_debug("[%s] Setup/plugin::analog[%d]", result ? "Succeeded" : "Failed", i);
+          result_tmp = entity->plugin.analog[i]->setup();
+          result &= result_tmp;
+          if (false == result_tmp) {
+            entity->communication.diag->log_error("Failed to Setup/plugin::analog[%d]", i);
+          }
         }
       }
       for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
         if (nullptr != entity->plugin.i2c[i]) {
           entity->plugin.i2c[i]->set_diagnostic(*entity->communication.diag);
-          result &= entity->plugin.i2c[i]->setup();
-          entity->communication.diag->log_debug("[%s] Setup/plugin::i2c[%d]", result ? "Succeeded" : "Failed", i);
+          result_tmp = entity->plugin.i2c[i]->setup();
+          result &= result_tmp;
+          if (false == result_tmp) {
+            entity->communication.diag->log_error("Failed to Setup/plugin::i2c[%d]", i);
+          }
         }
       }
-      if (nullptr != entity->plugin.spi_sd_card) {
-        entity->plugin.spi_sd_card->set_diagnostic(*entity->communication.diag);
-        result &= entity->plugin.spi_sd_card->setup();
-        entity->communication.diag->log_debug("[%s] Setup/plugin::spi_sd_card", result ? "Succeeded" : "Failed");
+      if (nullptr != entity->plugin.eeprom) {
+        entity->plugin.eeprom->set_diagnostic(*entity->communication.diag);
+        result_tmp = entity->plugin.eeprom->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::eeprom");
+        }
+      }
+      if (nullptr != entity->plugin.sd_card) {
+        entity->plugin.sd_card->set_diagnostic(*entity->communication.diag);
+        result_tmp = entity->plugin.sd_card->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::sd_card");
+        }
       }
       if (nullptr != entity->plugin.spi) {
         entity->plugin.spi->set_diagnostic(*entity->communication.diag);
-        result &= entity->plugin.spi->setup();
-        entity->communication.diag->log_debug("[%s] Setup/plugin::spi", result ? "Succeeded" : "Failed");
+        result_tmp = entity->plugin.spi->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::spi");
+        }
       }
       if (nullptr != entity->plugin.servo_left) {
         entity->plugin.servo_left->set_diagnostic(*entity->communication.diag);
-        result &= entity->plugin.servo_left->setup();
-        entity->communication.diag->log_debug("[%s] Setup/plugin::servo_left", result ? "Succeeded" : "Failed");
+        result_tmp = entity->plugin.servo_left->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::servo_left");
+        }
       }
       if (nullptr != entity->plugin.servo_right) {
         entity->plugin.servo_right->set_diagnostic(*entity->communication.diag);
-        result &= entity->plugin.servo_right->setup();
-        entity->communication.diag->log_debug("[%s] Setup/plugin::servo_right", result ? "Succeeded" : "Failed");
+        result_tmp = entity->plugin.servo_right->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::servo_right");
+        }
+      }
+      if (nullptr != entity->plugin.pad) {
+        entity->plugin.pad->set_diagnostic(*entity->communication.diag);
+        result_tmp = entity->plugin.pad->setup();
+        result &= result_tmp;
+        if (false == result_tmp) {
+          entity->communication.diag->log_error("Failed to Setup/plugin::pad");
+        }
       }
     }
   }
@@ -281,8 +330,14 @@ Meridim90 mrd_input() {
     if (nullptr != entity->plugin.spi) {
       result &= entity->plugin.spi->input(a_meridim90);
     }
-    if (nullptr != entity->plugin.spi_sd_card) {
-      result &= entity->plugin.spi_sd_card->input(a_meridim90);
+    if (nullptr != entity->plugin.eeprom) {
+      result &= entity->plugin.eeprom->input(a_meridim90);
+    }
+    if (nullptr != entity->plugin.sd_card) {
+      result &= entity->plugin.sd_card->input(a_meridim90);
+    }
+    if (nullptr != entity->plugin.pad) {
+      result &= entity->plugin.pad->input(a_meridim90);
     }
   }
   return a_meridim90;
@@ -316,8 +371,14 @@ bool mrd_output(Meridim90 &a_meridim90) {
   if (nullptr != entity->plugin.spi) {
     result &= entity->plugin.spi->output(a_meridim90);
   }
-  if (nullptr != entity->plugin.spi_sd_card) {
-    result &= entity->plugin.spi_sd_card->output(a_meridim90);
+  if (nullptr != entity->plugin.sd_card) {
+    result &= entity->plugin.sd_card->output(a_meridim90);
+  }
+  if (nullptr != entity->plugin.eeprom) {
+    result &= entity->plugin.eeprom->output(a_meridim90);
+  }
+  if (nullptr != entity->plugin.pad) {
+    result &= entity->plugin.pad->output(a_meridim90);
   }
   if (true == result) {
     //////////////////////////////////////////////////////////

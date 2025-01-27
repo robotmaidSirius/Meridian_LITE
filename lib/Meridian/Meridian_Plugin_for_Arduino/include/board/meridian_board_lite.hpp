@@ -16,12 +16,15 @@ using namespace meridian::core::meridim;
 #include "pins/meridian_board_lite_pins.hpp"
 #include "settins/meridian_board_lite_setting.hpp"
 
-#include "mrd_communication/i_mrd_conversation.hpp"
-#include "mrd_communication/i_mrd_diagnostic.hpp"
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp"
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp"
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp"
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_spi.hpp"
+#include <mrd_communication/i_mrd_conversation.hpp>
+#include <mrd_communication/i_mrd_diagnostic.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_eeprom.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_pad.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_sd.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp>
+#include <mrd_modules/mrd_plugin/i_mrd_plugin_spi.hpp>
 
 namespace meridian {
 namespace board {
@@ -46,11 +49,13 @@ public:
   public:
     IMeridianGPIOInOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM]; ///< アナログ入力のインターフェース
     IMeridianGPIOInOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];     ///< GPIOのインターフェース
-    IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];                  // I2Cのインターフェース
-    IMeridianSPI *spi_sd_card;                                       // SDカード用のSPIのインターフェース
-    IMeridianSPI *spi;                                               // SPIのインターフェース
+    IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];                  ///< I2Cのインターフェース
+    IMeridianEEPROM *eeprom;                                         ///< EEPROMのインターフェース
+    IMeridianSD *sd_card;                                            ///< SDカード用のSPIのインターフェース
+    IMeridianSPI *spi;                                               ///< SPIのインターフェース
     IMeridianServo *servo_left;                                      ///< ICS_Lのインターフェース
     IMeridianServo *servo_right;                                     ///< ICS_Rのインターフェース
+    IMeridianPad *pad;                                               ///< パッドのインターフェース
   };
 
 public:

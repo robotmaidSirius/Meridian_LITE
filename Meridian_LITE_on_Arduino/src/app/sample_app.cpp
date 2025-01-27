@@ -11,44 +11,62 @@
 #include <Arduino.h>
 
 #include <mrd_module/gpio/mrd_module_gpio_out.hpp>
-#define DEBUG_BOARD_LED 1
+////////////////////////////////////////////////////////////////////////////////////////////////
+// テスト関数
+////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if DEBUG_BOARD_LED
-meridian::modules::plugin::MrdGpioOut gpio(2, 2, 0);
-#endif
-
-bool sample_app_setup(mrd_entity &entity) {
-  log_i("");
-#if DEBUG_BOARD_LED
-  gpio.setup();
-#endif
-  entity.plugin.gpio[1]->write(1);
-  return true;
-}
-
-bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
-  // LED Test
+/// @brief LED点灯テスト (再定義)
+void test_led_board(Meridim90 &mrd_meridim, mrd_entity &entity) {
+  // [setup]
+  static bool init = true;
+  static meridian::modules::plugin::MrdGpioOut gpio(2, 2, 0);
+  if (true == init) {
+    gpio.setup();
+    init = false;
+  }
+  // [loop]
   static bool led_state = false;
   if (false == led_state) {
-#if DEBUG_BOARD_LED
     gpio.write(1);
     gpio.output(mrd_meridim);
-#else
-    entity.plugin.gpio[0]->write(1);
-#endif
     entity.communication.diag->log_debug("---------------- LED ON ----------------");
     led_state = true;
   } else {
-#if DEBUG_BOARD_LED
     gpio.write(0);
     gpio.output(mrd_meridim);
-#else
-    entity.plugin.gpio[0]->write(0);
-#endif
     entity.communication.diag->log_debug("---------------- LED OFF----------------");
     led_state = false;
   }
-  // Log Test
+}
+
+/// @brief LED点灯テスト (entityを使用)
+void test_led_entity(Meridim90 &mrd_meridim, mrd_entity &entity) {
+  // [setup]
+  static bool init = true;
+  if (true == init) {
+    init = false;
+  }
+  // [loop]
+  static bool led_state = false;
+  if (false == led_state) {
+    entity.plugin.gpio[0]->write(1);
+    entity.communication.diag->log_debug("---------------- LED ON ----------------");
+    led_state = true;
+  } else {
+    entity.plugin.gpio[0]->write(0);
+    entity.communication.diag->log_debug("---------------- LED OFF----------------");
+    led_state = false;
+  }
+}
+
+/// @brief ログ出力テスト
+void test_log(Meridim90 &mrd_meridim, mrd_entity &entity) {
+  // [setup]
+  static bool init = true;
+  if (true == init) {
+    init = false;
+  }
+  // [loop]
   static int log_shift = -1;
   static bool flag_log = true;
   log_shift++;
@@ -102,6 +120,27 @@ bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
   entity.communication.diag->log_error("test[%s,%d]", __FILE__, __LINE__);
   entity.communication.diag->log_fatal("test[%s,%d]", __FILE__, __LINE__);
   entity.communication.diag->log("<MES> test[%s,%d]\n", __FILE__, __LINE__);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+// 外部関数
+////////////////////////////////////////////////////////////////////////////////////////////////
+bool sample_app_setup(mrd_entity &entity) {
+  entity.plugin.gpio[1]->write(1);
+  return true;
+}
+#define BOARD_ENABLE_LED 1
+bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
+
+  // LED Test
+#if BOARD_ENABLE_LED
+  test_led_board(mrd_meridim, entity);
+#else
+  test_led_entity(mrd_meridim, entity);
+#endif
+
+  // Log Test
+  test_log(mrd_meridim, entity);
 
   return true;
 }

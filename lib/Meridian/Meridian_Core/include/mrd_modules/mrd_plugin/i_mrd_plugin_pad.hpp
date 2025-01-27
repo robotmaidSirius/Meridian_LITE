@@ -1,5 +1,5 @@
 /**
- * @file i_mrd_plugin_joypad.hpp
+ * @file i_mrd_plugin_pad.hpp
  * @brief MeridianCoreで使用するジョイパッドのインターフェースクラス
  * @version 1.2.0
  * @date 2025-01-16
@@ -7,15 +7,15 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef __I_MRD_PLUGIN_JOYPAD_HPP__
-#define __I_MRD_PLUGIN_JOYPAD_HPP__
+#ifndef __I_MRD_PLUGIN_PAD_HPP__
+#define __I_MRD_PLUGIN_PAD_HPP__
 
 #include "i_mrd_plugin.hpp"
 
 namespace meridian {
 namespace modules {
 namespace plugin {
-namespace joypad {
+namespace pad {
 
 enum hat_t {
   N = 0,
@@ -120,15 +120,14 @@ struct ButtonInfo {
   bool linked;
   const int version = 20250119;
 };
-} // namespace joypad
+} // namespace pad
 
-class IMeridianJoypad : public IMeridianPlugin {
+class IMeridianPad : public IMeridianPlugin {
 public:
-public:
-  virtual const char *get_name() { return "None"; };
+  virtual const char *type_name() { return "None"; };
 
 public:
-  joypad::ButtonInfo buttons;
+  pad::ButtonInfo buttons;
   bool isConnected() { return this->buttons.linked; };
 };
 
@@ -136,4 +135,4 @@ public:
 } // namespace modules
 } // namespace meridian
 
-#endif // __I_MRD_PLUGIN_JOYPAD_HPP__
+#endif // __I_MRD_PLUGIN_PAD_HPP__

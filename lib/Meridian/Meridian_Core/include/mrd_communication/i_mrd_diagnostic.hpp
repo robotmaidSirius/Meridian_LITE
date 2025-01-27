@@ -71,6 +71,41 @@ public:
   void enable() { this->_output_log = true; }
   void disable() { this->_output_log = false; }
 
+  void log(const char *format, ...) {
+    OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_OPERATIONAL;
+    if (true == this->_output_log) {
+      if (this->_level <= a_level) {
+        char loc_buf[this->_BUFFER_SIZE];
+        char *message = loc_buf;
+        va_list arg;
+        va_list copy;
+        va_start(arg, format);
+        va_copy(copy, arg);
+        int len = vsnprintf(message, sizeof(loc_buf), format, copy);
+        va_end(copy);
+        if (len < 0) {
+          va_end(arg);
+          return;
+        }
+        if ((unsigned long long)len >= sizeof(loc_buf)) {
+          message = (char *)malloc(len + 1);
+          if (message == NULL) {
+            va_end(arg);
+            return;
+          }
+          len = vsnprintf(message, len + 1, format, arg);
+        }
+        va_end(arg);
+
+        this->message(a_level, message);
+        if (message != loc_buf) {
+          free(message);
+        }
+        return;
+      }
+    }
+    return;
+  }
   void log_trace(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_TRACE;
     if (true == this->_output_log) {
@@ -143,41 +178,6 @@ public:
   }
   void log_info(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_INFO;
-    if (true == this->_output_log) {
-      if (this->_level <= a_level) {
-        char loc_buf[this->_BUFFER_SIZE];
-        char *message = loc_buf;
-        va_list arg;
-        va_list copy;
-        va_start(arg, format);
-        va_copy(copy, arg);
-        int len = vsnprintf(message, sizeof(loc_buf), format, copy);
-        va_end(copy);
-        if (len < 0) {
-          va_end(arg);
-          return;
-        }
-        if ((unsigned long long)len >= sizeof(loc_buf)) {
-          message = (char *)malloc(len + 1);
-          if (message == NULL) {
-            va_end(arg);
-            return;
-          }
-          len = vsnprintf(message, len + 1, format, arg);
-        }
-        va_end(arg);
-
-        this->message(a_level, message);
-        if (message != loc_buf) {
-          free(message);
-        }
-        return;
-      }
-    }
-    return;
-  }
-  void log(const char *format, ...) {
-    OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_OPERATIONAL;
     if (true == this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
