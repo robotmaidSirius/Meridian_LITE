@@ -47,7 +47,6 @@
 			".clang-format": true,
 			"lib": true,
 		},
-		"editor.fontFamily": "Consolas, 'Courier New', monospace",
 		"editor.rulers": [
 			120
 		],

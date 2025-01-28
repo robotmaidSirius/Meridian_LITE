@@ -7,7 +7,7 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#include "sample_app.hpp"
+#include "../sample_app.hpp"
 #include <Arduino.h>
 
 #include <mrd_module/gpio/mrd_module_gpio_out.hpp>

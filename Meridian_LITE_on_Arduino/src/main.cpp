@@ -8,6 +8,7 @@
  *
  */
 #include "app/sample_app.hpp"
+#include "app/sample_app_default.hpp"
 #include "keys.h"
 #include <board/meridian_board_lite.hpp>
 //////////////////////////////////////////////////////////////////////////
@@ -43,12 +44,26 @@
 #include <mrd_module/gpio/mrd_module_gpio_out.hpp>
 
 //////////////////////////////////////////////////////////////////////////
+#define PINS_BOARD_LED_CONNECT (2)
+#define PINS_BOARD_LED_SIGNAL  (0xFF)
+#define SETTING_LOG_LEVEL      (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG)
+//////////////////////////////////////////////////////////////////////////
 // 使用するモジュールの設定
 //////////////////////////////////////////////////////////////////////////
-MrdConversationWifi con_wifi;
-MrdDiagnosticUart diag_uart(&Serial,
-                            BOARD_SETTING_DEFAULT_SERIAL0_BAUD,
-                            MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG);
+sample_app_default app_default;
+MrdConversationWifi con_wifi(
+#if 0xFF != PINS_BOARD_LED_CONNECT
+    new MrdGpioOut(PINS_BOARD_LED_CONNECT),
+#else
+    nullptr,
+#endif
+#if 0xFF != PINS_BOARD_LED_SIGNAL
+    new MrdGpioOut(PINS_BOARD_LED_SIGNAL)
+#else
+    nullptr
+#endif
+);
+MrdDiagnosticUart diag_uart(&Serial, BOARD_SETTING_DEFAULT_SERIAL0_BAUD, SETTING_LOG_LEVEL);
 mrd_entity entity = {
     .communication = {
         .con = &con_wifi,
@@ -90,37 +105,82 @@ mrd_entity entity = {
         .spi = nullptr,
         .servo_left = nullptr,
         .servo_right = nullptr,
-        .pad =
-#if defined(MODULE_PAD_WIIMOTE)
-            new MrdPadWiimote(),
-#elif defined(MODULE_PAD_KRC5FH)
-            new MrdPadKRC5FH(),
-#else
-            nullptr,
-#endif
+        .pad = nullptr,
     },
 };
+
+void setup_error() {
+  while (true) {
+    log_e("Board setup failed.");
+    if (false == diagnosis.communication.con.initalized) {
+      log_e("  communication::conversation");
+    }
+    if (false == diagnosis.communication.diag.initalized) {
+      log_e("  communication::diagnostic");
+    }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+      if (false == diagnosis.plugin.analog[i].initalized) {
+        log_e("  plugin::analog[%d]", i);
+      }
+    }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+      if (false == diagnosis.plugin.gpio[i].initalized) {
+        log_e("  plugin::gpio[%d]", i);
+      }
+    }
+    for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+      if (false == diagnosis.plugin.i2c[i].initalized) {
+        log_e("  plugin::i2c[%d]", i);
+      }
+    }
+    if (false == diagnosis.plugin.eeprom.initalized) {
+      log_e("  plugin::eeprom");
+    }
+    if (false == diagnosis.plugin.sd_card.initalized) {
+      log_e("  plugin::sd_card");
+    }
+    if (false == diagnosis.plugin.spi.initalized) {
+      log_e("  plugin::common_spi");
+    }
+    if ((false == diagnosis.plugin.servo_left.initalized) || (false == diagnosis.plugin.servo_right.initalized)) {
+      log_e("  plugin::servo %s%s",
+            (false == diagnosis.plugin.servo_left.initalized) ? "L" : "",
+            (false == diagnosis.plugin.servo_right.initalized) ? "R" : "");
+    }
+    if (false == diagnosis.plugin.pad.initalized) {
+      log_e("  plugin::pad");
+    }
+
+    delay(1000);
+  }
+}
 
 /// @brief セットアップ関数
 void setup() {
   bool result = false;
+  //////////////////////
+  app_default.setup();
+  entity.plugin.pad = &app_default.pad;
+  entity.plugin.servo_left = &app_default.servo_left;
+  entity.plugin.servo_right = &app_default.servo_right;
+
+  //////////////////////
   if (true == board_setup(&entity, new mrd_parameters())) {
     result = sample_app_setup(entity);
   }
-  con_wifi.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
-  result = con_wifi.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT);
+  if (true == result) {
+    con_wifi.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
+    result = con_wifi.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT);
+  }
 
   if (false == result) {
-    while (true) {
-      log_e("Board setup failed.");
-      delay(1000);
-    }
-  }
-  //////////////////////
-  diag_uart.log_info("This machine IP: %s\n", con_wifi.get_ip_address());
-  for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
-    if (0 != con_wifi.target[i].port) {
-      diag_uart.log_info("  Send Target[%s:%d]\n", con_wifi.target[i].ip.toString().c_str(), con_wifi.target[i].port);
+    setup_error();
+  } else {
+    diag_uart.log_info("This machine IP: %s\n", con_wifi.get_ip_address());
+    for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
+      if (0 != con_wifi.target[i].port) {
+        diag_uart.log_info("  Send Target[%s:%d]\n", con_wifi.target[i].ip.toString().c_str(), con_wifi.target[i].port);
+      }
     }
   }
 }
@@ -135,6 +195,8 @@ void loop() {
   if (false == result) {
     log_e("======== application failed.");
   }
+  //////////////////////
+  app_default.loop(mrd_meridim);
 
   // 出力処理
   result &= mrd_output(mrd_meridim);
