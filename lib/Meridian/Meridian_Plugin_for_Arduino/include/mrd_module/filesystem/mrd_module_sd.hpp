@@ -29,60 +29,32 @@ namespace sd_card {
 }; // namespace sd_card
 
 class MrdSdCard : public IMeridianSD {
+private:
+  bool mount_sd = false;
+  int _chipselect_pin = -1;
+  int _test_pin = A0;
+  const char *_test_file = "/test.txt";
+
 public:
-  MrdSdCard() {}
+  MrdSdCard(int chipselect_pin) { this->_chipselect_pin = chipselect_pin; }
   ~MrdSdCard() {}
 
 public:
+  bool input(Meridim90 &a_meridim) override { return true; };
+  bool output(Meridim90 &a_meridim) override { return true; };
   bool write(uint16_t address, uint8_t data) override { return true; }
   uint8_t read(uint16_t address) override { return 0; }
   bool setup() override {
-    this->mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-    this->mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
-    return true;
-  }
-  bool input(Meridim90 &a_meridim) { return true; }
-  bool output(Meridim90 &a_meridim) { return true; }
-
-private:
-public:
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-
-  //================================================================================================================
-  //  SDメモリ 関連の処理
-  //================================================================================================================
-
-  //------------------------------------------------------------------------------------
-  //  初期化処理
-  //------------------------------------------------------------------------------------
-
-  /// @brief SDカードの初期化を試みる. SDカードがマウントされているか,
-  ///        及びチップ選択ピンの設定に基づく.
-  /// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-  /// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-  /// @return SDカードの初期化が成功した場合はtrueを,
-  ///         失敗またはSDカードがマウントされていない場合はfalseを返す.
-  bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin) {
-    if (a_sd_mount) {
-      Serial.print("Initializing SD card... ");
-      // delay(100);
-      if (!SD.begin(a_sd_chipselect_pin)) {
-        Serial.println("Card failed, or not present.");
-        // delay(100);
+    if (true == this->mount_sd) {
+      if (!SD.begin(this->_chipselect_pin)) {
         return false;
       } else {
-        Serial.println("OK.");
-        // delay(100);
-        return true;
+        if (1 == CHECK_SD_RW) {
+          return this->sd_check();
+        }
       }
     }
-    Serial.println("SD not mounted.");
-    // delay(100);
-    return false;
+    return true;
   }
 
   //------------------------------------------------------------------------------------
@@ -91,48 +63,47 @@ public:
 
   /// @brief SDカードの読み書き機能をテストする. SDカードがマウントされ,
   /// 読み書きのチェックが要求された場合のみテストを実行する.
-  /// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-  /// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-  /// @param a_sd_check_rw SDカードの読み書きをチェックするかどうかのブール値.
   /// @return SDカードの読み書きが成功した場合はtrueを, 失敗した場合はfalseを返す.
-  bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw) {
-    if (a_sd_mount && a_sd_check_rw) {
-      File sd_file; // SDカード用
-      sd_file = SD.open("/test.txt", FILE_WRITE);
-      delay(1); // SPI安定化検証用
-
+  bool sd_check() {
+    bool result = false;
+    if ((true == this->mount_sd)) {
+      bool flag_write = false;
+      File sd_file;                             // SDカード用
+      uint8_t rand_number = random(0x10, 0xFF); // SD書き込みテスト用のランダムな4桁の数字を生成
+      sd_file = SD.open(this->_test_file, FILE_WRITE);
       if (sd_file) {
-        Serial.print("Checking SD card r/w... ");
-        // SD書き込みテスト用のランダムな4桁の数字を生成
-        randomSeed(long(analogRead(A0))); // 未接続ピンのノイズを利用
-        int rand_number_tmp = random(1000, 9999);
-
-        Serial.print("write code ");
-        Serial.print(rand_number_tmp);
-        // ファイルへの書き込みを実行
-        sd_file.println(rand_number_tmp);
-        delayMicroseconds(1); // SPI安定化検証用
-        sd_file.close();
-        delayMicroseconds(10); // SPI安定化検証用
-        // ファイルからの読み込みを実行
-        sd_file = SD.open("/test.txt");
-        if (sd_file) {
-          Serial.print(" and read code ");
-          while (sd_file.available()) {
-            Serial.write(sd_file.read());
-          }
+        delay(1);                                      // SPI安定化検証用
+        randomSeed(long(analogRead(this->_test_pin))); // 未接続ピンのノイズを利用
+        {
+          // ファイルへの書き込みを実行
+          sd_file.println(rand_number);
+          delayMicroseconds(1); // SPI安定化検証用
           sd_file.close();
+          flag_write = true;
+          delayMicroseconds(10); // SPI安定化検証用
         }
-        SD.remove("/test.txt");
-        delay(10);
-        return true;
-      } else {
-        Serial.println("Could not open SD test.txt file.");
-        return false;
+      }
+      if (true == flag_write) {
+        uint8_t rand_number_tmp;
+        // ファイルからの読み込みを実行
+        sd_file = SD.open(this->_test_file, FILE_READ);
+        if (sd_file) {
+          rand_number_tmp = sd_file.read();
+
+          sd_file.close();
+          if (rand_number == rand_number_tmp) {
+            result = true;
+          }
+        }
+      }
+      if (true == flag_write) {
+        result &= SD.remove(this->_test_file);
       }
     } else {
-      return false;
+      result = true;
     }
+
+    return result;
   }
 };
 

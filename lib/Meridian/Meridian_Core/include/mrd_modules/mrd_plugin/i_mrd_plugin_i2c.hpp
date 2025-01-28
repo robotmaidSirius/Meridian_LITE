@@ -16,6 +16,20 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
+class IMeridianI2CStatus {
+public:
+  bool initalized = false;
+  bool setup = false;
+  bool happened_error = false;
+
+public:
+  void all_ok() {
+    this->initalized = true;
+    this->setup = true;
+    this->happened_error = false;
+  }
+};
+
 class IMeridianI2C : public IMeridianPlugin {
 public:
   IMeridianI2C(uint8_t address) {
@@ -28,6 +42,16 @@ public:
 
 protected:
   uint8_t m_address;
+
+public:
+  void get_status(IMeridianI2CStatus &state) {
+    state.initalized = this->a_state.initalized;
+    state.setup = this->a_state.setup;
+    state.happened_error = this->a_state.happened_error;
+  }
+
+protected:
+  IMeridianI2CStatus a_state;
 };
 
 } // namespace plugin

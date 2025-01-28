@@ -26,7 +26,7 @@ public:
   virtual bool output(Meridim90 &a_meridim) = 0;
 
 public:
-  void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
 
 protected:
   IMeridianDiagnostic *a_diag;

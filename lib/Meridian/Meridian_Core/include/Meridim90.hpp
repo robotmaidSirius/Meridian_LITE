@@ -16,8 +16,11 @@ namespace meridian {
 namespace core {
 namespace meridim {
 #ifndef MERIDIM90_SIZE
-#define MERIDIM90_SIZE 90 //! Meridim配列の長さ設定 (デフォルトは90)
+#define MERIDIM90_SIZE (90) /**< Meridim配列の長さ設定 (デフォルトは90) */
 #endif
+const int MERIDIM90_DATA_SIZE = (MERIDIM90_SIZE - 1);           ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
+const int MERIDIM90_USER_DATA_SIZE = (MERIDIM90_SIZE - 80 - 2); ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
+
 const int MERIDIM90_LEN = MERIDIM90_SIZE * 2; //! Meridim配列のバイト型の長さ
 const int MERIDIM90_BYTE = MERIDIM90_LEN * 2; //! Meridim配列のバイト型の長さ
 
@@ -49,14 +52,14 @@ enum MasterCommand {
 
 //! @brief エラービット MRD_ERR_CODEの上位8bit分
 enum ErrorBit {
-  ERRBIT_15_ESP_PC = 15,       //! ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
-  ERRBIT_14_PC_ESP = 14,       //! PC → ESP32 のUDP受信エラー
-  ERRBIT_13_ESP_TSY = 13,      //! ESP32 → TeensyのSPI受信エラー
-  ERRBIT_12_TSY_ESP = 12,      //! Teensy → ESP32 のSPI受信エラー
-  ERRBIT_11_BOARD_DELAY = 11,  //! Teensy or ESP32の処理ディレイ (末端で捕捉)
-  ERRBIT_10_UDP_ESP_SKIP = 10, //! PC → ESP32 のUDPフレームスキップエラー
-  ERRBIT_9_BOARD_SKIP = 9,     //! PC → ESP32 → Teensy のフレームスキップエラー (末端で捕捉)
-  ERRBIT_8_PC_SKIP = 8,        //! Teensy → ESP32 → PC のフレームスキップエラー (末端で捕捉)
+  ERRBIT_ESP_PC = 15,       //! ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
+  ERRBIT_PC_ESP = 14,       //! PC → ESP32 のUDP受信エラー
+  ERRBIT_ESP_TSY = 13,      //! ESP32 → TeensyのSPI受信エラー
+  ERRBIT_TSY_ESP = 12,      //! Teensy → ESP32 のSPI受信エラー
+  ERRBIT_BOARD_DELAY = 11,  //! Teensy or ESP32の処理ディレイ (末端で捕捉)
+  ERRBIT_UDP_ESP_SKIP = 10, //! PC → ESP32 のUDPフレームスキップエラー
+  ERRBIT_BOARD_SKIP = 9,    //! PC → ESP32 → Teensy のフレームスキップエラー (末端で捕捉)
+  ERRBIT_PC_SKIP = 8,       //! Teensy → ESP32 → PC のフレームスキップエラー (末端で捕捉)
 };
 
 //================================================================================================================
@@ -91,7 +94,7 @@ enum ErrorBit {
 
 //! @brief Meridim90の構造体
 struct Meridim90 {
-  int16_t master_command = (int16_t)MasterCommand::MCMD_TORQUE_ALL_OFF; //!	マスターコマンド
+  int16_t master_command; //!	マスターコマンド
 
   uint16_t sequential; //! シーケンス番号
 
@@ -180,11 +183,10 @@ struct Meridim90 {
   int16_t r_servo_id14_cmd; //! 追加テスト用のコマンド
   int16_t r_servo_id14_val; //! 追加テスト用の値
 
-  int16_t user_data[MERIDIM90_SIZE - 83]; //! ユーザー定義用
+  int16_t user_data[MERIDIM90_USER_DATA_SIZE]; //! ユーザー定義用
 
-  uint16_t err; //! ERROR CODE
-  int16_t cksm; //! CHECK SUM
-  int32_t cobs; //! COBS
+  uint16_t err;      //! ERROR CODE
+  uint16_t checksum; //! CHECK SUM
 };
 
 } // namespace meridim

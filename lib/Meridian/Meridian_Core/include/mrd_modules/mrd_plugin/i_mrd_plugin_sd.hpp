@@ -16,10 +16,34 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
+class IMeridianSDStatus {
+public:
+  bool initalized = false;
+  bool setup = false;
+  bool happened_error = false;
+
+public:
+  void all_ok() {
+    this->initalized = true;
+    this->setup = true;
+    this->happened_error = false;
+  }
+};
+
 class IMeridianSD : public IMeridianPlugin {
 public:
   virtual bool write(uint16_t address, uint8_t data) = 0;
   virtual uint8_t read(uint16_t address) = 0;
+
+public:
+  void get_status(IMeridianSDStatus &state) {
+    state.initalized = this->a_state.initalized;
+    state.setup = this->a_state.setup;
+    state.happened_error = this->a_state.happened_error;
+  }
+
+protected:
+  IMeridianSDStatus a_state;
 };
 
 } // namespace plugin

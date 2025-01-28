@@ -20,6 +20,7 @@ using namespace meridian::core::meridim;
 Meridim90 meridim90;
 mrd_entity *entity = nullptr;
 mrd_parameters param;
+mrd_diagnosis diagnosis;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -89,7 +90,6 @@ void boot_standby(bool output_log = true) {
 
 bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   bool result = true;
-  bool result_tmp = true;
   //////////////////////////////////////////////////////////
   // Initialize the shared memory
   //////////////////////////////////////////////////////////
@@ -154,13 +154,12 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   }
   if (true == flag_ic2_begin) {
     if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
-      result_tmp = Wire.begin();
+      result = Wire.begin();
     } else {
-      result_tmp = Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
+      result = Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
     }
-    result_tmp &= Wire.setClock(param.i2c_speed);
-    result &= result_tmp;
-    if (false == result_tmp) {
+    result &= Wire.setClock(param.i2c_speed);
+    if (false == result) {
       entity->communication.diag->log_error("Failed to setup I2C");
     }
   }
@@ -178,15 +177,15 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   // Setup Communication
   //////////////////////////////////////////////////////////
   if (true == result) {
-    result_tmp = false;
+    diagnosis.communication.con.initalized = false;
     if (nullptr != entity) {
       if (nullptr != entity->communication.con) {
         entity->communication.con->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->communication.con->setup();
-        result &= result_tmp;
+        diagnosis.communication.con.initalized = entity->communication.con->setup();
+        result &= diagnosis.communication.con.initalized;
       }
     }
-    if (false == result_tmp) {
+    if (false == diagnosis.communication.con.initalized) {
       entity->communication.diag->log_fatal("Failed to Setup/communication::conversation");
     }
 
@@ -197,84 +196,103 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
         if (nullptr != entity->plugin.gpio[i]) {
           entity->plugin.gpio[i]->set_diagnostic(*entity->communication.diag);
-          result_tmp = entity->plugin.gpio[i]->setup();
-          result &= result_tmp;
-          if (false == result_tmp) {
+          diagnosis.plugin.gpio[i].initalized = entity->plugin.gpio[i]->setup();
+          result &= diagnosis.plugin.gpio[i].initalized;
+          if (false == diagnosis.plugin.gpio[i].initalized) {
             entity->communication.diag->log_error("Failed to Setup/plugin::gpio[%d]", i);
           }
+        } else {
+          diagnosis.plugin.gpio[i].all_ok();
         }
       }
       for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
         if (nullptr != entity->plugin.analog[i]) {
           entity->plugin.analog[i]->set_diagnostic(*entity->communication.diag);
-          result_tmp = entity->plugin.analog[i]->setup();
-          result &= result_tmp;
-          if (false == result_tmp) {
+          diagnosis.plugin.analog[i].initalized = entity->plugin.analog[i]->setup();
+          result &= diagnosis.plugin.analog[i].initalized;
+          if (false == diagnosis.plugin.analog[i].initalized) {
             entity->communication.diag->log_error("Failed to Setup/plugin::analog[%d]", i);
           }
+        } else {
+          diagnosis.plugin.analog[i].all_ok();
         }
       }
       for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
         if (nullptr != entity->plugin.i2c[i]) {
           entity->plugin.i2c[i]->set_diagnostic(*entity->communication.diag);
-          result_tmp = entity->plugin.i2c[i]->setup();
-          result &= result_tmp;
-          if (false == result_tmp) {
+          diagnosis.plugin.i2c[i].initalized = entity->plugin.i2c[i]->setup();
+          result &= diagnosis.plugin.i2c[i].initalized;
+          if (false == diagnosis.plugin.i2c[i].initalized) {
             entity->communication.diag->log_error("Failed to Setup/plugin::i2c[%d]", i);
           }
+        } else {
+          diagnosis.plugin.i2c[i].all_ok();
         }
       }
       if (nullptr != entity->plugin.eeprom) {
         entity->plugin.eeprom->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.eeprom->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.eeprom.initalized = entity->plugin.eeprom->setup();
+        result &= diagnosis.plugin.eeprom.initalized;
+        if (false == diagnosis.plugin.eeprom.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::eeprom");
         }
+      } else {
+        diagnosis.plugin.eeprom.all_ok();
       }
       if (nullptr != entity->plugin.sd_card) {
         entity->plugin.sd_card->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.sd_card->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.sd_card.initalized = entity->plugin.sd_card->setup();
+        result &= diagnosis.plugin.sd_card.initalized;
+        if (false == diagnosis.plugin.sd_card.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::sd_card");
         }
+      } else {
+        diagnosis.plugin.sd_card.all_ok();
       }
       if (nullptr != entity->plugin.spi) {
         entity->plugin.spi->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.spi->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.spi.initalized = entity->plugin.spi->setup();
+        result &= diagnosis.plugin.spi.initalized;
+        if (false == diagnosis.plugin.spi.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::spi");
         }
+      } else {
+        diagnosis.plugin.spi.all_ok();
       }
       if (nullptr != entity->plugin.servo_left) {
         entity->plugin.servo_left->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.servo_left->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.servo_left.initalized = entity->plugin.servo_left->setup();
+        result &= diagnosis.plugin.servo_left.initalized;
+        if (false == diagnosis.plugin.servo_left.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::servo_left");
         }
+      } else {
+        diagnosis.plugin.servo_left.all_ok();
       }
       if (nullptr != entity->plugin.servo_right) {
         entity->plugin.servo_right->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.servo_right->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.servo_right.initalized = entity->plugin.servo_right->setup();
+        result &= diagnosis.plugin.servo_right.initalized;
+        if (false == diagnosis.plugin.servo_right.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::servo_right");
         }
+      } else {
+        diagnosis.plugin.servo_right.all_ok();
       }
       if (nullptr != entity->plugin.pad) {
         entity->plugin.pad->set_diagnostic(*entity->communication.diag);
-        result_tmp = entity->plugin.pad->setup();
-        result &= result_tmp;
-        if (false == result_tmp) {
+        diagnosis.plugin.pad.initalized = entity->plugin.pad->setup();
+        result &= diagnosis.plugin.pad.initalized;
+        if (false == diagnosis.plugin.pad.initalized) {
           entity->communication.diag->log_error("Failed to Setup/plugin::pad");
         }
+      } else {
+        diagnosis.plugin.pad.all_ok();
       }
     }
   }
   if (true == result) {
+    meridian::core::execution::meridim_clear(meridim90);
     hello_meridian_board_lite();
   } else {
     entity->communication.diag->log_fatal("Failed setup");
@@ -386,7 +404,7 @@ bool mrd_output(Meridim90 &a_meridim90) {
     // Output Communication
     //////////////////////////////////////////////////////////
     if (nullptr != entity->communication.con) {
-      result &= entity->communication.con->send(a_meridim90);
+      entity->communication.con->send(a_meridim90);
     }
     //////////////////////////////////////////////////////////
     // Copy the data to the shared memory

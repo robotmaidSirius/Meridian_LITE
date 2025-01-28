@@ -18,6 +18,22 @@ namespace core {
 namespace communication {
 using namespace meridian::core::meridim;
 
+class IMeridianConversationStatus {
+public:
+  bool initalized = false;
+  bool setup = false;
+  bool happened_error = false;
+  bool no_device = false;
+
+public:
+  void all_ok() {
+    this->initalized = true;
+    this->setup = true;
+    this->happened_error = false;
+    this->no_device = true;
+  }
+};
+
 class IMeridianConversation {
 public:
   virtual const char *type_name() { return "None"; };
@@ -27,10 +43,17 @@ public:
   virtual bool send(Meridim90 &a_meridim) = 0;
 
 public:
-  void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+  void get_status(IMeridianConversationStatus &state) {
+    state.initalized = this->a_state.initalized;
+    state.setup = this->a_state.setup;
+    state.happened_error = this->a_state.happened_error;
+    state.no_device = this->a_state.no_device;
+  }
 
 protected:
   IMeridianDiagnostic *a_diag;
+  IMeridianConversationStatus a_state;
 };
 
 } // namespace communication

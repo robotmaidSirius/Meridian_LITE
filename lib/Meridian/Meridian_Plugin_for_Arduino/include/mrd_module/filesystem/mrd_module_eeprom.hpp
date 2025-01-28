@@ -27,6 +27,8 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
 #define EEPROM_STYLE    Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
 #define CHECK_EEPROM_RW 0   // 起動時のEEPROMの動作チェック
 #define EEPROM_PROTECT  0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
+#define EEPROM_SET      0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_LOAD     0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
 
 namespace meridian {
 namespace modules {
@@ -38,26 +40,31 @@ namespace eeprom {
 
 class MrdEEPROM : public IMeridianEEPROM {
 public:
-  MrdEEPROM(bool protect = true) { this->_protect = protect; }
+  MrdEEPROM(int size, bool protect = true) {
+    this->_size = size;
+    this->_protect = protect;
+  }
   ~MrdEEPROM() {}
 
 private:
   bool _protect = false; // EEPROMの書き込み保護フラグ
+  int _size = 0;
 
 public:
+  bool input(Meridim90 &a_meridim) override { return true; };
+  bool output(Meridim90 &a_meridim) override { return true; };
   bool write(uint16_t address, uint8_t data) override { return true; }
-  uint8_t read(uint16_t address) override { return 0; }
-  virtual bool setup() override {
-    this->mrd_eeprom_init();                                  // EEPROMの初期化
-    this->mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE); // 内容のダンプ表示
-    this->mrd_eeprom_write_read_check(this->eeprom_setup,     // EEPROMのリードライトテスト
-                                      CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE,
-                                      this->_protect);
-
-    return true;
+  uint8_t read(uint16_t address) override { return EEPROM.read(address); }
+  bool setup() override {
+    if (EEPROM.begin(this->_size)) {                 // EEPROMの初期化
+      this->dump_at_boot(EEPROM_DUMP, EEPROM_STYLE); // 内容のダンプ表示
+      this->write_read_check(this->eeprom_setup,     // EEPROMのリードライトテスト
+                             CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+      return true;
+    } else {
+      return false;
+    }
   }
-  virtual bool input(Meridim90 &a_meridim) { return true; }
-  virtual bool output(Meridim90 &a_meridim) { return true; }
 
 public:
   //////////////////////////////////////////////////////////////////////////////
@@ -84,32 +91,13 @@ public:
   UnionEEPROM eeprom_read_data;  // EEPROM読み込み用
   UnionEEPROM eeprom_setup;      // EEPROM読み込み用
 
-  //================================================================================================================
-  //  EEPROM関連の処理
-  //================================================================================================================
-
-  /// @brief EEPROMの初期化
-  /// @param a_eeprom_size EEPROMのバイト長
-  /// @return 初期化が成功すればtrue, 失敗ならfalseを返す.
-  bool mrd_eeprom_init() {
-    int a_eeprom_size = EEPROM_SIZE;
-    Serial.print("Initializing EEPROM... ");
-    if (EEPROM.begin(a_eeprom_size)) {
-      Serial.println("OK.");
-      return true;
-    } else {
-      Serial.println("Failed.");
-    }
-    return false;
-  }
-
   /// @brief EEPROMの内容を読み込んで返す.
   /// @return UnionEEPROM のフォーマットで配列を返す.
-  UnionEEPROM mrd_eeprom_read() {
+  UnionEEPROM eeprom_read() {
     UnionEEPROM read_data_tmp;
     for (int i = 0; i < EEPROM_SIZE; i++) // データを読み込む時はbyte型
     {
-      read_data_tmp.bval[i] = EEPROM.read(i);
+      read_data_tmp.bval[i] = this->read(i);
     }
     return read_data_tmp;
   }
@@ -118,26 +106,23 @@ public:
   /// @param a_data EEPROM用の配列データ.
   /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
   /// @return 終了時にtrueを返す.
-  bool mrd_eeprom_dump_to_serial(UnionEEPROM a_data, int a_bhd) {
+  bool dump_to_serial(UnionEEPROM a_data, int a_bhd) {
     int len_tmp = EEPROM.length(); // EEPROMの長さ
-    Serial.print("EEPROM Length ");
-    Serial.print(len_tmp); // EEPROMの長さ表示
-    Serial.println("byte, 16bit Dump;");
+    this->a_diag->log_info("EEPROM Length %d byte, 16bit Dump;", len_tmp);
     for (int i = 0; i < 270; i++) // 読み込むデータはshort型で作成
     {
-      if (a_bhd == 0) {
-        Serial.print(a_data.sval[i], BIN);
-      } else if (a_bhd == 1) {
-        Serial.print(a_data.sval[i], HEX);
+      if (a_bhd == 1) {
+        this->a_diag->log("%d", a_data.sval[i]);
       } else {
-        Serial.print(a_data.sval[i], DEC);
+        this->a_diag->log("%X", a_data.sval[i]);
       }
-      if ((i == 89) or (i == 179) or (i == 269)) {
-        Serial.println();
+      if (0 == (i % 89)) {
+        this->a_diag->log("\n");
       } else {
-        Serial.print("/");
+        this->a_diag->log("/");
       }
     }
+    this->a_diag->log("\n");
     return true;
   }
 
@@ -145,9 +130,9 @@ public:
   /// @param a_do_dump 実施するか否か.
   /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
   /// @return 終了時にtrueを返す.
-  bool mrd_eeprom_dump_at_boot(bool a_do_dump, int a_bhd) {
+  bool dump_at_boot(bool a_do_dump, int a_bhd) {
     if (a_do_dump) {
-      mrd_eeprom_dump_to_serial(mrd_eeprom_read(), a_bhd);
+      dump_to_serial(eeprom_read(), a_bhd);
       return true;
     }
     return false;
@@ -157,13 +142,12 @@ public:
   /// @param a_write_data EEPROM書き込み用の配列データ.
   /// @param a_flg_protect EEPROMの書き込み許可があるかどうかのブール値.
   /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, 書き込まなかった場合はfalseを返す.
-  bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, bool eeprom_protect) {
-    if (a_flg_protect) { // EEPROM書き込み実施フラグをチェック
+  bool eeprom_write(UnionEEPROM a_write_data) {
+    if (this->_protect) { // EEPROM書き込み実施フラグをチェック
       return false;
     }
-    if (eeprom_protect) // config.hのEEPROM書き込みプロテクトをチェック
+    if (this->_protect) // config.hのEEPROM書き込みプロテクトをチェック
     {
-      Serial.println("EEPROM is protected. To unprotect, please set 'EEPROM_PROTECT' to false.");
       return false;
     }
 
@@ -201,28 +185,22 @@ public:
   /// @param a_protect EEPROMの書き込み許可があるかどうかのブール値.
   /// @param a_bhd ダンプリストの表示形式.(0:Bin, 1:Hex, 2:Dec)
   /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, それ以外はfalseを返す.
-  bool mrd_eeprom_write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, int a_bhd, bool eeprom_protect) {
+  bool write_read_check(UnionEEPROM a_write_data, bool a_do, bool a_protect, int a_bhd) {
     if (!a_do) // EEPROMの読み書きチェックを実施するか
     {
       return false;
     }
 
     // EEPROM書き込みを実行
-    Serial.println("Try to write EEPROM: ");
-    mrd_eeprom_dump_to_serial(a_write_data, a_bhd); // 書き込み内容をダンプ表示
+    dump_to_serial(a_write_data, a_bhd); // 書き込み内容をダンプ表示
 
-    if (mrd_eeprom_write(a_write_data, a_protect, eeprom_protect)) {
-      Serial.println("...Write OK.");
-    } else {
-      Serial.println("...Write failed.");
+    if (false == eeprom_write(a_write_data)) {
       return false;
     }
 
     // EEPROM読み込みを実行
-    Serial.println("Read EEPROM: ");
-    UnionEEPROM read_data_tmp = mrd_eeprom_read();
-    mrd_eeprom_dump_to_serial(read_data_tmp, a_bhd); // 読み込み内容をダンプ表示
-    Serial.println("...Read completed.");
+    UnionEEPROM read_data_tmp = eeprom_read();
+    dump_to_serial(read_data_tmp, a_bhd); // 読み込み内容をダンプ表示
 
     return true;
   }
@@ -235,7 +213,7 @@ public:
   /// @param index_y 配列の一次元目(0~2).
   /// @param index_x 配列の二次元目(0~89).
   /// @return short型データを返す.
-  short mrd_eeprom_read_short(int index_y, int index_x) {
+  short read_short(int index_y, int index_x) {
     return short(EEPROM.read(index_y * 90 + index_x));
   }
 
@@ -244,7 +222,7 @@ public:
   /// @param index_x 配列の二次元目(0~179).
   /// @param low_high 下位ビットか上位ビットか. (0:low_bit, 1:high_bit)
   /// @return byte型データを返す.
-  int8_t mrd_eeprom_read_byte(int index_y, int index_x, int low_high) //
+  int8_t read_byte(int index_y, int index_x, int low_high) //
   {
     return int8_t(EEPROM.read(index_y * 180 + index_x * 2 + low_high));
   }

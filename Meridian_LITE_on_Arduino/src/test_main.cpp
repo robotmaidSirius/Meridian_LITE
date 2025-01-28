@@ -78,8 +78,8 @@ void IRAM_ATTR frame_timer() {
 //================================================================================================================
 //  SETUP
 //================================================================================================================
-MrdEEPROM _eeprom;
-MrdSdCard _sd_card;
+MrdEEPROM _eeprom(540);
+MrdSdCard _sd_card(5);
 MrdConversationWifi _comm;
 MrdServoICS _servo_l;
 MrdServoICS _servo_r;
@@ -110,8 +110,7 @@ void test_setup() {
   };
 
   // サーボ用UART設定
-  _servo_l.mrd_servo_begin(L, MOUNT_SERVO_TYPE_L); // サーボモータの通信初期設定. Serial2
-  _servo_r.mrd_servo_begin(R, MOUNT_SERVO_TYPE_R); // サーボモータの通信初期設定. Serial3
+  _servo_l.mrd_servo_begin(); // サーボモータの通信初期設定. Serial2 Serial3
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -201,12 +200,12 @@ void test_loop() {
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
 
     // @[2-4a] エラービット14番(ESP32のPCからのUDP受信エラー検出)をサゲる
-    mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
+    mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_PC_ESP);
 
   } else { // チェックサムがNGならバッファから転記せず前回のデータを使用する
 
     // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
-    mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
+    mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_PC_ESP);
     err.pc_esp++;
     mrd.monitor_check_flow("CsErr*", monitor.flow); // デバグ用フロー表示
   }
@@ -220,14 +219,14 @@ void test_loop() {
   if (mrd.seq_compare_nums(mrdsq.r_expect, int(s_udp_meridim.usval[MRD_SEQ]))) {
 
     // エラービット10番[ESP受信のスキップ検出]をサゲる
-    mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_10_UDP_ESP_SKIP);
+    mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_UDP_ESP_SKIP);
     flg.meridim_rcvd = true; // Meridim受信成功フラグをアゲる.
 
   } else {                                              // 受信シーケンス番号の値が予想と違ったら
     mrdsq.r_expect = int(s_udp_meridim.usval[MRD_SEQ]); // 現在の受信値を予想結果としてキープ
 
     // エラービット10番[ESP受信のスキップ検出]をアゲる
-    mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_10_UDP_ESP_SKIP);
+    mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_UDP_ESP_SKIP);
 
     err.esp_skip++;
     flg.meridim_rcvd = false; // Meridim受信成功フラグをサゲる.
@@ -252,8 +251,11 @@ void test_loop() {
     // リモコンデータの読み込み
     pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
 
-    // リモコンの値をmeridimに格納する
+#if 0
+// リモコンの値をmeridimに格納する
+    // 引数の修正が必要
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+#endif
   }
 
   //------------------------------------------------------------------------------------

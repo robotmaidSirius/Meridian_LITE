@@ -20,6 +20,22 @@ namespace core {
 namespace communication {
 using namespace meridian::core::meridim;
 
+class IMeridianDiagnosticStatus {
+public:
+  bool initalized = false;
+  bool setup = false;
+  bool happened_error = false;
+  bool no_device = false;
+
+public:
+  void all_ok() {
+    this->initalized = true;
+    this->setup = true;
+    this->happened_error = false;
+    this->no_device = true;
+  }
+};
+
 class IMeridianDiagnostic {
 public:
   // @brief Define log level
@@ -355,6 +371,17 @@ private:
   bool _output_log = false;                               /*!< Output control flag   */
   OUTPUT_LOG_LEVEL _level = OUTPUT_LOG_LEVEL::LEVEL_INFO; /*!< Output Level */
   const int _BUFFER_SIZE = 128;
+
+public:
+  void get_status(IMeridianDiagnosticStatus &state) {
+    state.initalized = this->a_state.initalized;
+    state.setup = this->a_state.setup;
+    state.happened_error = this->a_state.happened_error;
+    state.no_device = this->a_state.no_device;
+  }
+
+protected:
+  IMeridianDiagnosticStatus a_state;
 };
 
 } // namespace communication

@@ -3,11 +3,18 @@
 
 // ヘッダファイルの読み込み
 #include "config.h"
-#include "main.h"
 
 // ライブラリ導入
-#include <ESP32Wiimote.h> // Wiiコントローラー
+#include <ESP32Wiimote.h>       // Wiiコントローラー
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 ESP32Wiimote wiimote;
+
+typedef union {
+  short sval[MRDM_LEN + 4];           // short型で90個の配列データを持つ
+  unsigned short usval[MRDM_LEN + 2]; // 上記のunsigned short型
+  uint8_t bval[MRDM_LEN + 4];         // byte型で180個の配列データを持つ
+  uint8_t ubval[MRDM_BYTE + 4];       // 上記のunsigned byte型
+} Meridim90Union2;
 
 // リモコン受信ボタンデータの変換テーブル
 constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
@@ -275,7 +282,7 @@ void Core0_BT_r(void *args) { // サブCPU(Core0)で実行するプログラム
 /// @param a_pad_array PAD受信値の格納用配列.
 /// @param a_marge PADボタンデータをマージするかどうかのブール値.
 /// trueの場合は既存のデータにビット単位でOR演算を行い, falseの場合は新しいデータで上書きする.
-bool meriput90_pad(Meridim90Union &a_meridim, PadUnion a_pad_array, bool a_marge) {
+bool meriput90_pad(Meridim90Union2 &a_meridim, PadUnion a_pad_array, bool a_marge) {
 
   // ボタンデータの処理 (マージ or 上書き)
   if (a_marge) {

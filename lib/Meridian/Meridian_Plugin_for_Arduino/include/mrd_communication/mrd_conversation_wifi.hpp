@@ -12,6 +12,8 @@
 #define MRD_CONVERSATION_WIFI_HPP
 
 // ヘッダファイルの読み込み
+#include "mrd_module/gpio/mrd_module_gpio_out.hpp"
+#include <meridian_core.hpp>
 #include <mrd_communication/i_mrd_conversation.hpp>
 
 // ライブラリ導入
@@ -25,10 +27,39 @@ namespace communication {
 class MrdConversationWifi : public IMeridianConversation {
 private:
   int _open_port = 22224;
+  MrdGpioOut *_gpio_connect = nullptr;
+  MrdGpioOut *_gpio_signal = nullptr;
 
 public:
-  MrdConversationWifi() {}
   const char *type_name() override { return "Wifi"; };
+  MrdConversationWifi(MrdGpioOut *connect = nullptr, MrdGpioOut *signal = nullptr) {
+    this->_gpio_connect = connect;
+    this->_gpio_signal = signal;
+    if (nullptr != this->_gpio_connect) {
+      this->_gpio_connect->setup();
+      this->_gpio_connect->write(0, true);
+    }
+    if (nullptr != this->_gpio_signal) {
+      this->_gpio_signal->setup();
+      this->_gpio_signal->write(0, true);
+    }
+  }
+  void set_diagnostic(IMeridianDiagnostic &ref) override {
+    this->a_diag = &ref;
+    if (nullptr != this->_gpio_connect) {
+      this->_gpio_connect->set_diagnostic(ref);
+    }
+    if (nullptr != this->_gpio_signal) {
+      this->_gpio_signal->set_diagnostic(ref);
+    }
+  }
+  bool check_connect() {
+    bool result = (WiFi.status() != WL_CONNECTED) ? false : true;
+    if (nullptr != this->_gpio_connect) {
+      this->_gpio_connect->write(result ? 1 : 0, true);
+    }
+    return result;
+  }
 
   bool connect(const char *ssid, const char *password, int open_port = 22224) {
     this->_open_port = open_port;
@@ -39,6 +70,12 @@ public:
     int timeout_ms = 10 * (1000);
     int logging_time_ms = (500);
 
+    if (nullptr != this->_gpio_connect) {
+      this->_gpio_connect->write(0, true);
+    }
+    if (nullptr != this->_gpio_signal) {
+      this->_gpio_signal->write(0, true);
+    }
     while (WiFi.status() != WL_CONNECTED) { // https://www.arduino.cc/en/Reference/WiFiStatus 戻り値一覧
       timeout_ms -= delay_ms;
       if (0 == timeout_ms % logging_time_ms) { // 0.5秒ごとに接続状況を出力
@@ -50,7 +87,14 @@ public:
         return false;
       }
     }
-    return this->a_udp.begin(this->_open_port);
+    uint8_t result = this->a_udp.begin(this->_open_port);
+    if (0 != result) {
+      if (nullptr != this->_gpio_connect) {
+        this->_gpio_connect->write(1, true);
+      }
+      return true;
+    }
+    return false;
   }
 
   bool setup() override {
@@ -58,26 +102,45 @@ public:
   }
 
   bool received(Meridim90 &a_meridim) {
-    byte a_meridim_bval[94] = {0};
-    int a_len = 90;
+    int a_len = MERIDIM90_SIZE;
     if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
     {
-      this->a_udp.read(a_meridim_bval, a_len); // データの受信
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(1, true);
+      }
+      byte a_meridim_array[a_len] = {0};
+      this->a_udp.read(a_meridim_array, a_len); // データの受信
+      meridian::core::execution::mrd_convert_Meridim90(a_meridim, a_meridim_array, a_len);
+
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(0, true);
+      }
       return true;
     }
     return false; // バッファにデータがない
   }
   bool send(Meridim90 &a_meridim) {
-    byte a_meridim_bval[94] = {0};
-    int a_len = 90;
-    for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
-      if (0 != target[i].port) {
-        this->a_udp.beginPacket(target[i].ip, target[i].port); // UDPパケットの開始
-        this->a_udp.write(a_meridim_bval, a_len);              // データの書き込み
-        this->a_udp.endPacket();                               // UDPパケットの終了
+    bool result = this->check_connect();
+    if (true == result) {
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(1, true);
+      }
+      meridian::core::execution::meridim_countup(a_meridim);
+      byte a_meridim_array[MERIDIM90_SIZE] = {0};
+      meridian::core::execution::mrd_convert_array(a_meridim_array, MERIDIM90_SIZE, a_meridim);
+      int a_len = 90;
+      for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
+        if (0 != target[i].port) {
+          this->a_udp.beginPacket(target[i].ip, target[i].port); // UDPパケットの開始
+          this->a_udp.write(a_meridim_array, MERIDIM90_SIZE);    // データの書き込み
+          this->a_udp.endPacket();                               // UDPパケットの終了
+        }
+      }
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(0, true);
       }
     }
-    return true;
+    return result;
   }
 
 public:

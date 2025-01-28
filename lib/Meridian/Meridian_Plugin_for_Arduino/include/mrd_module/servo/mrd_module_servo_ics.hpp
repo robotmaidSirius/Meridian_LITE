@@ -11,7 +11,10 @@
 #define __MRD_MODULE_SERVO_ICS_HPP__
 
 // ヘッダーファイルの読み込み
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 #include <mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp>
+
+#define SERVO_LOST_ERR_WAIT 6 // 連続何フレームサーボ信号をロストしたら異常とするか
 
 // ライブラリ導入
 
@@ -43,45 +46,10 @@ public:
   /// @param a_line UART通信ライン(L, R, またはC).
   /// @param a_servo_type サーボのタイプを示す整数値.
   /// @return サーボがサポートされている場合はtrueを, サポートされていない場合はfalseを返す.
-  bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
-    switch (a_servo_type) {
-    case 1:
-      // single PWM [WIP]
-      return false;
-    case 11:
-      // I2C_PCA9685 to PWM [WIP]
-      return false;
-    case 21:
-      // RSxTTL (FUTABA) [WIP]
-      return false;
-    case 31:
-      // DYNAMIXEL Protocol 1.0 [WIP]
-      return false;
-    case 32:
-      // DYNAMIXEL Protocol 2.0 [WIP]
-      return false;
-    case 43:
-      if (a_line == UartLine::L)
-        ics_L.begin(); // サーボモータの通信初期設定. Serial2
-      else if (a_line == UartLine::R)
-        ics_R.begin(); // サーボモータの通信初期設定. Serial3
-      return true;
-    case 44:
-      // PMX(KONDO) [WIP]
-      return false;
-    case 51:
-      // XBUS(JR PROPO) [WIP]
-      return false;
-    case 61:
-      // STS(FEETECH) [WIP]
-      return false;
-    case 62:
-      // SCS(FEETECH) [WIP]
-      return false;
-    default:
-      // Not defined.
-      return false;
-    }
+  bool mrd_servo_begin() {
+    ics_L.begin(); // サーボモータの通信初期設定. Serial2
+    ics_R.begin(); // サーボモータの通信初期設定. Serial3
+    return true;
   }
 
   //------------------------------------------------------------------------------------
@@ -219,12 +187,34 @@ public:
 
 #if 1
 #include "gs2d_krs.h"
-
 //================================================================================================================
 //  gs2d によるICSサーボの処理
 //  https://github.com/karakuri-products/gs2d
 //================================================================================================================
 
+/**
+ * @brief Degree value to Kondo's KRS Servo value.
+ *
+ * @param[in] degree Source degree value
+ * @param[in] trim Trim degree value
+ * @param[in] cw Correction value for direction of rotation（+1 or -1）
+ * @return int, Kondo's KRS Servo value（3500-11500）
+ */
+int Deg2Krs(float degree, float trim, int cw) {
+  float _x = 7500 + (trim * 29.6296) + (degree * 29.6296 * cw);
+  if (_x > 11500) // max limit
+  {
+    _x = 11500;
+  } else if (_x < 3500) // min limit
+  {
+    _x = 3500;
+  }
+  return static_cast<int>(_x);
+}
+float Krs2Deg(int krs, float trim, int cw) {
+  float _x = (krs - 7500 - (trim * 29.62963)) * 0.03375 * cw;
+  return _x;
+}
 /// @brief ICSサーボの実行処理を行う関数
 /// @param a_servo_id サーボのインデックス番号
 /// @param a_cmnd サーボのコマンド
@@ -239,12 +229,12 @@ float mrd_servo_process_ics_gs2d(int a_servo_id, int a_cmnd, float a_tgt, float 
                                  int a_cw, int &a_err_cnt, uint16_t &a_stat, IcsHardSerialClass &ics) {
   int val_tmp = 0;
   if (a_cmnd == 1) { // コマンドが1ならPos指定
-    val_tmp = ics.setPos(a_servo_id, mrd.Deg2Krs(a_tgt, a_trim, a_cw));
+    val_tmp = ics.setPos(a_servo_id, Deg2Krs(a_tgt, a_trim, a_cw));
   } else { // コマンドが0等なら脱力して値を取得
     val_tmp = ics.setFree(a_servo_id);
   }
   if (val_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
-    val_tmp = mrd.Deg2Krs(a_tgt_past, a_trim, a_cw);
+    val_tmp = Deg2Krs(a_tgt_past, a_trim, a_cw);
     a_err_cnt++;
     if (a_err_cnt >= SERVO_LOST_ERR_WAIT) { // 一定以上の連続エラーで通信不能とみなす
       a_err_cnt = SERVO_LOST_ERR_WAIT;
@@ -255,7 +245,7 @@ float mrd_servo_process_ics_gs2d(int a_servo_id, int a_cmnd, float a_tgt, float 
     a_stat = 0;
   }
 
-  return mrd.Krs2Deg(val_tmp, a_trim, a_cw);
+  return Krs2Deg(val_tmp, a_trim, a_cw);
 }
 
 #endif

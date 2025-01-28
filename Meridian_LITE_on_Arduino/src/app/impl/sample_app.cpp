@@ -129,21 +129,26 @@ bool sample_app_setup(mrd_entity &entity) {
   entity.plugin.gpio[1]->write(1);
   return true;
 }
-#define BOARD_ENABLE_LED 1
-#define TEST_ENABLE_LOG  0
+#define TEST_ENABLE_LED       0
+#define TEST_ENABLE_BOARD_LED 0
+#define TEST_ENABLE_LOG       0
 bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
 
   // LED Test
-#if BOARD_ENABLE_LED
+#if TEST_ENABLE_LED
+#if TEST_ENABLE_BOARD_LED
   test_led_board(mrd_meridim, entity);
 #else
   test_led_entity(mrd_meridim, entity);
+#endif
 #endif
 
 #if TEST_ENABLE_LOG
   // Log Test
   test_log(mrd_meridim, entity);
 #endif
+
+  log_i("SEQ[%04X] CH-SUM[%04X]", mrd_meridim.sequential, mrd_meridim.checksum);
 
   return true;
 }

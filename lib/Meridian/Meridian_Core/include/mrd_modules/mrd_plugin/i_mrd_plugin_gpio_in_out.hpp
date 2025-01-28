@@ -16,6 +16,20 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
+class IMeridianGPIOInOutStatus {
+public:
+  bool initalized = false;
+  bool setup = false;
+  bool happened_error = false;
+
+public:
+  void all_ok() {
+    this->initalized = true;
+    this->setup = true;
+    this->happened_error = false;
+  }
+};
+
 template <typename TYPE>
 class IMeridianGPIOInOut : public IMeridianPlugin {
 public:
@@ -29,6 +43,16 @@ public:
 
 protected:
   uint8_t m_pin = 0xFF;
+
+public:
+  void get_status(IMeridianGPIOInOutStatus &state) {
+    state.initalized = this->a_state.initalized;
+    state.setup = this->a_state.setup;
+    state.happened_error = this->a_state.happened_error;
+  }
+
+protected:
+  IMeridianGPIOInOutStatus a_state;
 };
 
 } // namespace plugin
