@@ -10,6 +10,7 @@
 #ifndef MRD_SERVO_KONDO_ICS_3_5_HPP
 #define MRD_SERVO_KONDO_ICS_3_5_HPP
 
+// TODO: (未実装)
 // ライブラリ導入
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 #include <meridian_core.hpp>
