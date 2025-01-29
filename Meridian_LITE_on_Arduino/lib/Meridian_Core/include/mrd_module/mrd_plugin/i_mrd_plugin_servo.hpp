@@ -17,6 +17,19 @@ namespace modules {
 namespace plugin {
 
 class IMeridianServo : public IMeridianPlugin {
+protected:
+  static const int ERR_CODE = 0x80; ///! エラー発生
+  uint8_t COMMAND_READ_ONLY = 0x8;  ///! サーボのストレッチ設定
+  enum COMMAND {
+    COMMAND_FREE = 0,        ///! サーボのトルクOFF
+    COMMAND_SET_POS = 1,     ///! サーボのトルクON
+    COMMAND_STRETCH = 3,     ///! サーボのストレッチ設定
+    COMMAND_SPEED = 4,       ///! サーボのスピード設定
+    COMMAND_CURRENT = 5,     ///! サーボの電流制限設定
+    COMMAND_TEMPERATURE = 6, ///! サーボの温度設定
+    COMMAND_ID = 7,          ///! サーボのID設定
+  };
+
 public:
   virtual bool setup() { return true; };
   virtual bool input(Meridim90 &a_meridim) { return true; };

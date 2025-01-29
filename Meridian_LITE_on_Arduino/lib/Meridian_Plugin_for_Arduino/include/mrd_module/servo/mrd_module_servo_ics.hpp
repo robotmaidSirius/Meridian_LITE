@@ -22,10 +22,6 @@ namespace modules {
 namespace plugin {
 
 class MrdServoICS : public IMeridianServo {
-private:
-  static const int ERR_CODE = 0x80;     //! エラーコード
-  static const int COMMAND_FREE = 0x00; //! エラーコード
-  static const int COMMAND_SET = 0x01;  //! エラーコード
 public:
   IcsHardSerialClass ics;
   Meridim90Servo servo[MERIDIM90_SERVO_NUM]; //! サーボのコマンドと値
@@ -73,6 +69,7 @@ public:
   }
   bool output(Meridim90 &a_meridim) override {
     if (true == this->_enable) {
+      this->mrd_servos_drive_lite();
       for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
         a_meridim.servo[i].cmd = this->servo[i].cmd;
         a_meridim.servo[i].id = this->servo[i].id;
@@ -95,25 +92,69 @@ public:
     for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
       if (0 != this->servo[i].cmd) {
         if (true == this->check_id(this->servo[i].id)) {
-          int a_pos = 0;
+          int a_tmp = 0;
+          int cmd = ~(COMMAND_READ_ONLY) & this->servo[i].cmd;
+          bool read_only = (0 < (this->servo[i].cmd & COMMAND_READ_ONLY)) ? true : false;
+
           switch (this->servo[i].cmd) {
-          case COMMAND_SET:
-            a_pos = this->ics.setPos(this->servo[i].id, this->servo[i].value);
+          case COMMAND_SET_POS: ///! サーボのトルクON
+            if (false == read_only) {
+              a_tmp = this->ics.setPos(this->servo[i].id, this->servo[i].value);
+            } else {
+              a_tmp = this->ics.getPos(this->servo[i].id);
+            }
             break;
-          case COMMAND_FREE:
+          case COMMAND_STRETCH: ///! サーボのストレッチ設定
+            if (false == read_only) {
+              a_tmp = this->ics.setStrc(this->servo[i].id, this->servo[i].value);
+            } else {
+              a_tmp = this->ics.getStrc(this->servo[i].id);
+            }
+            break;
+          case COMMAND_SPEED: ///! サーボのスピード設定
+            if (false == read_only) {
+              a_tmp = this->ics.setSpd(this->servo[i].id, this->servo[i].value);
+            } else {
+              a_tmp = this->ics.getSpd(this->servo[i].id);
+            }
+            break;
+          case COMMAND_CURRENT: ///! サーボの電流制限設定
+            if (false == read_only) {
+              a_tmp = this->ics.setCur(this->servo[i].id, this->servo[i].value);
+            } else {
+              a_tmp = this->ics.getCur(this->servo[i].id);
+            }
+            break;
+          case COMMAND_TEMPERATURE: ///! サーボの温度設定
+            if (false == read_only) {
+              a_tmp = this->ics.setTmp(this->servo[i].id, this->servo[i].value);
+            } else {
+              a_tmp = this->ics.getTmp(this->servo[i].id);
+            }
+            break;
+          case COMMAND_ID: ///! サーボのID設定
+            if (false == read_only) {
+              a_tmp = this->ics.setID(this->servo[i].id);
+            } else {
+              a_tmp = this->ics.getID();
+            }
+            break;
+          case COMMAND_FREE: ///! サーボのトルクOFF
           default:
-            a_pos = this->ics.setFree(this->servo[i].id);
+            a_tmp = this->ics.setFree(this->servo[i].id);
             break;
           }
 
           // サーボからの返信信号を受け取れなかった場合
-          if (a_pos == -1) { // サーボからの返信信号を受け取れなかった場合
+          if (a_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
             this->a_err_cnt[i]++;
             if (this->a_err_cnt[i] >= LOST_COUNT_MAX) { // 一定以上の連続エラーで通信不能とみなす
               this->a_err_cnt[i] = LOST_COUNT_MAX;
               this->servo[i].option &= ERR_CODE;
+              this->servo[i].value = 0;
             }
           } else {
+            this->servo[i].value = a_tmp;
             if (0 <= a_err_cnt[i]) {
               this->a_err_cnt[i] = 0;
               this->servo[i].option = ~(ERR_CODE) & this->servo[i].option;
