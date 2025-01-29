@@ -53,7 +53,7 @@ public:
 
 public:
   virtual bool setup() { return false; }
-  virtual const char *type_name() { return "None"; };
+  virtual const char *get_name() { return "None"; };
 
 protected:
   virtual size_t message(OUTPUT_LOG_LEVEL level, const char *message) { return 0; }

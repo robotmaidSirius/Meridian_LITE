@@ -49,11 +49,11 @@ void test_led_entity(Meridim90 &mrd_meridim, mrd_entity &entity) {
   // [loop]
   static bool led_state = false;
   if (false == led_state) {
-    entity.plugin.gpio[0]->write(1);
+    static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[0])->write(true);
     entity.communication.diag->log_debug("---------------- LED ON ----------------");
     led_state = true;
   } else {
-    entity.plugin.gpio[0]->write(0);
+    static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[0])->write(false);
     entity.communication.diag->log_debug("---------------- LED OFF----------------");
     led_state = false;
   }
@@ -126,7 +126,7 @@ void test_log(Meridim90 &mrd_meridim, mrd_entity &entity) {
 // 外部関数
 ////////////////////////////////////////////////////////////////////////////////////////////////
 bool sample_app_setup(mrd_entity &entity) {
-  entity.plugin.gpio[1]->write(1);
+  static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[1])->write(false);
   return true;
 }
 #define TEST_ENABLE_LED       0

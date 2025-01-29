@@ -37,8 +37,8 @@ void hello_meridian_board_lite() {
   if (true == output_log) {
     entity->communication.diag->log_info("Hi, This is %s(%s) %s.", PLUGIN_BOARD_NAME, PLUGIN_NAME, PLUGIN_VERSION);
     // Meridian Core
-    entity->communication.diag->log_info("  Debug port: %s (%d bps)", entity->communication.diag->type_name(), BOARD_SETTING_DEFAULT_SERIAL0_BAUD);
-    entity->communication.diag->log_info("  Communication: %s", (nullptr != entity->communication.con) ? entity->communication.con->type_name() : "--");
+    entity->communication.diag->log_info("  Debug port: %s (%d bps)", entity->communication.diag->get_name(), BOARD_SETTING_DEFAULT_SERIAL0_BAUD);
+    entity->communication.diag->log_info("  Communication: %s", (nullptr != entity->communication.con) ? entity->communication.con->get_name() : "--");
 
     // Meridian Plugin
     entity->communication.diag->log_info("  Mounted Plugin");
@@ -58,7 +58,7 @@ void hello_meridian_board_lite() {
     entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? "Yes" : "--");
     entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? "Yes" : "--", param.ics_l_speed);
     entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? "Yes" : "--", param.ics_r_speed);
-    entity->communication.diag->log_info("    Pad : %s ", (nullptr != entity->plugin.pad) ? entity->plugin.pad->type_name() : "--");
+    entity->communication.diag->log_info("    Pad : %s ", (nullptr != entity->plugin.pad) ? entity->plugin.pad->get_name() : "--");
   }
 }
 

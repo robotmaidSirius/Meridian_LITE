@@ -11,7 +11,7 @@
 #define __MRD_MODULE_EEPROM_HPP__
 
 // ヘッダーファイルの読み込み
-#include <mrd_module/mrd_plugin/i_mrd_plugin_sd.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_eeprom.hpp>
 
 // ライブラリ導入
 #include <EEPROM.h>
@@ -108,21 +108,21 @@ public:
   /// @return 終了時にtrueを返す.
   bool dump_to_serial(UnionEEPROM a_data, int a_bhd) {
     int len_tmp = EEPROM.length(); // EEPROMの長さ
-    this->a_diag->log_info("EEPROM Length %d byte, 16bit Dump;", len_tmp);
+    this->m_diag->log_info("EEPROM Length %d byte, 16bit Dump;", len_tmp);
     for (int i = 0; i < 270; i++) // 読み込むデータはshort型で作成
     {
       if (a_bhd == 1) {
-        this->a_diag->log("%d", a_data.sval[i]);
+        this->m_diag->log("%d", a_data.sval[i]);
       } else {
-        this->a_diag->log("%X", a_data.sval[i]);
+        this->m_diag->log("%X", a_data.sval[i]);
       }
       if (0 == (i % 89)) {
-        this->a_diag->log("\n");
+        this->m_diag->log("\n");
       } else {
-        this->a_diag->log("/");
+        this->m_diag->log("/");
       }
     }
-    this->a_diag->log("\n");
+    this->m_diag->log("\n");
     return true;
   }
 

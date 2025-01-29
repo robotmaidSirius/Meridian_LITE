@@ -16,22 +16,6 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class IMeridianPadStatus {
-public:
-  bool initalized = false;
-  bool setup = false;
-  bool happened_error = false;
-  bool linked = false;
-
-public:
-  void all_ok() {
-    this->initalized = true;
-    this->setup = true;
-    this->happened_error = false;
-    this->linked = false;
-  }
-};
-
 namespace pad {
 
 enum hat_t {
@@ -142,9 +126,6 @@ struct ButtonInfo {
 
 class IMeridianPad : public IMeridianPlugin {
 public:
-  virtual const char *type_name() { return "None"; };
-
-public:
   pad::ButtonInfo buttons;
   virtual bool setup() {
     this->buttons.linked = false;
@@ -162,16 +143,6 @@ public:
     this->buttons.enabled = true;
     return this->buttons.enabled;
   };
-
-public:
-  void get_status(IMeridianPadStatus &state) {
-    state.initalized = this->a_state.initalized;
-    state.setup = this->a_state.setup;
-    state.happened_error = this->a_state.happened_error;
-  }
-
-protected:
-  IMeridianPadStatus a_state;
 };
 
 } // namespace plugin

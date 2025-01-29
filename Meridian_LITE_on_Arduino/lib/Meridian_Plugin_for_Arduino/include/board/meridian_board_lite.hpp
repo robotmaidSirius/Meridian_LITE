@@ -17,6 +17,7 @@
 
 #include <mrd_communication/i_mrd_conversation.hpp>
 #include <mrd_communication/i_mrd_diagnostic.hpp>
+#if BOARD_IN_DETAILED_CLASS
 #include <mrd_module/mrd_plugin/i_mrd_plugin_eeprom.hpp>
 #include <mrd_module/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
 #include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
@@ -24,7 +25,9 @@
 #include <mrd_module/mrd_plugin/i_mrd_plugin_sd.hpp>
 #include <mrd_module/mrd_plugin/i_mrd_plugin_servo.hpp>
 #include <mrd_module/mrd_plugin/i_mrd_plugin_spi.hpp>
-
+#else
+#include <mrd_module/mrd_plugin/i_mrd_plugin.hpp>
+#endif
 namespace meridian {
 namespace board {
 namespace meridian_board_lite {
@@ -46,6 +49,7 @@ public:
   /// @brief プラグインのインターフェースをまとめた構造体
   struct mrd_pluginStatus {
   public:
+#if BOARD_IN_DETAILED_CLASS
     IMeridianGPIOInOutStatus analog[MERIDIAN_BOARD_LITE_ANALOG_NUM]; ///< アナログ入力のインターフェース
     IMeridianGPIOInOutStatus gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];     ///< GPIOのインターフェース
     IMeridianI2CStatus i2c[MERIDIAN_BOARD_LITE_I2C_NUM];             ///< I2Cのインターフェース
@@ -55,6 +59,17 @@ public:
     IMeridianServoStatus servo_left;                                 ///< ICS_Lのインターフェース
     IMeridianServoStatus servo_right;                                ///< ICS_Rのインターフェース
     IMeridianPadStatus pad;                                          ///< パッドのインターフェース
+#else
+    IMeridianPlugin::Status analog[MERIDIAN_BOARD_LITE_ANALOG_NUM]; ///< アナログ入力のインターフェース
+    IMeridianPlugin::Status gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];     ///< GPIOのインターフェース
+    IMeridianPlugin::Status i2c[MERIDIAN_BOARD_LITE_I2C_NUM];       ///< I2Cのインターフェース
+    IMeridianPlugin::Status eeprom;                                 ///< EEPROMのインターフェース
+    IMeridianPlugin::Status sd_card;                                ///< SDカード用のSPIのインターフェース
+    IMeridianPlugin::Status spi;                                    ///< SPIのインターフェース
+    IMeridianPlugin::Status servo_left;                             ///< ICS_Lのインターフェース
+    IMeridianPlugin::Status servo_right;                            ///< ICS_Rのインターフェース
+    IMeridianPlugin::Status pad;                                    ///< パッドのインターフェース
+#endif
   };
 
 public:
@@ -74,6 +89,7 @@ public:
   /// @brief プラグインのインターフェースをまとめた構造体
   struct mrd_plugin {
   public:
+#if BOARD_IN_DETAILED_CLASS
     IMeridianGPIOInOut<int> *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM]; ///< アナログ入力のインターフェース
     IMeridianGPIOInOut<int> *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];     ///< GPIOのインターフェース
     IMeridianI2C *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];                  ///< I2Cのインターフェース
@@ -83,6 +99,17 @@ public:
     IMeridianServo *servo_left;                                      ///< ICS_Lのインターフェース
     IMeridianServo *servo_right;                                     ///< ICS_Rのインターフェース
     IMeridianPad *pad;                                               ///< パッドのインターフェース
+#else
+    IMeridianPlugin *analog[MERIDIAN_BOARD_LITE_ANALOG_NUM]; ///< アナログ入力のインターフェース
+    IMeridianPlugin *gpio[MERIDIAN_BOARD_LITE_GPIO_NUM];     ///< GPIOのインターフェース
+    IMeridianPlugin *i2c[MERIDIAN_BOARD_LITE_I2C_NUM];       ///< I2Cのインターフェース
+    IMeridianPlugin *eeprom;                                 ///< EEPROMのインターフェース
+    IMeridianPlugin *sd_card;                                ///< SDカード用のSPIのインターフェース
+    IMeridianPlugin *spi;                                    ///< SPIのインターフェース
+    IMeridianPlugin *servo_left;                             ///< ICS_Lのインターフェース
+    IMeridianPlugin *servo_right;                            ///< ICS_Rのインターフェース
+    IMeridianPlugin *pad;                                    ///< パッドのインターフェース
+#endif
   };
 
 public:

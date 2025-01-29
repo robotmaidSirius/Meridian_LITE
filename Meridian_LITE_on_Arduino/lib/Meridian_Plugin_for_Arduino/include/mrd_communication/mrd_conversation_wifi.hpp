@@ -31,7 +31,7 @@ private:
   MrdGpioOut *_gpio_signal = nullptr;
 
 public:
-  const char *type_name() override { return "Wifi"; };
+  const char *get_name() override { return "Wifi"; };
   MrdConversationWifi(MrdGpioOut *connect = nullptr, MrdGpioOut *signal = nullptr) {
     this->_gpio_connect = connect;
     this->_gpio_signal = signal;
@@ -45,7 +45,7 @@ public:
     }
   }
   void set_diagnostic(IMeridianDiagnostic &ref) override {
-    this->a_diag = &ref;
+    this->m_diag = &ref;
     if (nullptr != this->_gpio_connect) {
       this->_gpio_connect->set_diagnostic(ref);
     }
@@ -79,11 +79,11 @@ public:
     while (WiFi.status() != WL_CONNECTED) { // https://www.arduino.cc/en/Reference/WiFiStatus 戻り値一覧
       timeout_ms -= delay_ms;
       if (0 == timeout_ms % logging_time_ms) { // 0.5秒ごとに接続状況を出力
-        this->a_diag->log(".");
+        this->m_diag->log(".");
       }
       delay(delay_ms);       // 接続が完了するまでループで待つ
       if (0 >= timeout_ms) { // 10秒でタイムアウト
-        this->a_diag->log_error("Wifi init TIMEOUT.");
+        this->m_diag->log_error("Wifi init TIMEOUT.");
         return false;
       }
     }

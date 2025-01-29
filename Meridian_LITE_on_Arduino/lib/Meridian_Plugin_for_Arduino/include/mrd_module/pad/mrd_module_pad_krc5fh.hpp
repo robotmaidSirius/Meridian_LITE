@@ -55,7 +55,7 @@ public:
   ~MrdPadKRC5FH() {}
 
 public:
-  const char *type_name() override { return "KRC-5FH"; };
+  const char *get_name() override { return "KRC-5FH"; };
 
 public:
   bool setup() override { return true; };

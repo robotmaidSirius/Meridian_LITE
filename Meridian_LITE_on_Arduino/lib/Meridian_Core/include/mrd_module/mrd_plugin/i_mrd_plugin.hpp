@@ -21,15 +21,46 @@ using namespace meridian::core::communication;
 
 class IMeridianPlugin {
 public:
+  virtual const char *get_name() { return "Unknow"; };
   virtual bool setup() = 0;
   virtual bool input(Meridim90 &a_meridim) = 0;
   virtual bool output(Meridim90 &a_meridim) = 0;
 
 public:
-  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+  class Status {
+  public:
+    static const int OPTION_MAX = 10;
+
+    bool initalized = false;
+    bool setup = false;
+    bool happened_error = false;
+    bool option[Status::OPTION_MAX] = {false};
+
+  public:
+    void all_ok() {
+      this->initalized = true;
+      this->setup = true;
+      this->happened_error = false;
+      for (int i = 0; i < Status::OPTION_MAX; i++) {
+        this->option[i] = false;
+      }
+    }
+  };
+
+public:
+  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->m_diag = &ref; }
+  void get_status(Status &state) {
+    state.initalized = this->m_state.initalized;
+    state.setup = this->m_state.setup;
+    state.happened_error = this->m_state.happened_error;
+    for (int i = 0; i < Status::OPTION_MAX; i++) {
+      state.option[i] = this->m_state.option[i];
+    }
+  }
 
 protected:
-  IMeridianDiagnostic *a_diag;
+  IMeridianDiagnostic *m_diag;
+  Status m_state;
 };
 
 } // namespace plugin

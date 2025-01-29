@@ -16,30 +16,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class IMeridianSPIStatus {
-public:
-  bool initalized = false;
-  bool setup = false;
-  bool happened_error = false;
-
-public:
-  void all_ok() {
-    this->initalized = true;
-    this->setup = true;
-    this->happened_error = false;
-  }
-};
-
 class IMeridianSPI : public IMeridianPlugin {
-public:
-  void get_status(IMeridianSPIStatus &state) {
-    state.initalized = this->a_state.initalized;
-    state.setup = this->a_state.setup;
-    state.happened_error = this->a_state.happened_error;
-  }
-
-protected:
-  IMeridianSPIStatus a_state;
 };
 
 } // namespace plugin

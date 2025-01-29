@@ -136,7 +136,7 @@ public:
   void write(uint8_t address, uint8_t data) {}
   uint8_t read(uint8_t address) { return 0; }
   bool setup() override {
-    this->a_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
+    this->m_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
     xTaskCreatePinnedToCore(ahrs_mpu6050::thread_mrd_ahrs_mpu6050,
                             this->m_task_name,
                             this->m_stack_depth,

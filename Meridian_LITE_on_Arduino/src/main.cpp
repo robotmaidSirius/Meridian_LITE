@@ -7,9 +7,10 @@
  * @copyright Copyright (c) 2025-.
  *
  */
+#include "keys.h"
+
 #include "app/sample_app.hpp"
 #include "app/sample_app_default.hpp"
-#include "keys.h"
 #include <board/meridian_board_lite.hpp>
 //////////////////////////////////////////////////////////////////////////
 // mrd_communication
@@ -93,7 +94,7 @@ mrd_entity entity = {
             nullptr,
         },
         .eeprom =
-#if defined(MODULE_FS_SD_CARD)
+#if defined(MODULE_FS_EEPROM)
             new MrdEEPROM(EEPROM_SIZE),
 #else
             nullptr,

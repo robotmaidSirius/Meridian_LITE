@@ -25,7 +25,7 @@ public:
   ~MrdPadWiimote() {}
 
 public:
-  const char *type_name() override { return "Wiimote"; };
+  const char *get_name() override { return "Wiimote"; };
 
 public:
   bool setup() override { return true; };

@@ -17,7 +17,7 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
-class MrdGpioOut : public IMeridianGPIOInOut<int> {
+class MrdGpioOut : public IMeridianGPIOInOut<bool> {
 public:
   MrdGpioOut(uint8_t pin, int index = -1, int pos = -1) : IMeridianGPIOInOut(pin) {
     assert(-1 <= index && index < MERIDIM90_USER_DATA_SIZE);
@@ -44,8 +44,8 @@ public:
     }
     return false;
   }
-  bool write(int value) override {
-    this->m_flag = (0 < value) ? true : false;
+  bool write(bool value) override {
+    this->m_flag = value;
     return true;
   }
   bool write(int value, bool output) {
@@ -55,8 +55,8 @@ public:
     }
     return true;
   }
-  int read() override {
-    return this->m_flag ? 1 : 0;
+  bool read() override {
+    return this->m_flag;
   }
 
   bool input(Meridim90 &a_meridim) override {

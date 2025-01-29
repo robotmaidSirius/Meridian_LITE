@@ -36,24 +36,24 @@ public:
 
 class IMeridianConversation {
 public:
-  virtual const char *type_name() { return "None"; };
+  virtual const char *get_name() { return "None"; };
   virtual bool setup() = 0;
 
   virtual bool received(Meridim90 &a_meridim) = 0;
   virtual bool send(Meridim90 &a_meridim) = 0;
 
 public:
-  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->a_diag = &ref; }
+  virtual void set_diagnostic(IMeridianDiagnostic &ref) { this->m_diag = &ref; }
   void get_status(IMeridianConversationStatus &state) {
-    state.initalized = this->a_state.initalized;
-    state.setup = this->a_state.setup;
-    state.happened_error = this->a_state.happened_error;
-    state.no_device = this->a_state.no_device;
+    state.initalized = this->m_state.initalized;
+    state.setup = this->m_state.setup;
+    state.happened_error = this->m_state.happened_error;
+    state.no_device = this->m_state.no_device;
   }
 
 protected:
-  IMeridianDiagnostic *a_diag;
-  IMeridianConversationStatus a_state;
+  IMeridianDiagnostic *m_diag;
+  IMeridianConversationStatus m_state;
 };
 
 } // namespace communication
