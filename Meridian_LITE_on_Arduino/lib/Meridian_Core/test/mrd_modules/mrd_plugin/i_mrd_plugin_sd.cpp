@@ -7,4 +7,4 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#include "mrd_modules/mrd_plugin/i_mrd_plugin_sd.hpp"
+#include "mrd_module/mrd_plugin/i_mrd_plugin_sd.hpp"

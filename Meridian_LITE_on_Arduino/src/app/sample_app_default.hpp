@@ -10,35 +10,36 @@
 #ifndef __SAMPLE_APP_DEFAULT_HPP__
 #define __SAMPLE_APP_DEFAULT_HPP__
 
+#define APP_SERVO_BAUDRATE_L 1250000 // L系統のICSサーボの通信速度bps
+#define APP_SERVO_BAUDRATE_R 1250000 // R系統のICSサーボの通信速度bps
+#define APP_SERVO_TIMEOUT_L  2       // L系統のICS返信待ちのタイムアウト時間
+#define APP_SERVO_TIMEOUT_R  2       // R系統のICS返信待ちのタイムアウト時間
+
 #if defined(MODULE_PAD_WIIMOTE)
 #include <mrd_module/pad/mrd_module_pad_wiimote.hpp>
 #elif defined(MODULE_PAD_KRC5FH)
 #include <mrd_module/pad/mrd_module_pad_krc5fh.hpp>
-#endif
-#if 0
-#include <mrd_module/servo/mrd_module_servo_ics.hpp>
 #else
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_pad.hpp>
 #endif
+#include <mrd_module/servo/mrd_module_servo_ics.hpp>
 
 using namespace meridian::modules::plugin;
 
-class sample_app_default {
+class SampleAppDefault {
+
 public:
+  SampleAppDefault();
+
 #if defined(MODULE_PAD_WIIMOTE)
   MrdPadWiimote pad;
 #elif defined(MODULE_PAD_KRC5FH)
-  MrdPadWiimote pad;
+  MrdPadKRC5FH pad;
 #else
   IMeridianPad pad;
 #endif
-#if 0
   MrdServoICS servo_left;
   MrdServoICS servo_right;
-#else
-  IMeridianServo servo_left;
-  IMeridianServo servo_right;
-#endif
 
 public:
   void setup();

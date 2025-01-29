@@ -12,7 +12,7 @@
 
 // TODO: (未実装)
 // ライブラリ導入
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_servo.hpp>
 
 namespace meridian {
 namespace modules {

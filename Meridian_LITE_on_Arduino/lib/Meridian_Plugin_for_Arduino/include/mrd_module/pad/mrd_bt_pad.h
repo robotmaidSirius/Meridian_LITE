@@ -273,6 +273,13 @@ void Core0_BT_r(void *args) { // サブCPU(Core0)で実行するプログラム
   }
 }
 
+void start_pad() {
+  // Bluetoothの開始と表示(WIIMOTE)
+  if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
+    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
+    xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
+  }
+}
 //------------------------------------------------------------------------------------
 //  meridimへのデータ書き込み
 //------------------------------------------------------------------------------------

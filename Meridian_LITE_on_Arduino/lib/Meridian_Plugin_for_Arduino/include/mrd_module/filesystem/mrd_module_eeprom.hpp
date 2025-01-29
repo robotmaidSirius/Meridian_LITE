@@ -11,7 +11,7 @@
 #define __MRD_MODULE_EEPROM_HPP__
 
 // ヘッダーファイルの読み込み
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_sd.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_sd.hpp>
 
 // ライブラリ導入
 #include <EEPROM.h>
@@ -22,13 +22,13 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
   Dec = 2,       // DEC
 };
 
-#define EEPROM_SIZE     540 // 使用するEEPROMのサイズ(バイト)
-#define EEPROM_DUMP     0   // 起動時のEEPROM内容のダンプ表示
-#define EEPROM_STYLE    Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
-#define CHECK_EEPROM_RW 0   // 起動時のEEPROMの動作チェック
-#define EEPROM_PROTECT  0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
-#define EEPROM_SET      0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
-#define EEPROM_LOAD     0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
+#define EEPROM_DEFAULT_SIZE 540 // 使用するEEPROMのサイズ(バイト)
+#define EEPROM_DUMP         0   // 起動時のEEPROM内容のダンプ表示
+#define EEPROM_STYLE        Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
+#define CHECK_EEPROM_RW     0   // 起動時のEEPROMの動作チェック
+#define EEPROM_PROTECT      0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
+#define EEPROM_SET          0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_LOAD         0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
 
 namespace meridian {
 namespace modules {
@@ -83,9 +83,9 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   // EEPROM読み書き用共用体
   typedef union {
-    uint8_t bval[EEPROM_SIZE];            // 1バイト単位で540個のデータを持つ
-    short saval[3][int(EEPROM_SIZE / 4)]; // short型で3*90個の配列データを持つ
-    short sval[int(EEPROM_SIZE / 2)];     // short型で270個のデータを持つ
+    uint8_t bval[EEPROM_DEFAULT_SIZE];            // 1バイト単位で540個のデータを持つ
+    short saval[3][int(EEPROM_DEFAULT_SIZE / 4)]; // short型で3*90個の配列データを持つ
+    short sval[int(EEPROM_DEFAULT_SIZE / 2)];     // short型で270個のデータを持つ
   } UnionEEPROM;
   UnionEEPROM eeprom_write_data; // EEPROM書き込み用
   UnionEEPROM eeprom_read_data;  // EEPROM読み込み用
@@ -95,7 +95,7 @@ public:
   /// @return UnionEEPROM のフォーマットで配列を返す.
   UnionEEPROM eeprom_read() {
     UnionEEPROM read_data_tmp;
-    for (int i = 0; i < EEPROM_SIZE; i++) // データを読み込む時はbyte型
+    for (int i = 0; i < EEPROM_DEFAULT_SIZE; i++) // データを読み込む時はbyte型
     {
       read_data_tmp.bval[i] = this->read(i);
     }
@@ -152,9 +152,9 @@ public:
     }
 
     // EEPROM書き込み
-    byte old_value_tmp;                   // EEPROMにすでに書き込んであるデータ
-    bool flg_renew_tmp = false;           // 書き込みコミットを実施するかのフラグ
-    for (int i = 0; i < EEPROM_SIZE; i++) // データを書き込む時はbyte型
+    byte old_value_tmp;                           // EEPROMにすでに書き込んであるデータ
+    bool flg_renew_tmp = false;                   // 書き込みコミットを実施するかのフラグ
+    for (int i = 0; i < EEPROM_DEFAULT_SIZE; i++) // データを書き込む時はbyte型
     {
       if (i >= EEPROM.length()) // EEPROMのサイズを超えないようチェック
       {

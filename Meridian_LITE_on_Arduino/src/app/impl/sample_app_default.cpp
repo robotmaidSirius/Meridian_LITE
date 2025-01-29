@@ -9,7 +9,15 @@
  */
 #include "../sample_app_default.hpp"
 
-void sample_app_default::loop(Meridim90 &a_meridim90) {
+#include <Arduino.h>
+#include <board/pins/meridian_board_lite_pins.hpp>
+
+void SampleAppDefault::loop(Meridim90 &a_meridim90) {
 }
-void sample_app_default::setup() {
+void SampleAppDefault::setup() {
+}
+
+SampleAppDefault::SampleAppDefault() {
+  this->servo_left.setup(&Serial1, PINS_DEFAULT_SERVO_1_EN, APP_SERVO_BAUDRATE_L, APP_SERVO_BAUDRATE_L);
+  this->servo_right.setup(&Serial2, PINS_DEFAULT_SERVO_2_EN, APP_SERVO_BAUDRATE_R, APP_SERVO_TIMEOUT_R);
 }

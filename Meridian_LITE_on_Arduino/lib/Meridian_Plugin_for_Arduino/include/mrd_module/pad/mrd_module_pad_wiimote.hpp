@@ -11,7 +11,7 @@
 #define __MRD_MODULE_PAD_WIIMOTE_HPP__
 
 // ヘッダーファイルの読み込み
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_pad.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_pad.hpp>
 
 // ライブラリ導入
 

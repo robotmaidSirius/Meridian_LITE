@@ -50,18 +50,6 @@ void mrd_setBit8(uint8_t &value, uint8_t a_bit_pos);
 /// @return なし.
 void mrd_clearBit8(uint8_t &value, uint8_t a_bit_pos);
 
-//------------------------------------------------------------------------------------
-//  タイムアウト監視用タイマー
-//------------------------------------------------------------------------------------
-
-/// @brief 指定されたミリ秒のタイムアウトを監視する. mrd_timeout_resetとセットで使う.
-/// @param a_limit タイムアウトまでの時間(ms)
-/// @return タイムアウトでtrueを返す.
-bool mrd_timeout_check(unsigned long a_limit);
-
-/// @brief タイムアウト監視開始フラグをリセットする. mrd_timeout_checkとセットで使う.
-void mrd_timeout_reset();
-
 } // namespace execution
 } // namespace core
 } // namespace meridian

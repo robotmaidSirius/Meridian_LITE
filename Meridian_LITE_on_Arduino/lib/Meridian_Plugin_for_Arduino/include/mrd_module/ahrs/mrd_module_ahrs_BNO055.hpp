@@ -11,7 +11,7 @@
 #define __MRD_MODULE_AHRS_BNO055_HPP__
 
 // ヘッダーファイルの読み込み
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
 
 // ライブラリ導入
 #include <Adafruit_BNO055.h> // 9軸センサBNO055用ライブラリ
@@ -23,16 +23,16 @@ namespace modules {
 namespace plugin {
 namespace ahrs_bno055 {
 struct st_data {
-  bool initalized = false;    ///< 初期化フラグ
-  imu::Vector<3> accelerator; ///<  加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
-  imu::Vector<3> gyroscope;   ///< ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
-  imu::Vector<3> magnetmeter; ///< 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
-  imu::Vector<3> euler;       ///< センサフュージョンによる方向推定値 - VECTOR_EULER - degrees
+  bool initalized = false;     ///< 初期化フラグ
+  imu::Vector<3> accelerator;  ///<  加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
+  imu::Vector<3> gyroscope;    ///< ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
+  imu::Vector<3> magnetometer; ///< 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
+  imu::Vector<3> euler;        ///< センサフュージョンによる方向推定値 - VECTOR_EULER - degrees
   unsigned long timestamp = 0;
 };
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile bool flag_mrd_ahrs_BNO055_loop = false;
+volatile bool flag_mrd_ahrs_bno055_loop = false;
 st_data a_data;
 inline float deg2rad(float deg) { return (deg * M_PI) / 180.0; }
 inline float rad2deg(float rad) { return (rad * 180.0) / M_PI; }
@@ -52,14 +52,14 @@ struct thread_args {
   TwoWire *theWire;
 };
 
-void thread_mrd_ahrs_BNO055(void *args) {
-  flag_mrd_ahrs_BNO055_loop = true;
+void thread_mrd_ahrs_bno055(void *args) {
+  flag_mrd_ahrs_bno055_loop = true;
   st_data a_ahrs;
   thread_args param = *(thread_args *)args;
   int delay_ms = param.delay_ms;
 
   Adafruit_BNO055 bno = Adafruit_BNO055(param.sensorID, param.address, param.theWire);
-  while (true == flag_mrd_ahrs_BNO055_loop) {
+  while (true == flag_mrd_ahrs_bno055_loop) {
     if (!bno.begin()) {
     } else {
       bno.setExtCrystalUse(false);
@@ -68,7 +68,7 @@ void thread_mrd_ahrs_BNO055(void *args) {
     }
     delay(1000);
   }
-  while (true == flag_mrd_ahrs_BNO055_loop) {
+  while (true == flag_mrd_ahrs_bno055_loop) {
     {
       // 加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
       a_ahrs.accelerator = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
@@ -76,7 +76,7 @@ void thread_mrd_ahrs_BNO055(void *args) {
       a_ahrs.gyroscope = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
 
       // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
-      a_ahrs.magnetmeter = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+      a_ahrs.magnetometer = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
 
       // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
       a_ahrs.euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -110,7 +110,7 @@ public:
     this->param->delay_ms = 10;
   }
   ~MrdAhrsBNO055() {
-    ahrs_bno055::flag_mrd_ahrs_BNO055_loop = false;
+    ahrs_bno055::flag_mrd_ahrs_bno055_loop = false;
     vTaskDelete(this->task_handle);
     pthread_mutex_destroy(&ahrs_bno055::mutex);
   }
@@ -120,7 +120,7 @@ public:
   uint8_t read(uint8_t address) { return 0; }
   bool setup() override {
     this->a_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
-    xTaskCreatePinnedToCore(ahrs_bno055::thread_mrd_ahrs_BNO055,
+    xTaskCreatePinnedToCore(ahrs_bno055::thread_mrd_ahrs_bno055,
                             this->m_task_name,
                             this->m_stack_depth,
                             (void *)this->param,
@@ -139,15 +139,15 @@ public:
         this->reset();
       }
 
-      a_meridim.acc_x = this->float2HfShort(this->a_ahrs.accelerator.x()); //! 加速度センサX値
-      a_meridim.acc_y = this->float2HfShort(this->a_ahrs.accelerator.y()); //! 加速度センサY値
-      a_meridim.acc_z = this->float2HfShort(this->a_ahrs.accelerator.z()); //! 加速度センサZ値
-      a_meridim.gyro_x = this->float2HfShort(this->a_ahrs.gyroscope.x());  //! ジャイロセンサX値
-      a_meridim.gyro_y = this->float2HfShort(this->a_ahrs.gyroscope.y());  //! ジャイロセンサY値
-      a_meridim.gyro_z = this->float2HfShort(this->a_ahrs.gyroscope.z());  //! ジャイロセンサZ値
-      a_meridim.mag_x = this->float2HfShort(this->a_ahrs.magnetmeter.x()); //! 磁力センサX値
-      a_meridim.mag_y = this->float2HfShort(this->a_ahrs.magnetmeter.y()); //! 磁力センサY値
-      a_meridim.mag_z = this->float2HfShort(this->a_ahrs.magnetmeter.z()); //! 磁力センサZ値
+      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x());   //! 加速度センサX値
+      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y());   //! 加速度センサY値
+      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z());   //! 加速度センサZ値
+      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x());       //! ジャイロセンサX値
+      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y());       //! ジャイロセンサY値
+      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z());       //! ジャイロセンサZ値
+      a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetometer.x()); //! 磁力センサX値
+      a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetometer.y()); //! 磁力センサY値
+      a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetometer.z()); //! 磁力センサZ値
 
       // a_meridim.temperature = this->float2HfShort(0); //! 温度センサ値
 
@@ -156,9 +156,9 @@ public:
         this->yaw_origin = this->float2HfShort(this->a_ahrs.euler.x());
         this->m_rest_flag = false;
       }
-      a_meridim.dmp_roll = this->float2HfShort(this->a_ahrs.euler.z());                                   //! DMP推定ロール方向値
-      a_meridim.dmp_pitch = this->float2HfShort(this->a_ahrs.euler.y());                                  //! DMP推定ピッチ方向値
-      a_meridim.dmp_yaw = this->float2HfShort(deg_correction(this->a_ahrs.euler.x() - this->yaw_origin)); //! DMP推定ヨー方向値
+      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.euler.z());                                                //! DMP推定ロール方向値
+      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.euler.y());                                               //! DMP推定ピッチ方向値
+      a_meridim.dmp.yaw = this->float2HfShort(ahrs_bno055::deg_correction(this->a_ahrs.euler.x() - this->yaw_origin)); //! DMP推定ヨー方向値
     }
     return true;
   }

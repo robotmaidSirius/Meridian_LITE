@@ -11,7 +11,7 @@
 #define __MRD_MODULE_GPIO_OUT_HPP__
 
 #include <Arduino.h>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
 
 namespace meridian {
 namespace modules {

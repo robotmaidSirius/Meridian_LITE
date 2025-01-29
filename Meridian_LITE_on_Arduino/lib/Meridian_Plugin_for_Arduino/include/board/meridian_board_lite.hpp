@@ -10,21 +10,20 @@
 #ifndef __BOARD_MERIDIAN_BOARD_LITE_HPP__
 #define __BOARD_MERIDIAN_BOARD_LITE_HPP__
 
-#include "meridian_core.hpp"
-using namespace meridian::core::meridim;
+#include "meridian_core_for_arduino.hpp"
 
 #include "pins/meridian_board_lite_pins.hpp"
 #include "settins/meridian_board_lite_setting.hpp"
 
 #include <mrd_communication/i_mrd_conversation.hpp>
 #include <mrd_communication/i_mrd_diagnostic.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_eeprom.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_pad.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_sd.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_servo.hpp>
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_spi.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_eeprom.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_gpio_in_out.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_pad.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_sd.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_servo.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_spi.hpp>
 
 namespace meridian {
 namespace board {

@@ -47,10 +47,11 @@
 #define PINS_BOARD_LED_CONNECT (2)
 #define PINS_BOARD_LED_SIGNAL  (0xFF)
 #define SETTING_LOG_LEVEL      (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG)
+#define EEPROM_SIZE            (540)
 //////////////////////////////////////////////////////////////////////////
 // 使用するモジュールの設定
 //////////////////////////////////////////////////////////////////////////
-sample_app_default app_default;
+SampleAppDefault app_default;
 MrdConversationWifi con_wifi(
 #if 0xFF != PINS_BOARD_LED_CONNECT
     new MrdGpioOut(PINS_BOARD_LED_CONNECT),
@@ -64,6 +65,7 @@ MrdConversationWifi con_wifi(
 #endif
 );
 MrdDiagnosticUart diag_uart(&Serial, BOARD_SETTING_DEFAULT_SERIAL0_BAUD, SETTING_LOG_LEVEL);
+
 mrd_entity entity = {
     .communication = {
         .con = &con_wifi,
@@ -92,13 +94,13 @@ mrd_entity entity = {
         },
         .eeprom =
 #if defined(MODULE_FS_SD_CARD)
-            new MrdEEPROM(),
+            new MrdEEPROM(EEPROM_SIZE),
 #else
             nullptr,
 #endif
         .sd_card =
 #if defined(MODULE_FS_SD_CARD)
-            new MrdSdCard(),
+            new MrdSdCard(PINS_DEFAULT_SPI_CS2),
 #else
             nullptr,
 #endif

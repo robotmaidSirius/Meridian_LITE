@@ -5,17 +5,6 @@
 
 #include <board/meridian_board_lite.hpp>
 
-/// @file    Meridian_LITE_for_ESP32/src/main.cpp
-/// @brief   Meridian is a system that smartly realizes the digital twin of a robot.
-/// @details Meridian_LITE for Meridian Board -LITE- with ESP32DecKitC.
-///
-/// This code is licensed under the MIT License.
-/// Copyright (c) 2022 Izumi Ninagawa & Project Meridian
-
-//================================================================================================================
-//  初期設定
-//================================================================================================================
-
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "keys.h"
@@ -27,7 +16,6 @@
 #include "mrd_module/filesystem/mrd_module_sd.hpp"
 #include "mrd_module/pad/mrd_bt_pad.h"
 #include "mrd_module/servo/mrd_module_servo_ics.hpp"
-#include "mrd_util.h"
 
 // ライブラリ導入
 #include <Arduino.h>
@@ -57,23 +45,6 @@ MrdMonitor monitor;
 
 //================================================================================================================
 MERIDIANFLOW::Meridian mrd;
-IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
-IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
-
-// ハードウェアタイマーとカウンタ用変数の定義
-hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
-volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ
-portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタイマー用のミューテックス
-unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
-volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
-
-/// @brief count_timerを保護しつつ1ずつインクリメント
-void IRAM_ATTR frame_timer() {
-  portENTER_CRITICAL_ISR(&timer_mux);
-  count_timer++;
-  portEXIT_CRITICAL_ISR(&timer_mux);
-  xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
-}
 
 //================================================================================================================
 //  SETUP
@@ -81,17 +52,24 @@ void IRAM_ATTR frame_timer() {
 MrdEEPROM _eeprom(540);
 MrdSdCard _sd_card(5);
 MrdConversationWifi _comm;
-MrdServoICS _servo_l;
-MrdServoICS _servo_r;
+MrdServoICS *_servo_l;
+MrdServoICS *_servo_r;
+
+/// @brief 配列の中で0以外が入っている最大のIndexを求める.
+/// @param a_arr 配列
+/// @param a_size 配列の長さ
+/// @return 0以外が入っている最大のIndex. すべて0の場合は1を反す.
+int mrd_max_used_index(const int a_arr[], int a_size) {
+  int max_index_tmp = 0;
+  for (int i = 0; i < a_size; ++i) {
+    if (a_arr[i] != 0) {
+      max_index_tmp = i;
+    }
+  }
+  return max_index_tmp + 1;
+}
 
 void test_setup() {
-  // シリアルモニターの設定
-  // シリアルモニターの確立待ち
-  unsigned long start_time = millis();
-  while (!Serial && (millis() - start_time < SERIAL_PC_TIMEOUT)) { // タイムアウトもチェック
-    delay(1);
-  }
-
   // ピンモードの設定
   pinMode(PIN_ERR_LED, OUTPUT); // エラー通知用LED
 
@@ -110,7 +88,7 @@ void test_setup() {
   };
 
   // サーボ用UART設定
-  _servo_l.mrd_servo_begin(); // サーボモータの通信初期設定. Serial2 Serial3
+  _servo_l->setup(); // サーボモータの通信初期設定. Serial2 Serial3
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -130,11 +108,7 @@ void test_setup() {
 
   _eeprom.setup();
 
-  // Bluetoothの開始と表示(WIIMOTE)
-  if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
-    xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
-  }
+  start_pad();
 
   // UDP開始用ダミーデータの生成
   s_udp_meridim.sval[MRD_MASTER] = 90;
@@ -142,21 +116,22 @@ void test_setup() {
   r_udp_meridim.sval[MRD_MASTER] = 90;
   r_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(r_udp_meridim.sval, MRDM_LEN);
 
-  // タイマーの設定
-  timer_semaphore = xSemaphoreCreateBinary();          // セマフォの作成
-  timer = timerBegin(0, 80, true);                     // タイマーの設定(1つ目のタイマーを使用, 分周比80)
-  timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数をタイマーの割り込みに登録
-  timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10msごとにトリガー
-  timerAlarmEnable(timer);                             // タイマーを開始
+  mrd_timer_setup(10); // タイマーの設定
+}
+//------------------------------------------------------------------------------------
+//  meriput / meridimへのデータ書き込み
+//------------------------------------------------------------------------------------
 
-  // 開始メッセージ
-  mrd_disp.flow_start_lite_esp();
-
-  // タイマーの初期化
-  count_frame = 0;
-  portENTER_CRITICAL(&timer_mux);
-  count_timer = 0;
-  portEXIT_CRITICAL(&timer_mux);
+/// @brief meridim配列のチェックサムを算出して[len-1]に書き込む.
+/// @param a_meridim Meridim配列の共用体. 参照渡し.
+/// @return 常にtrueを返す.
+bool mrd_meriput90_cksm(Meridim90Union &a_meridim, int len = 90) {
+  int a_cksm = 0;
+  for (int i = 0; i < len - 1; i++) {
+    a_cksm += int(a_meridim.sval[i]);
+  }
+  a_meridim.sval[len - 1] = short(~a_cksm);
+  return true;
 }
 
 //================================================================================================================
@@ -295,9 +270,9 @@ void test_loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STDALONE) {                                                                  // サーボ処理を行うかどうか
-    _servo_l.mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
-    _servo_r.mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
+  if (!MODE_ESP32_STDALONE) {          // サーボ処理を行うかどうか
+    _servo_l->mrd_servos_drive_lite(); // サーボ動作を実行する
+    _servo_r->mrd_servos_drive_lite(); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -334,8 +309,8 @@ void test_loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = _servo_l.mrd_servos_make_errcode_lite(sv);
-  s_udp_meridim.ubval[MRD_ERR_l] = _servo_r.mrd_servos_make_errcode_lite(sv);
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_l->mrd_servos_make_errcode_lite();
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_r->mrd_servos_make_errcode_lite();
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -344,29 +319,14 @@ void test_loop() {
   //------------------------------------------------------------------------------------
   //   [ 12 ] フレーム終端処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[12]", monitor.flow); // 動作チェック用シリアル表示
 
   // @[12-1] count_timerがcount_frameに追いつくまで待機
-  count_frame++;
-  while (true) {
-    if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
-      portENTER_CRITICAL(&timer_mux);
-      unsigned long current_count_timer = count_timer; // ハードウェアタイマーの値を読む
-      portEXIT_CRITICAL(&timer_mux);
-      if (current_count_timer >= count_frame) {
-        break;
-      }
-    }
-  }
+  mrd_timer_delay();
 
   // @[12-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
   if (flg.count_frame_reset) {
-    portENTER_CRITICAL(&timer_mux);
-    count_frame = count_timer;
-    portEXIT_CRITICAL(&timer_mux);
+    mrd_timer_clear();
   }
-
-  mrd.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示
 }
 
 //================================================================================================================
@@ -426,8 +386,8 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    _servo_l.mrd_servo_all_off(s_udp_meridim);
-    _servo_r.mrd_servo_all_off(s_udp_meridim);
+    _servo_l->mrd_servo_all_off();
+    _servo_r->mrd_servo_all_off();
     return true;
   }
 

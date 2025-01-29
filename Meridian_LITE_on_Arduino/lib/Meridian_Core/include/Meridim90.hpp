@@ -15,39 +15,48 @@
 namespace meridian {
 namespace core {
 namespace meridim {
+
 #ifndef MERIDIM90_SIZE
 #define MERIDIM90_SIZE (90) /**< Meridim配列の長さ設定 (デフォルトは90) */
 #endif
-const int MERIDIM90_DATA_SIZE = (MERIDIM90_SIZE - 1);           ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
-const int MERIDIM90_USER_DATA_SIZE = (MERIDIM90_SIZE - 80 - 2); ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
+#ifndef MERIDIM90_SERVO_NUM
+#define MERIDIM90_SERVO_NUM (33) /**< 接続するサーボの数 */
+#endif
+#if (MERIDIM90_SIZE <= (20 + 2 + (MERIDIM90_SERVO_NUM * 2)))
+#error "MERIDIM90_SERVO_NUM を減らしてください"
+#error "Please reduce MERIDIM90_SERVO_NUM"
+#endif
+
+const int MERIDIM90_DATA_SIZE = (MERIDIM90_SIZE - 1);                                     ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
+const int MERIDIM90_USER_DATA_SIZE = (MERIDIM90_SIZE - 20 - MERIDIM90_SERVO_NUM * 2 - 2); ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
 
 const int MERIDIM90_LEN = MERIDIM90_SIZE * 2; //! Meridim配列のバイト型の長さ
 const int MERIDIM90_BYTE = MERIDIM90_LEN * 2; //! Meridim配列のバイト型の長さ
 
 //! @brief マスターコマンド定義
 enum MasterCommand {
-  MCMD_TORQUE_ALL_OFF = 0,             //! すべてのサーボトルクをオフにする (脱力)
-  MCMD_DUMMY_DATA = -32768,            //! SPI送受信用のダミーデータ判定用
-  MCMD_TEST_VALUE = -32767,            //! テスト用の仮設変数
-  MCMD_SENSOR_YAW_CALIB = 10002,       //! センサの推定ヨー軸を現在値センターとしてリセット
-  MCMD_SENSOR_ALL_CALIB = 10003,       //! センサの3軸について現在値を原点としてリセット
-  MCMD_ERR_CLEAR_SERVO_ID = 10004,     //! 通信エラーのサーボのIDをクリア (MRD_ERR_l)
-  MCMD_BOARD_TRANSMIT_ACTIVE = 10005,  //! ボードが定刻で送信を行うモード(PC側が受信待ち)
-  MCMD_BOARD_TRANSMIT_PASSIVE = 10006, //! ボードが受信を待ち返信するモード(PC側が定刻送信)
-  MCMD_FRAMETIMER_RESET = 10007,       //! フレームタイマーを現在時刻にリセット
-  MCMD_BOARD_STOP_DURING = 10008,      //! ボードの末端処理を[MRD_STOP_FRAMES]ミリ秒止める
-  MCMD_EEPROM_ENTER_WRITE = 10009,     //! EEPROM書き込みモードのスタート
-  MCMD_EEPROM_EXIT_WRITE = 10010,      //! EEPROM書き込みモードの終了
-  MCMD_EEPROM_ENTER_READ = 10011,      //! EEPROM読み出しモードのスタート
-  MCMD_EEPROM_EXIT_READ = 10012,       //! EEPROM読み出しモードの終了
-  MCMD_SD_CARD_ENTER_WRITE = 10013,    //! SD_CARD書き込みモードのスタート
-  MCMD_SD_CARD_EXIT_WRITE = 10014,     //! SD_CARD書き込みモードの終了
-  MCMD_SD_CARD_ENTER_READ = 10015,     //! SD_CARD読み出しモードのスタート
-  MCMD_SD_CARD_EXIT_READ = 10016,      //! SD_CARD読み出しモードの終了
-  MCMD_EEPROM_SAVE_TRIM = 10101,       //! 現在の姿勢をトリム値としてサーボに書き込む
-  MCMD_EEPROM_LOAD_TRIM = 10102,       //! EEPROMのトリム値をサーボに反映する
-  MCMD_NAK = 32766,                    //! コマンド実行の失敗を応答
-  MCMD_ACK = 32767,                    //! コマンド実行の成功を応答
+  MCMD_TORQUE_ALL_OFF = 0x0000u,         //! すべてのサーボトルクをオフにする (脱力)
+  MCMD_DUMMY_DATA = 0x8000u,             //! SPI送受信用のダミーデータ判定用
+  MCMD_TEST_VALUE = 0x8001u,             //! テスト用の仮設変数
+  MCMD_SENSOR_YAW_CALIB = 0x2712u,       //! センサの推定ヨー軸を現在値センターとしてリセット
+  MCMD_SENSOR_ALL_CALIB = 0x2713u,       //! センサの3軸について現在値を原点としてリセット
+  MCMD_ERR_CLEAR_SERVO_ID = 0x2714u,     //! 通信エラーのサーボのIDをクリア (MRD_ERR_l)
+  MCMD_BOARD_TRANSMIT_ACTIVE = 0x2715u,  //! ボードが定刻で送信を行うモード(PC側が受信待ち)
+  MCMD_BOARD_TRANSMIT_PASSIVE = 0x2716u, //! ボードが受信を待ち返信するモード(PC側が定刻送信)
+  MCMD_FRAMETIMER_RESET = 0x2717u,       //! フレームタイマーを現在時刻にリセット
+  MCMD_BOARD_STOP_DURING = 0x2718u,      //! ボードの末端処理を[MRD_STOP_FRAMES]ミリ秒止める
+  MCMD_EEPROM_ENTER_WRITE = 0x2719u,     //! EEPROM書き込みモードのスタート
+  MCMD_EEPROM_EXIT_WRITE = 0x271Au,      //! EEPROM書き込みモードの終了
+  MCMD_EEPROM_ENTER_READ = 0x271Bu,      //! EEPROM読み出しモードのスタート
+  MCMD_EEPROM_EXIT_READ = 0x271Cu,       //! EEPROM読み出しモードの終了
+  MCMD_SD_CARD_ENTER_WRITE = 0x271Du,    //! SD_CARD書き込みモードのスタート
+  MCMD_SD_CARD_EXIT_WRITE = 0x271Eu,     //! SD_CARD書き込みモードの終了
+  MCMD_SD_CARD_ENTER_READ = 0x271Fu,     //! SD_CARD読み出しモードのスタート
+  MCMD_SD_CARD_EXIT_READ = 0x2720u,      //! SD_CARD読み出しモードの終了
+  MCMD_EEPROM_SAVE_TRIM = 0x2775u,       //! 現在の姿勢をトリム値としてサーボに書き込む
+  MCMD_EEPROM_LOAD_TRIM = 0x2776u,       //! EEPROMのトリム値をサーボに反映する
+  MCMD_NAK = 0x7FFEu,                    //! コマンド実行の失敗を応答
+  MCMD_ACK = 0x7FFFu,                    //! コマンド実行の成功を応答
 };
 
 //! @brief エラービット MRD_ERR_CODEの上位8bit分
@@ -92,97 +101,46 @@ enum ErrorBit {
 // [MERIDIM90_LEN-2] ERROR CODE
 // [MERIDIM90_LEN-1] チェックサム
 
+struct Meridim90Vector {
+  int16_t x;
+  int16_t y;
+  int16_t z;
+};
+struct Meridim90RPY {
+  int16_t roll;
+  int16_t pitch;
+  int16_t yaw;
+};
+struct Meridim90Servo {
+  uint8_t id;
+  uint8_t cmd;
+  uint8_t option;
+  uint8_t value;
+};
+
+struct Meridim90Controller {
+  int16_t buttons;  //! リモコンの基本ボタン値
+  int16_t stick_l;  //! リモコンの左スティックアナログ値
+  int16_t stick_r;  //! リモコンの右スティックアナログ値
+  uint8_t analog_l; //! リモコンのL2ボタンアナログ値
+  uint8_t analog_r; //! リモコンのR2ボタンアナログ値
+};
+
 //! @brief Meridim90の構造体
 struct Meridim90 {
-  int16_t master_command; //!	マスターコマンド
+  int16_t master_command;       //!	マスターコマンド
+  uint16_t sequential;          //! シーケンス番号
+  Meridim90Vector accelerator;  //! 加速度センサ値
+  Meridim90Vector gyroscope;    //! 加速度センサ値
+  Meridim90Vector magnetometer; //! 加速度センサ値
+  int16_t temperature;          //! 温度センサ値
+  Meridim90RPY dmp;             //! DMP推定
 
-  uint16_t sequential; //! シーケンス番号
+  Meridim90Controller control; //! リモコンの基本ボタン値
+  uint8_t motion_frames;       //! モーション設定のフレーム数
+  uint8_t stop_frames_ms;      //! ボード停止時のフレーム数
 
-  int16_t acc_x;       //! 加速度センサX値
-  int16_t acc_y;       //! 加速度センサY値
-  int16_t acc_z;       //! 加速度センサZ値
-  int16_t gyro_x;      //! ジャイロセンサX値
-  int16_t gyro_y;      //! ジャイロセンサY値
-  int16_t gyro_z;      //! ジャイロセンサZ値
-  int16_t mag_x;       //! 磁気コンパスX値
-  int16_t mag_y;       //! 磁気コンパスY値
-  int16_t mag_z;       //! 磁気コンパスZ値
-  int16_t temperature; //! 温度センサ値
-  int16_t dmp_roll;    //! DMP推定ロール方向値
-  int16_t dmp_pitch;   //! DMP推定ピッチ方向値
-  int16_t dmp_yaw;     //! DMP推定ヨー方向値
-
-  int16_t control_buttons;     //! リモコンの基本ボタン値
-  int16_t control_stick_l;     //! リモコンの左スティックアナログ値
-  int16_t control_stick_r;     //! リモコンの右スティックアナログ値
-  uint16_t control_l2r2analog; //! リモコンのL2R2ボタンアナログ値
-
-  uint8_t motion_frames;  //! モーション設定のフレーム数
-  uint8_t stop_frames_ms; //! ボード停止時のフレーム数
-
-  int16_t head_y_cmd; //! 頭ヨーのコマンド
-  int16_t head_y_val; //! 頭ヨーの値
-
-  int16_t l_shoulder_p_cmd; //! 左肩ピッチのコマンド
-  int16_t l_shoulder_p_val; //! 左肩ピッチの値
-  int16_t l_shoulder_r_cmd; //! 左肩ロールのコマンド
-  int16_t l_shoulder_r_val; //! 左肩ロールの値
-  int16_t l_elbow_y_cmd;    //! 左肘ヨーのコマンド
-  int16_t l_elbow_y_val;    //! 左肘ヨーの値
-  int16_t l_elbow_p_cmd;    //! 左肘ピッチのコマンド
-  int16_t l_elbow_p_val;    //! 左肘ピッチの値
-  int16_t l_hipjoint_y_cmd; //! 左股ヨーのコマンド
-  int16_t l_hipjoint_y_val; //! 左股ヨーの値
-  int16_t l_hipjoint_r_cmd; //! 左股ロールのコマンド
-  int16_t l_hipjoint_r_val; //! 左股ロールの値
-  int16_t l_hipjoint_p_cmd; //! 左股ピッチのコマンド
-  int16_t l_hipjoint_p_val; //! 左股ピッチの値
-  int16_t l_knee_p_cmd;     //! 左膝ピッチのコマンド
-  int16_t l_knee_p_val;     //! 左膝ピッチの値
-  int16_t l_ankle_p_cmd;    //! 左足首ピッチのコマンド
-  int16_t l_ankle_p_val;    //! 左足首ピッチの値
-  int16_t l_ankle_r_cmd;    //! 左足首ロールのコマンド
-  int16_t l_ankle_r_val;    //! 左足首ロールの値
-  int16_t l_servo_id11_cmd; //! 追加サーボ用のコマンド
-  int16_t l_servo_id11_val; //! 追加サーボ用の値
-  int16_t l_servo_id12_cmd; //! 追加サーボ用のコマンド
-  int16_t l_servo_id12_val; //! 追加サーボ用の値
-  int16_t l_servo_id13_cmd; //! 追加サーボ用のコマンド
-  int16_t l_servo_id13_val; //! 追加サーボ用の値
-  int16_t l_servo_id14_cmd; //! 追加サーボ用のコマンド
-  int16_t l_servo_id14_val; //! 追加サーボ用の値
-
-  int16_t waist_y_cmd;      //! 腰ヨーのコマンド
-  int16_t waist_y_val;      //! 腰ヨーの値
-  int16_t r_shoulder_p_cmd; //! 右肩ピッチのコマンド
-  int16_t r_shoulder_p_val; //! 右肩ピッチの値
-  int16_t r_shoulder_r_cmd; //! 右肩ロールのコマンド
-  int16_t r_shoulder_r_val; //! 右肩ロールの値
-  int16_t r_elbow_y_cmd;    //! 右肘ヨーのコマンド
-  int16_t r_elbow_y_val;    //! 右肘ヨーの値
-  int16_t r_elbow_p_cmd;    //! 右肘ピッチのコマンド
-  int16_t r_elbow_p_val;    //! 右肘ピッチの値
-  int16_t r_hipjoint_y_cmd; //! 右股ヨーのコマンド
-  int16_t r_hipjoint_y_val; //! 右股ヨーの値
-  int16_t r_hipjoint_r_cmd; //! 右股ロールのコマンド
-  int16_t r_hipjoint_r_val; //! 右股ロールの値
-  int16_t r_hipjoint_p_cmd; //! 右股ピッチのコマンド
-  int16_t r_hipjoint_p_val; //! 右股ピッチの値
-  int16_t r_knee_p_cmd;     //! 右膝ピッチのコマンド
-  int16_t r_knee_p_val;     //! 右膝ピッチの値
-  int16_t r_ankle_p_cmd;    //! 右足首ピッチのコマンド
-  int16_t r_ankle_p_val;    //! 右足首ピッチの値
-  int16_t r_ankle_r_cmd;    //! 右足首ロールのコマンド
-  int16_t r_ankle_r_val;    //! 右足首ロールの値
-  int16_t r_servo_id11_cmd; //! 追加テスト用のコマンド
-  int16_t r_servo_id11_val; //! 追加テスト用の値
-  int16_t r_servo_id12_cmd; //! 追加テスト用のコマンド
-  int16_t r_servo_id12_val; //! 追加テスト用の値
-  int16_t r_servo_id13_cmd; //! 追加テスト用のコマンド
-  int16_t r_servo_id13_val; //! 追加テスト用の値
-  int16_t r_servo_id14_cmd; //! 追加テスト用のコマンド
-  int16_t r_servo_id14_val; //! 追加テスト用の値
-
+  Meridim90Servo servo[MERIDIM90_SERVO_NUM];   //! サーボのコマンドと値
   int16_t user_data[MERIDIM90_USER_DATA_SIZE]; //! ユーザー定義用
 
   uint16_t err;      //! ERROR CODE

@@ -11,7 +11,7 @@
 #define __MRD_MODULE_IMU_MPU6050_HPP__
 
 // ヘッダーファイルの読み込み
-#include <mrd_modules/mrd_plugin/i_mrd_plugin_i2c.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
 
 // ライブラリ導入
 #include <Arduino.h>
@@ -40,7 +40,7 @@ struct thread_args {
 };
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile bool flag_mrd_ahrs_MPU6050_loop = false;
+volatile bool flag_mrd_ahrs_mpu6050_loop = false;
 st_data a_data;
 inline float deg2rad(float deg) { return (deg * M_PI) / 180.0; }
 inline float rad2deg(float rad) { return (rad * 180.0) / M_PI; }
@@ -54,14 +54,14 @@ inline float deg_correction(float deg) {
   }
 }
 
-void thread_mrd_ahrs_MPU6050(void *args) {
-  flag_mrd_ahrs_MPU6050_loop = true;
+void thread_mrd_ahrs_mpu6050(void *args) {
+  flag_mrd_ahrs_mpu6050_loop = true;
   thread_args param = *(thread_args *)args;
   int delay_ms = param.delay_ms;
 
   st_data a_ahrs;
   MPU6050 mpu6050;
-  while (true == flag_mrd_ahrs_MPU6050_loop) {
+  while (true == flag_mrd_ahrs_mpu6050_loop) {
     mpu6050.initialize();
     uint8_t devStatus = mpu6050.dmpInitialize();
 
@@ -89,7 +89,7 @@ void thread_mrd_ahrs_MPU6050(void *args) {
   uint8_t fifoBuffer[64]; ///! FIFO storage buffer
   float ypr[3];           ///! roll/pitch/yaw container and gravity vector
 
-  while (true == flag_mrd_ahrs_MPU6050_loop) {
+  while (true == flag_mrd_ahrs_mpu6050_loop) {
     if (mpu6050.dmpGetCurrentFIFOPacket(fifoBuffer)) { // Get new data
       mpu6050.dmpGetQuaternion(&a_ahrs.quaternion, fifoBuffer);
       mpu6050.dmpGetGravity(&a_ahrs.gravity, &a_ahrs.quaternion);
@@ -127,7 +127,7 @@ public:
     this->param->delay_ms = 10;
   }
   ~MrdAhrsMPU6050() {
-    ahrs_mpu6050::flag_mrd_ahrs_MPU6050_loop = false;
+    ahrs_mpu6050::flag_mrd_ahrs_mpu6050_loop = false;
     vTaskDelete(this->task_handle);
     pthread_mutex_destroy(&ahrs_mpu6050::mutex);
   }
@@ -137,7 +137,7 @@ public:
   uint8_t read(uint8_t address) { return 0; }
   bool setup() override {
     this->a_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
-    xTaskCreatePinnedToCore(ahrs_mpu6050::thread_mrd_ahrs_MPU6050,
+    xTaskCreatePinnedToCore(ahrs_mpu6050::thread_mrd_ahrs_mpu6050,
                             this->m_task_name,
                             this->m_stack_depth,
                             (void *)this->param,
@@ -156,17 +156,17 @@ public:
         this->reset();
       }
 
-      a_meridim.acc_x = this->float2HfShort(this->a_ahrs.accelerator.x); //! 加速度センサX値
-      a_meridim.acc_y = this->float2HfShort(this->a_ahrs.accelerator.y); //! 加速度センサY値
-      a_meridim.acc_z = this->float2HfShort(this->a_ahrs.accelerator.z); //! 加速度センサZ値
-      a_meridim.gyro_x = this->float2HfShort(this->a_ahrs.gyroscope.x);  //! ジャイロセンサX値
-      a_meridim.gyro_y = this->float2HfShort(this->a_ahrs.gyroscope.y);  //! ジャイロセンサY値
-      a_meridim.gyro_z = this->float2HfShort(this->a_ahrs.gyroscope.z);  //! ジャイロセンサZ値
+      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x); //! 加速度センサX値
+      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y); //! 加速度センサY値
+      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z); //! 加速度センサZ値
+      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x);     //! ジャイロセンサX値
+      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y);     //! ジャイロセンサY値
+      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z);     //! ジャイロセンサZ値
 
-      // TODO: magnetmeter に gravityをいれている？
-      a_meridim.mag_x = this->float2HfShort(this->a_ahrs.gravity.x);
-      a_meridim.gravity_y = this->float2HfShort(this->a_ahrs.gravity.y);
-      a_meridim.gravity_z = this->float2HfShort(this->a_ahrs.gravity.z);
+      // TODO: magnetometer に gravityをいれている？
+      a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.gravity.x);
+      a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.gravity.y);
+      a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.gravity.z);
 
       // a_meridim.temperature = this->float2HfShort(0); //! 温度センサ値
 
@@ -175,9 +175,9 @@ public:
         this->yaw_origin = this->float2HfShort(this->a_ahrs.ypr_deg.z);
         this->m_rest_flag = false;
       }
-      a_meridim.dmp_roll = this->float2HfShort(this->a_ahrs.ypr_deg.x);                                   //! DMP推定ロール方向値
-      a_meridim.dmp_pitch = this->float2HfShort(this->a_ahrs.ypr_deg.y);                                  //! DMP推定ピッチ方向値
-      a_meridim.dmp_yaw = this->float2HfShort(deg_correction(this->a_ahrs.ypr_deg.z) - this->yaw_origin); //! DMP推定ヨー方向値
+      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.ypr_deg.x);                                                 //! DMP推定ロール方向値
+      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.ypr_deg.y);                                                //! DMP推定ピッチ方向値
+      a_meridim.dmp.yaw = this->float2HfShort(ahrs_mpu6050::deg_correction(this->a_ahrs.ypr_deg.z) - this->yaw_origin); //! DMP推定ヨー方向値
     }
     return true;
   }

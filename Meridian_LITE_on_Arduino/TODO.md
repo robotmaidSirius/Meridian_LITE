@@ -44,10 +44,10 @@
 | analog   | アナログ入力 |   V   |       | テストがまだ。数値入力をどうするか？  |
 | gpio-out | DAC          |   V   |   V   |                                       |
 | gpio-in  | DAC          |   V   |       | テストがまだ                          |
-| I2C      | I2C          |       |       | 置き換えは出来た。IMUの動作確認をする |
+| I2C      | I2C          |   △   |       | 置き換えは出来た。IMUの動作確認をする |
 | EEPROM   | EEPROM       |   △   |       | 理解不足                              |
 | sd_card  | SDカード     |   △   |       | 理解不足                              |
-| spi      | SPI          |       |       |                                       |
-| ICS_L    | servo_left   |       |       | 置き換える                            |
-| ICS_R    | servo_right  |       |       | 置き換える                            |
-| pad      | パッド       |       |       | 振り分けを実施する。                  |
+| spi      | SPI          |  --   |       | CANを使うおう                         |
+| ICS_L    | servo_left   |   △   |       | 置き換える                            |
+| ICS_R    | servo_right  |   △   |       | 置き換える                            |
+| pad      | パッド       |   △   |       | 振り分けを実施する。                  |
