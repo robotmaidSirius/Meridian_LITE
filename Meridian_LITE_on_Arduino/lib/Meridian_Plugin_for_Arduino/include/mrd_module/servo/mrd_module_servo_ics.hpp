@@ -23,8 +23,8 @@ namespace plugin {
 
 class MrdServoICS : public IMeridianServo {
 public:
-  IcsHardSerialClass ics;
-  Meridim90Servo servo[MERIDIM90_SERVO_NUM]; //! サーボのコマンドと値
+  IcsHardSerialClass ics;                    ///! ICSサーボのインスタンス
+  Meridim90Servo servo[MERIDIM90_SERVO_NUM]; ///! サーボのコマンドと値
 
 public:
   MrdServoICS() {
@@ -195,7 +195,7 @@ private:
   bool _enable = false;
   int _index = 0;
   int LOST_COUNT_MAX = 6;
-  int a_err_cnt[MERIDIM90_SERVO_NUM]; //! エラーカウント
+  int a_err_cnt[MERIDIM90_SERVO_NUM]; ///! エラーカウント
 
 #if 1
 
@@ -218,11 +218,11 @@ public:
 
   // 各種パラメータ書込み
   int setID(byte id) { return this->ics.setFree(id); }
-  int setPos(byte id, unsigned int pos) { return this->ics.setPos(id, pos); }       // 目標値設定
-  int setStrc(byte id, unsigned int strc) { return this->ics.setStrc(id, strc); }   // ストレッチ書込 1～127  1(弱）  <=>    127(強）
-  int setSpd(byte id, unsigned int spd) { return this->ics.setSpd(id, spd); }       // スピード書込   1～127  1(遅い) <=>    127(速い)
-  int setCur(byte id, unsigned int curlim) { return this->ics.setCur(id, curlim); } // 電流制限値書込 1～63   1(低い) <=>    63 (高い)
-  int setTmp(byte id, unsigned int tmplim) { return this->ics.setTmp(id, tmplim); } // 温度上限書込   1～127  127(低温） <=> 1(高温)
+  int setPos(byte id, unsigned int pos) { return this->ics.setPos(id, pos); }                     // 目標値設定
+  int setStrc(byte id, unsigned int strc) { return this->ics.setStrc(id, strc); }                 // ストレッチ書込 1～127  1(弱）  <=>    127(強）
+  int setSpd(byte id, unsigned int spd) { return this->ics.setSpd(id, spd); }                     // スピード書込   1～127  1(遅い) <=>    127(速い)
+  int setCur(byte id, unsigned int current_limit) { return this->ics.setCur(id, current_limit); } // 電流制限値書込 1～63   1(低い) <=>    63 (高い)
+  int setTmp(byte id, unsigned int tmp_limit) { return this->ics.setTmp(id, tmp_limit); }         // 温度上限書込   1～127  127(低温） <=> 1(高温)
 
   // 各種パラメータ読込み
   int getID() { return this->ics.getID(); }

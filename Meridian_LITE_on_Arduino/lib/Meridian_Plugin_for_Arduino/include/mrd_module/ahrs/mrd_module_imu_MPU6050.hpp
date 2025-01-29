@@ -118,7 +118,7 @@ void thread_mrd_ahrs_mpu6050(void *args) {
 
 class MrdAhrsMPU6050 : public IMeridianI2C {
 public:
-  MrdAhrsMPU6050(uint16_t address, int core = 0) {
+  MrdAhrsMPU6050(uint16_t address, int core = 0) : IMeridianI2C(address) {
     this->m_address = address;
     if (nullptr == this->param) {
       this->param = new ahrs_mpu6050::thread_args();
@@ -156,28 +156,28 @@ public:
         this->reset();
       }
 
-      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x); //! 加速度センサX値
-      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y); //! 加速度センサY値
-      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z); //! 加速度センサZ値
-      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x);     //! ジャイロセンサX値
-      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y);     //! ジャイロセンサY値
-      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z);     //! ジャイロセンサZ値
+      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x); ///! 加速度センサX値
+      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y); ///! 加速度センサY値
+      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z); ///! 加速度センサZ値
+      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x);     ///! ジャイロセンサX値
+      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y);     ///! ジャイロセンサY値
+      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z);     ///! ジャイロセンサZ値
 
       // TODO: magnetometer に gravityをいれている？
       a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.gravity.x);
       a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.gravity.y);
       a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.gravity.z);
 
-      // a_meridim.temperature = this->float2HfShort(0); //! 温度センサ値
+      // a_meridim.temperature = this->float2HfShort(0); ///! 温度センサ値
 
       // Estimated heading value using DMP.
       if (true == this->m_rest_flag) {
         this->yaw_origin = this->float2HfShort(this->a_ahrs.ypr_deg.z);
         this->m_rest_flag = false;
       }
-      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.ypr_deg.x);                                                 //! DMP推定ロール方向値
-      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.ypr_deg.y);                                                //! DMP推定ピッチ方向値
-      a_meridim.dmp.yaw = this->float2HfShort(ahrs_mpu6050::deg_correction(this->a_ahrs.ypr_deg.z) - this->yaw_origin); //! DMP推定ヨー方向値
+      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.ypr_deg.x);                                                 ///! DMP推定ロール方向値
+      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.ypr_deg.y);                                                ///! DMP推定ピッチ方向値
+      a_meridim.dmp.yaw = this->float2HfShort(ahrs_mpu6050::deg_correction(this->a_ahrs.ypr_deg.z) - this->yaw_origin); ///! DMP推定ヨー方向値
     }
     return true;
   }

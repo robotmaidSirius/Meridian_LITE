@@ -97,7 +97,7 @@ void thread_mrd_ahrs_bno055(void *args) {
 
 class MrdAhrsBNO055 : public IMeridianI2C {
 public:
-  MrdAhrsBNO055(int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A, TwoWire *theWire = &Wire) {
+  MrdAhrsBNO055(int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A, TwoWire *theWire = &Wire) : IMeridianI2C(address) {
     if (nullptr == theWire) {
       theWire = &Wire;
     }
@@ -139,26 +139,26 @@ public:
         this->reset();
       }
 
-      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x());   //! 加速度センサX値
-      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y());   //! 加速度センサY値
-      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z());   //! 加速度センサZ値
-      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x());       //! ジャイロセンサX値
-      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y());       //! ジャイロセンサY値
-      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z());       //! ジャイロセンサZ値
-      a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetometer.x()); //! 磁力センサX値
-      a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetometer.y()); //! 磁力センサY値
-      a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetometer.z()); //! 磁力センサZ値
+      a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x());   ///! 加速度センサX値
+      a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y());   ///! 加速度センサY値
+      a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z());   ///! 加速度センサZ値
+      a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x());       ///! ジャイロセンサX値
+      a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y());       ///! ジャイロセンサY値
+      a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z());       ///! ジャイロセンサZ値
+      a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetometer.x()); ///! 磁力センサX値
+      a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetometer.y()); ///! 磁力センサY値
+      a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetometer.z()); ///! 磁力センサZ値
 
-      // a_meridim.temperature = this->float2HfShort(0); //! 温度センサ値
+      // a_meridim.temperature = this->float2HfShort(0); ///! 温度センサ値
 
       // Estimated heading value using DMP.
       if (true == this->m_rest_flag) {
         this->yaw_origin = this->float2HfShort(this->a_ahrs.euler.x());
         this->m_rest_flag = false;
       }
-      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.euler.z());                                                //! DMP推定ロール方向値
-      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.euler.y());                                               //! DMP推定ピッチ方向値
-      a_meridim.dmp.yaw = this->float2HfShort(ahrs_bno055::deg_correction(this->a_ahrs.euler.x() - this->yaw_origin)); //! DMP推定ヨー方向値
+      a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.euler.z());                                                ///! DMP推定ロール方向値
+      a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.euler.y());                                               ///! DMP推定ピッチ方向値
+      a_meridim.dmp.yaw = this->float2HfShort(ahrs_bno055::deg_correction(this->a_ahrs.euler.x() - this->yaw_origin)); ///! DMP推定ヨー方向値
     }
     return true;
   }
