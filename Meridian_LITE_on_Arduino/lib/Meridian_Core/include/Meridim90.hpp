@@ -17,21 +17,22 @@ namespace core {
 namespace meridim {
 
 #ifndef MERIDIM90_SIZE
-#define MERIDIM90_SIZE (90) /**< Meridim配列の長さ設定 (デフォルトは90) */
+#define MERIDIM90_SIZE (90) /**< Meridimの変数の個数 (デフォルトは90) */
 #endif
 #ifndef MERIDIM90_SERVO_NUM
-#define MERIDIM90_SERVO_NUM (33) /**< 接続するサーボの数 */
+#define MERIDIM90_SERVO_NUM (30) /**< 接続するサーボの数 */
 #endif
-#if (MERIDIM90_SIZE <= (20 + 2 + (MERIDIM90_SERVO_NUM * 2)))
+#if (MERIDIM90_SIZE <= (2 + 12 + 1 + 4 + 1 + (MERIDIM90_SERVO_NUM * 2) + 2))
+// (Header[2](マスターコマンド+シーケンス) + AHRS[12] + Temp[1] + PAD[4] + Motion[1] + "サーボの数xサイズ倍率" + Footer[2](エラーコード+チェックサム))
 #error "MERIDIM90_SERVO_NUM を減らしてください"
 #error "Please reduce MERIDIM90_SERVO_NUM"
 #endif
+/// @brief ユーザー定義用のサイズ
+/// @details 全体の個数 - (Header[2](マスターコマンド+シーケンス) + AHRS[12] + Temp[1] + PAD[4] + Motion[1] + Servo[MERIDIM90_SERVO_NUM*2] + Footer[2](エラーコード+チェックサム )
+const int MERIDIM90_USER_DATA_SIZE = (MERIDIM90_SIZE - (2 + 12 + 1 + 4 + 1 + (MERIDIM90_SERVO_NUM * 2) + 2));
 
-const int MERIDIM90_DATA_SIZE = (MERIDIM90_SIZE - 1);                                     ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
-const int MERIDIM90_USER_DATA_SIZE = (MERIDIM90_SIZE - 20 - MERIDIM90_SERVO_NUM * 2 - 2); ///! ユーザー定義用のサイズ (全体長さ - ユーザー定義前にあるデータ数 - ユーザー定義後にあるデータ数)
-
-const int MERIDIM90_LEN = MERIDIM90_SIZE * 2; ///! Meridim配列のバイト型の長さ
-const int MERIDIM90_BYTE = MERIDIM90_LEN * 2; ///! Meridim配列のバイト型の長さ
+const int MERIDIM90_BYTE_LEN = (MERIDIM90_SIZE * 2);     ///! Meridim配列のバイト型の長さ (1つのデータが2バイトのため)
+const int MERIDIM90_DATA_LEN = (MERIDIM90_BYTE_LEN - 1); /// チェックサムを除いたバイト型の長さ
 
 //! @brief マスターコマンド定義
 enum MasterCommand {
@@ -61,14 +62,15 @@ enum MasterCommand {
 
 //! @brief エラービット MRD_ERR_CODEの上位8bit分
 enum ErrorBit {
-  ERRBIT_ESP_PC = 15,       ///! ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
-  ERRBIT_PC_ESP = 14,       ///! PC → ESP32 のUDP受信エラー
-  ERRBIT_ESP_TSY = 13,      ///! ESP32 → TeensyのSPI受信エラー
-  ERRBIT_TSY_ESP = 12,      ///! Teensy → ESP32 のSPI受信エラー
-  ERRBIT_BOARD_DELAY = 11,  ///! Teensy or ESP32の処理ディレイ (末端で捕捉)
-  ERRBIT_UDP_ESP_SKIP = 10, ///! PC → ESP32 のUDPフレームスキップエラー
-  ERRBIT_BOARD_SKIP = 9,    ///! PC → ESP32 → Teensy のフレームスキップエラー (末端で捕捉)
-  ERRBIT_PC_SKIP = 8,       ///! Teensy → ESP32 → PC のフレームスキップエラー (末端で捕捉)
+  ERRBIT_ESP_PC = (0b1 << 15),       ///! ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
+  ERRBIT_PC_ESP = (0b1 << 14),       ///! PC → ESP32 のUDP受信エラー
+  ERRBIT_ESP_TSY = (0b1 << 13),      ///! ESP32 → TeensyのSPI受信エラー
+  ERRBIT_TSY_ESP = (0b1 << 12),      ///! Teensy → ESP32 のSPI受信エラー
+  ERRBIT_BOARD_DELAY = (0b1 << 11),  ///! Teensy or ESP32の処理ディレイ (末端で捕捉)
+  ERRBIT_UDP_ESP_SKIP = (0b1 << 10), ///! PC → ESP32 のUDPフレームスキップエラー
+  ERRBIT_BOARD_SKIP = (0b1 << 9),    ///! PC → ESP32 → Teensy のフレームスキップエラー (末端で捕捉)
+  ERRBIT_PC_SKIP = (0b1 << 8),       ///! Teensy → ESP32 → PC のフレームスキップエラー (末端で捕捉)
+  ERRBIT_COMMON = (0b1 << 7),        ///! Teensy → ESP32 → PC のフレームスキップエラー (末端で捕捉)
 };
 
 //================================================================================================================
@@ -114,8 +116,7 @@ struct Meridim90RPY {
 struct Meridim90Servo {
   uint8_t id;
   uint8_t cmd;
-  uint8_t option;
-  uint8_t value;
+  uint16_t value;
 };
 
 struct Meridim90Controller {

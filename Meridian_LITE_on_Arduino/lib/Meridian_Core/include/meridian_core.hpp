@@ -17,7 +17,7 @@ namespace core {
 namespace execution {
 using namespace meridian::core::meridim;
 
-void mrd_convert_array(const uint8_t *data, int len, Meridim90 &a_meridim);
+void mrd_convert_array(uint8_t *data, int len, Meridim90 &a_meridim);
 void mrd_convert_Meridim90(Meridim90 &a_meridim, const uint8_t *data, int len);
 void meridim_countup(Meridim90 &a_meridim);
 void meridim_clear(Meridim90 &a_meridim);

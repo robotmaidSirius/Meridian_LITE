@@ -78,14 +78,19 @@ public:
     }
     while (WiFi.status() != WL_CONNECTED) { // https://www.arduino.cc/en/Reference/WiFiStatus 戻り値一覧
       timeout_ms -= delay_ms;
-      if (0 == timeout_ms % logging_time_ms) { // 0.5秒ごとに接続状況を出力
-        this->m_diag->log(".");
+      if (this->_output_log) {
+        if (0 == timeout_ms % logging_time_ms) { // 0.5秒ごとに接続状況を出力
+          this->m_diag->log(".");
+        }
       }
       delay(delay_ms);       // 接続が完了するまでループで待つ
       if (0 >= timeout_ms) { // 10秒でタイムアウト
         this->m_diag->log_error("Wifi init TIMEOUT.");
         return false;
       }
+    }
+    if (this->_output_log) {
+      this->m_diag->log("\n");
     }
     uint8_t result = this->a_udp.begin(this->_open_port);
     if (0 != result) {
@@ -102,7 +107,7 @@ public:
   }
 
   bool received(Meridim90 &a_meridim) {
-    int a_len = MERIDIM90_SIZE;
+    static int a_len = MERIDIM90_BYTE_LEN;
     if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
     {
       if (nullptr != this->_gpio_signal) {
@@ -121,19 +126,18 @@ public:
   }
   bool send(Meridim90 &a_meridim) {
     bool result = this->check_connect();
-    if (true == result) {
+    if (result) {
       if (nullptr != this->_gpio_signal) {
         this->_gpio_signal->write(1, true);
       }
       meridian::core::execution::meridim_countup(a_meridim);
-      byte a_meridim_array[MERIDIM90_SIZE] = {0};
-      meridian::core::execution::mrd_convert_array(a_meridim_array, MERIDIM90_SIZE, a_meridim);
-      int a_len = 90;
+      uint8_t a_meridim_array[MERIDIM90_BYTE_LEN] = {0};
+      meridian::core::execution::mrd_convert_array(a_meridim_array, MERIDIM90_BYTE_LEN, a_meridim);
       for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
         if (0 != target[i].port) {
-          this->a_udp.beginPacket(target[i].ip, target[i].port); // UDPパケットの開始
-          this->a_udp.write(a_meridim_array, MERIDIM90_SIZE);    // データの書き込み
-          this->a_udp.endPacket();                               // UDPパケットの終了
+          this->a_udp.beginPacket(target[i].ip, target[i].port);  // UDPパケットの開始
+          this->a_udp.write(a_meridim_array, MERIDIM90_BYTE_LEN); // データの書き込み
+          this->a_udp.endPacket();                                // UDPパケットの終了
         }
       }
       if (nullptr != this->_gpio_signal) {
@@ -177,6 +181,7 @@ private:
     IPAddress ip;
     uint16_t port = 0;
   };
+  bool _output_log = true;
 
 public:
   static const int NUMBER_ALLOWED = 1;

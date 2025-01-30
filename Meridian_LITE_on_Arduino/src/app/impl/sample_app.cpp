@@ -20,7 +20,7 @@ void test_led_board(Meridim90 &mrd_meridim, mrd_entity &entity) {
   // [setup]
   static bool init = true;
   static meridian::modules::plugin::MrdGpioOut gpio(2, 2, 0);
-  if (true == init) {
+  if (init) {
     gpio.setup();
     init = false;
   }
@@ -43,7 +43,7 @@ void test_led_board(Meridim90 &mrd_meridim, mrd_entity &entity) {
 void test_led_entity(Meridim90 &mrd_meridim, mrd_entity &entity) {
   // [setup]
   static bool init = true;
-  if (true == init) {
+  if (init) {
     init = false;
   }
   // [loop]
@@ -63,7 +63,7 @@ void test_led_entity(Meridim90 &mrd_meridim, mrd_entity &entity) {
 void test_log(Meridim90 &mrd_meridim, mrd_entity &entity) {
   // [setup]
   static bool init = true;
-  if (true == init) {
+  if (init) {
     init = false;
   }
   // [loop]
@@ -101,7 +101,7 @@ void test_log(Meridim90 &mrd_meridim, mrd_entity &entity) {
   default:
     log_level = IMeridianDiagnostic::OUTPUT_LOG_LEVEL::LEVEL_OFF;
     log_shift = -1;
-    if (true == flag_log) {
+    if (flag_log) {
       flag_log = false;
       entity.communication.diag->disable();
     } else {
@@ -126,10 +126,10 @@ void test_log(Meridim90 &mrd_meridim, mrd_entity &entity) {
 // 外部関数
 ////////////////////////////////////////////////////////////////////////////////////////////////
 bool sample_app_setup(mrd_entity &entity) {
-  static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[1])->write(false);
+  static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[1])->write(true);
   return true;
 }
-#define TEST_ENABLE_LED       0
+#define TEST_ENABLE_LED       1
 #define TEST_ENABLE_BOARD_LED 0
 #define TEST_ENABLE_LOG       0
 bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {

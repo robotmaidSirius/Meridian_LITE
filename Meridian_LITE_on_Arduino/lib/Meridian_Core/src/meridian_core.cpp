@@ -45,7 +45,6 @@ void meridim_clear(Meridim90 &a_meridim) {
   for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
     a_meridim.servo[i].id = 0;
     a_meridim.servo[i].cmd = 0;
-    a_meridim.servo[i].option = 0;
     a_meridim.servo[i].value = 0;
   }
 
@@ -53,21 +52,20 @@ void meridim_clear(Meridim90 &a_meridim) {
     a_meridim.user_data[i] = 0; ///! ユーザー定義用
   }
 
-  a_meridim.err = 0;      ///! ERROR CODE
-  a_meridim.checksum = 0; ///! CHECK SUM
+  a_meridim.err = (int16_t)ErrorBit::ERRBIT_COMMON; ///! ERROR CODE
+  a_meridim.checksum = 0xFFFF;                      ///! CHECK SUM
   mrd_set_checksum(a_meridim);
 }
 
-void mrd_convert_array(const uint8_t *data, int len, Meridim90 &a_meridim) {
+void mrd_convert_array(uint8_t *data, int len, Meridim90 &a_meridim) {
   mrd_set_checksum(a_meridim);
-  memcpy(&data, &a_meridim, len);
+  memcpy(data, &a_meridim, len);
 }
 void mrd_convert_Meridim90(Meridim90 &a_meridim, const uint8_t *data, int len) {
-  if (len <= MERIDIM90_SIZE) {
-    len = MERIDIM90_SIZE;
+  if (MERIDIM90_BYTE_LEN < len) {
+    len = MERIDIM90_BYTE_LEN;
   }
   memcpy(&a_meridim, data, size_t(len));
-  return;
 }
 void meridim_countup(Meridim90 &a_meridim) {
   a_meridim.sequential = (uint16_t)((uint32_t)a_meridim.sequential + 1) % 0xFFFF;
@@ -81,10 +79,10 @@ void meridim_countup(Meridim90 &a_meridim) {
 /// @param a_meridim Meridim配列の共用体. 参照渡し.
 /// @return 常にtrueを返す.
 void mrd_set_checksum(Meridim90 &a_meridim) {
-  uint16_t data[MERIDIM90_SIZE] = {0};
-  memcpy(data, &a_meridim, MERIDIM90_SIZE);
+  uint16_t data[MERIDIM90_BYTE_LEN] = {0};
+  memcpy(data, &a_meridim, MERIDIM90_BYTE_LEN);
   uint32_t a_checksum = 0;
-  for (int i = 0; i < MERIDIM90_DATA_SIZE; i++) {
+  for (int i = 0; i < MERIDIM90_DATA_LEN; i++) {
     a_checksum = (a_checksum + data[i]) & 0xFFFF;
   }
   a_meridim.checksum = (uint16_t)(~a_checksum & 0xFFFF);

@@ -29,9 +29,8 @@ public:
 public:
   MrdServoICS() {
     for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-      this->servo[i].cmd = 0xFF;
       this->servo[i].id = 0xFF;
-      this->servo[i].option = 0;
+      this->servo[i].cmd = COMMAND_FREE;
       this->servo[i].value = 0;
       this->a_err_cnt[i] = 0;
     }
@@ -39,17 +38,21 @@ public:
   ~MrdServoICS() {}
 
 public:
-  void set_meridim90_start_index(int index) {
+  void set_meridim90_start_index(int a_index, int a_max) {
+    assert(0 <= a_index && a_index < MERIDIM90_SERVO_NUM);
+    assert(0 < a_max && a_max <= MERIDIM90_SERVO_NUM);
+    assert((a_index + a_max) <= MERIDIM90_SERVO_NUM);
+    this->_start_index = a_index;
+    this->_servo_max = a_max;
   }
   void setup(HardwareSerial *icsSerial, byte en_pin, long baudrate = 1250000, int timeout = 2) {
     this->_icsSerial = icsSerial;
     this->_en_pin = en_pin;
     this->_baudrate = baudrate;
     this->_timeout = timeout;
-    for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-      this->servo[i].cmd = 0xFF;
+    for (int i = 0; i < this->_servo_max; i++) {
       this->servo[i].id = 0xFF;
-      this->servo[i].option = 0;
+      this->servo[i].cmd = COMMAND_FREE;
       this->servo[i].value = 0;
       this->a_err_cnt[i] = 0;
     }
@@ -63,18 +66,17 @@ public:
     return this->_enable;
   }
   bool input(Meridim90 &a_meridim) override {
-    if (true == this->_enable) {
+    if (this->_enable) {
     }
     return true;
   }
   bool output(Meridim90 &a_meridim) override {
-    if (true == this->_enable) {
+    if (this->_enable) {
       this->mrd_servos_drive_lite();
-      for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-        a_meridim.servo[i].cmd = this->servo[i].cmd;
-        a_meridim.servo[i].id = this->servo[i].id;
-        a_meridim.servo[i].option = this->servo[i].option;
-        a_meridim.servo[i].value = this->servo[i].value;
+      for (int i = 0; i < this->_servo_max; i++) {
+        a_meridim.servo[this->_start_index + i].cmd = this->servo[i].cmd;
+        a_meridim.servo[this->_start_index + i].id = this->servo[i].id;
+        a_meridim.servo[this->_start_index + i].value = this->servo[i].value;
       }
     }
     return true;
@@ -89,76 +91,72 @@ public:
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   bool mrd_servos_drive_lite() {
-    for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-      if (0 != this->servo[i].cmd) {
-        if (true == this->check_id(this->servo[i].id)) {
-          int a_tmp = 0;
-          int cmd = ~(COMMAND_READ_ONLY) & this->servo[i].cmd;
-          bool read_only = (0 < (this->servo[i].cmd & COMMAND_READ_ONLY)) ? true : false;
+    for (int i = 0; i < this->_servo_max; i++) {
+      if (this->check_id(this->servo[i].id)) {
+        int a_tmp = 0;
+        int cmd = ~(COMMAND_READ_ONLY) & this->servo[i].cmd;
+        bool read_only = (0 < (this->servo[i].cmd & COMMAND_READ_ONLY)) ? true : false;
 
-          switch (this->servo[i].cmd) {
-          case COMMAND_SET_POS: ///! サーボのトルクON
-            if (false == read_only) {
-              a_tmp = this->ics.setPos(this->servo[i].id, this->servo[i].value);
-            } else {
-              a_tmp = this->ics.getPos(this->servo[i].id);
-            }
-            break;
-          case COMMAND_STRETCH: ///! サーボのストレッチ設定
-            if (false == read_only) {
-              a_tmp = this->ics.setStrc(this->servo[i].id, this->servo[i].value);
-            } else {
-              a_tmp = this->ics.getStrc(this->servo[i].id);
-            }
-            break;
-          case COMMAND_SPEED: ///! サーボのスピード設定
-            if (false == read_only) {
-              a_tmp = this->ics.setSpd(this->servo[i].id, this->servo[i].value);
-            } else {
-              a_tmp = this->ics.getSpd(this->servo[i].id);
-            }
-            break;
-          case COMMAND_CURRENT: ///! サーボの電流制限設定
-            if (false == read_only) {
-              a_tmp = this->ics.setCur(this->servo[i].id, this->servo[i].value);
-            } else {
-              a_tmp = this->ics.getCur(this->servo[i].id);
-            }
-            break;
-          case COMMAND_TEMPERATURE: ///! サーボの温度設定
-            if (false == read_only) {
-              a_tmp = this->ics.setTmp(this->servo[i].id, this->servo[i].value);
-            } else {
-              a_tmp = this->ics.getTmp(this->servo[i].id);
-            }
-            break;
-          case COMMAND_ID: ///! サーボのID設定
-            if (false == read_only) {
-              a_tmp = this->ics.setID(this->servo[i].id);
-            } else {
-              a_tmp = this->ics.getID();
-            }
-            break;
-          case COMMAND_FREE: ///! サーボのトルクOFF
-          default:
-            a_tmp = this->ics.setFree(this->servo[i].id);
-            break;
-          }
-
-          // サーボからの返信信号を受け取れなかった場合
-          if (a_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
-            this->a_err_cnt[i]++;
-            if (this->a_err_cnt[i] >= LOST_COUNT_MAX) { // 一定以上の連続エラーで通信不能とみなす
-              this->a_err_cnt[i] = LOST_COUNT_MAX;
-              this->servo[i].option &= ERR_CODE;
-              this->servo[i].value = 0;
-            }
+        switch (this->servo[i].cmd) {
+        case COMMAND_SET_POS: ///! サーボのトルクON
+          if (false == read_only) {
+            a_tmp = this->ics.setPos(this->servo[i].id, this->servo[i].value);
           } else {
-            this->servo[i].value = a_tmp;
-            if (0 <= a_err_cnt[i]) {
-              this->a_err_cnt[i] = 0;
-              this->servo[i].option = ~(ERR_CODE) & this->servo[i].option;
-            }
+            a_tmp = this->ics.getPos(this->servo[i].id);
+          }
+          break;
+        case COMMAND_STRETCH: ///! サーボのストレッチ設定
+          if (false == read_only) {
+            a_tmp = this->ics.setStrc(this->servo[i].id, this->servo[i].value);
+          } else {
+            a_tmp = this->ics.getStrc(this->servo[i].id);
+          }
+          break;
+        case COMMAND_SPEED: ///! サーボのスピード設定
+          if (false == read_only) {
+            a_tmp = this->ics.setSpd(this->servo[i].id, this->servo[i].value);
+          } else {
+            a_tmp = this->ics.getSpd(this->servo[i].id);
+          }
+          break;
+        case COMMAND_CURRENT: ///! サーボの電流制限設定
+          if (false == read_only) {
+            a_tmp = this->ics.setCur(this->servo[i].id, this->servo[i].value);
+          } else {
+            a_tmp = this->ics.getCur(this->servo[i].id);
+          }
+          break;
+        case COMMAND_TEMPERATURE: ///! サーボの温度設定
+          if (false == read_only) {
+            a_tmp = this->ics.setTmp(this->servo[i].id, this->servo[i].value);
+          } else {
+            a_tmp = this->ics.getTmp(this->servo[i].id);
+          }
+          break;
+        case COMMAND_ID: ///! サーボのID設定
+          if (false == read_only) {
+            a_tmp = this->ics.setID(this->servo[i].id);
+          } else {
+            a_tmp = this->ics.getID();
+          }
+          break;
+        case COMMAND_FREE: ///! サーボのトルクOFF
+        default:
+          a_tmp = this->ics.setFree(this->servo[i].id);
+          break;
+        }
+
+        // サーボからの返信信号を受け取れなかった場合
+        if (a_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
+          this->a_err_cnt[i]++;
+          if (this->a_err_cnt[i] >= LOST_COUNT_MAX) { // 一定以上の連続エラーで通信不能とみなす
+            this->a_err_cnt[i] &= ERR_CODE;
+            this->servo[i].value = 0;
+          }
+        } else {
+          this->servo[i].value = a_tmp;
+          if (0 <= a_err_cnt[i]) {
+            this->a_err_cnt[i] = ~(ERR_CODE) & this->a_err_cnt[i];
           }
         }
       }
@@ -166,17 +164,21 @@ public:
     return true;
   }
 
-  bool mrd_servo_all_off() {
-    for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-      this->servo[i].cmd = COMMAND_FREE;
+  bool all_off() {
+    for (int i = 0; i < this->_servo_max; i++) {
+      if (this->check_id(this->servo[i].id)) {
+        this->servo[i].cmd = COMMAND_FREE;
+      }
     }
     return true;
   }
-  uint8_t mrd_servos_make_errcode_lite() {
+  uint8_t make_errcode_lite() {
     uint8_t servo_ix_tmp = 0;
-    for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-      if (0 != this->servo[i].option) {
-        servo_ix_tmp = uint8_t(i + 200);
+    for (int i = 0; i < this->_servo_max; i++) {
+      if (this->check_id(this->servo[i].id)) {
+        if (0 != this->a_err_cnt[i]) {
+          servo_ix_tmp = uint8_t(i + 200);
+        }
       }
     }
     return servo_ix_tmp;
@@ -194,17 +196,17 @@ private:
   bool _initialzed = false;
   bool _enable = false;
   int _index = 0;
+  int _start_index = 0;
+  int _servo_max = 0;
   int LOST_COUNT_MAX = 6;
   int a_err_cnt[MERIDIM90_SERVO_NUM]; ///! エラーカウント
 
 #if 1
 
 public:
-  // IcsBaseClassのメソッドを呼び出し
-  bool
-  check_id(byte id) {
+  bool check_id(byte id) {
     if (IcsHardSerialClass::MIN_ID <= id) {
-      if (id < MERIDIM90_SERVO_NUM) {
+      if (id < this->_servo_max) {
         if (id <= IcsHardSerialClass::MAX_ID) {
           return true;
         }
@@ -212,6 +214,9 @@ public:
     }
     return false;
   } // IDチェック
+
+public:
+  // IcsBaseClassのメソッドを呼び出し
 
   // サーボ位置決め設定
   int setFree(byte id) { return this->ics.setFree(id); } // サーボ脱力＋現在値読込

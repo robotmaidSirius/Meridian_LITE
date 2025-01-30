@@ -34,7 +34,7 @@ void hello_meridian_board_lite() {
   if (nullptr == entity) {
     output_log = false;
   }
-  if (true == output_log) {
+  if (output_log) {
     entity->communication.diag->log_info("Hi, This is %s(%s) %s.", PLUGIN_BOARD_NAME, PLUGIN_NAME, PLUGIN_VERSION);
     // Meridian Core
     entity->communication.diag->log_info("  Debug port: %s (%d bps)", entity->communication.diag->get_name(), BOARD_SETTING_DEFAULT_SERIAL0_BAUD);
@@ -43,21 +43,21 @@ void hello_meridian_board_lite() {
     // Meridian Plugin
     entity->communication.diag->log_info("  Mounted Plugin");
     for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
-      entity->communication.diag->log_info("    Analog[%d] : %s", i, (nullptr != entity->plugin.analog[i]) ? "Yes" : "--");
+      entity->communication.diag->log_info("    Analog[%d] : %s", i, (nullptr != entity->plugin.analog[i]) ? entity->plugin.analog[i]->get_name() : "--");
     }
     for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      entity->communication.diag->log_info("    DAC[%d] : %s", i, (nullptr != entity->plugin.gpio[i]) ? "Yes" : "--");
+      entity->communication.diag->log_info("    DAC[%d] : %s", i, (nullptr != entity->plugin.gpio[i]) ? entity->plugin.gpio[i]->get_name() : "--");
     }
     entity->communication.diag->log_info("    I2C: %u bps", param.i2c_speed);
     for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-      entity->communication.diag->log_info("      I2C[%d] : %s", i, (nullptr != entity->plugin.i2c[i]) ? "Yes" : "--");
+      entity->communication.diag->log_info("      I2C[%d] : %s", i, (nullptr != entity->plugin.i2c[i]) ? entity->plugin.i2c[i]->get_name() : "--");
     }
-    entity->communication.diag->log_info("    EEPROM : %s", (nullptr != entity->plugin.eeprom) ? "Yes" : "--");
-    entity->communication.diag->log_info("    SD-CARD : %s", (nullptr != entity->plugin.sd_card) ? "Yes" : "--");
+    entity->communication.diag->log_info("    EEPROM : %s", (nullptr != entity->plugin.eeprom) ? entity->plugin.eeprom->get_name() : "--");
+    entity->communication.diag->log_info("    SD-CARD : %s", (nullptr != entity->plugin.sd_card) ? entity->plugin.sd_card->get_name() : "--");
     entity->communication.diag->log_info("    SPI: %u bps", param.spi_speed);
-    entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? "Yes" : "--");
-    entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? "Yes" : "--", param.ics_l_speed);
-    entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? "Yes" : "--", param.ics_r_speed);
+    entity->communication.diag->log_info("      Common SPI : %s", (nullptr != entity->plugin.spi) ? entity->plugin.spi->get_name() : "--");
+    entity->communication.diag->log_info("    ICS_L : %s (%u bps)", (nullptr != entity->plugin.servo_left) ? entity->plugin.servo_left->get_name() : "--", param.ics_l_speed);
+    entity->communication.diag->log_info("    ICS_R : %s (%u bps)", (nullptr != entity->plugin.servo_right) ? entity->plugin.servo_right->get_name() : "--", param.ics_r_speed);
     entity->communication.diag->log_info("    Pad : %s ", (nullptr != entity->plugin.pad) ? entity->plugin.pad->get_name() : "--");
   }
 }
@@ -67,19 +67,19 @@ void boot_standby(bool output_log = true) {
   if (nullptr == entity) {
     output_log = false;
   }
-  if (true == output_log) {
+  if (output_log) {
     entity->communication.diag->log_info("Charging the capacitor.");
   }
   for (int i = 0; i < BOARD_SETTING_MOUNTED_BOOT_STANDBY; i++) {
     if (0 == (i % 100)) {
       // 100msごとにピリオドを表示
-      if (true == output_log) {
+      if (output_log) {
         entity->communication.diag->log(".");
       }
     }
     delay(1);
   }
-  if (true == output_log) {
+  if (output_log) {
     entity->communication.diag->log("\n");
   }
 }
@@ -152,7 +152,7 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       }
     }
   }
-  if (true == flag_ic2_begin) {
+  if (flag_ic2_begin) {
     if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
       result = Wire.begin();
     } else {
@@ -176,7 +176,7 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
   //////////////////////////////////////////////////////////
   // Setup Communication
   //////////////////////////////////////////////////////////
-  if (true == result) {
+  if (result) {
     diagnosis.communication.con.initalized = false;
     if (nullptr != entity) {
       if (nullptr != entity->communication.con) {
@@ -291,9 +291,10 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       }
     }
   }
-  if (true == result) {
+  if (result) {
     meridian::core::execution::meridim_clear(meridim90);
     hello_meridian_board_lite();
+    mrd_timer_setup(BOARD_SETTING_DEFAULT_INTERVAL_MS); // タイマーの設定
   } else {
     entity->communication.diag->log_fatal("Failed setup");
   }
@@ -399,7 +400,7 @@ bool mrd_output(Meridim90 &a_meridim90) {
   if (nullptr != entity->plugin.pad) {
     result &= entity->plugin.pad->output(a_meridim90);
   }
-  if (true == result) {
+  if (result) {
     //////////////////////////////////////////////////////////
     // Output Communication
     //////////////////////////////////////////////////////////
@@ -421,94 +422,6 @@ bool mrd_output(Meridim90 &a_meridim90) {
   return result;
 }
 
-int mrd_delay() {
-  return 1000;
-}
-
 } // namespace meridian_board_lite
 } // namespace board
 } // namespace meridian
-
-#if 0
-
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-const size_t loop_max = 65535;
-
-pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
-int counter = 0;
-
-void f1() {
-  size_t i;
-
-  for (i = 0; i < loop_max; i++) {
-#ifndef NOLOCK
-    int r;
-    r = pthread_mutex_lock(&m);
-    if (r != 0) {
-      log_e("%d/%s", r, "can not lock");
-    }
-#endif
-    counter++;
-#ifndef NOLOCK
-    r = pthread_mutex_unlock(&m);
-    if (r != 0) {
-      log_e("%d/%s", r, "can not unlock");
-    }
-#endif
-  }
-}
-
-void f2() {
-  size_t i;
-
-  for (i = 0; i < loop_max; i++) {
-#ifndef NOLOCK
-    if (pthread_mutex_lock(&m) != 0) {
-      log_e("can not lock");
-    }
-#endif
-    counter++;
-#ifndef NOLOCK
-    if (pthread_mutex_unlock(&m) != 0) {
-      log_e("can not unlock");
-    }
-#endif
-  }
-}
-
-int mutex_main(int argc, char *argv[]) {
-  pthread_t thread1, thread2;
-  int ret1 = pthread_create(&thread1, NULL, (void *)f1, NULL);
-  int ret2 = pthread_create(&thread2, NULL, (void *)f2, NULL);
-  if (ret1 != 0) {
-    log_e("can not create thread 1: %s", strerror(ret1));
-  }
-  if (ret2 != 0) {
-    log_e("can not create thread 2: %s", strerror(ret2));
-  }
-
-  printf("execute pthread_join thread1\n");
-  ret1 = pthread_join(thread1, NULL);
-  if (ret1 != 0) {
-    log_e("%d/%s", ret1, "can not join thread 1");
-  }
-
-  printf("execute pthread_join thread2\n");
-  ret2 = pthread_join(thread2, NULL);
-  if (ret2 != 0) {
-    log_e("%d/%s", ret2, "can not join thread 2");
-  }
-
-  printf("done\n");
-  printf("%d\n", counter);
-
-  pthread_mutex_destroy(&m);
-  return 0;
-}
-
-#endif

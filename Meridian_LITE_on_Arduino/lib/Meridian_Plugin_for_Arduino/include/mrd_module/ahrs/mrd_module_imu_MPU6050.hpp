@@ -33,10 +33,10 @@ struct st_data {
   unsigned long timestamp = 0;
 };
 struct thread_args {
+  int start_delay_ms;
   int delay_ms;
   int32_t sensorID;
   uint8_t address;
-  TwoWire *theWire;
 };
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -58,9 +58,10 @@ void thread_mrd_ahrs_mpu6050(void *args) {
   flag_mrd_ahrs_mpu6050_loop = true;
   thread_args param = *(thread_args *)args;
   int delay_ms = param.delay_ms;
+  delay(param.start_delay_ms);
 
   st_data a_ahrs;
-  MPU6050 mpu6050;
+  MPU6050 mpu6050(param.address);
   while (true == flag_mrd_ahrs_mpu6050_loop) {
     mpu6050.initialize();
     uint8_t devStatus = mpu6050.dmpInitialize();
@@ -86,8 +87,8 @@ void thread_mrd_ahrs_mpu6050(void *args) {
     delay(1000);
   }
 
-  uint8_t fifoBuffer[64]; ///! FIFO storage buffer
-  float ypr[3];           ///! roll/pitch/yaw container and gravity vector
+  uint8_t fifoBuffer[mpu6050.dmpGetFIFOPacketSize()]; ///! FIFO storage buffer
+  float ypr[3];                                       ///! roll/pitch/yaw container and gravity vector
 
   while (true == flag_mrd_ahrs_mpu6050_loop) {
     if (mpu6050.dmpGetCurrentFIFOPacket(fifoBuffer)) { // Get new data
@@ -118,13 +119,14 @@ void thread_mrd_ahrs_mpu6050(void *args) {
 
 class MrdAhrsMPU6050 : public IMeridianI2C {
 public:
-  MrdAhrsMPU6050(uint16_t address, int core = 0) : IMeridianI2C(address) {
-    this->m_address = address;
+  virtual const char *get_name() { return "MPU6050"; };
+  MrdAhrsMPU6050(bool is_AD0_low = true) : IMeridianI2C(is_AD0_low ? MPU6050_ADDRESS_AD0_LOW : MPU6050_ADDRESS_AD0_HIGH) {
     if (nullptr == this->param) {
       this->param = new ahrs_mpu6050::thread_args();
     }
-    this->param->address = address;
+    this->param->address = this->m_address;
     this->param->delay_ms = 10;
+    this->param->start_delay_ms = 1000;
   }
   ~MrdAhrsMPU6050() {
     ahrs_mpu6050::flag_mrd_ahrs_mpu6050_loop = false;
@@ -171,7 +173,7 @@ public:
       // a_meridim.temperature = this->float2HfShort(0); ///! 温度センサ値
 
       // Estimated heading value using DMP.
-      if (true == this->m_rest_flag) {
+      if (this->m_rest_flag) {
         this->yaw_origin = this->float2HfShort(this->a_ahrs.ypr_deg.z);
         this->m_rest_flag = false;
       }

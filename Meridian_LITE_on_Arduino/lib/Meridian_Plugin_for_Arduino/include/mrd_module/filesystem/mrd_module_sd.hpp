@@ -45,7 +45,7 @@ public:
   bool write(uint16_t address, uint8_t data) override { return true; }
   uint8_t read(uint16_t address) override { return 0; }
   bool setup() override {
-    if (true == this->mount_sd) {
+    if (this->mount_sd) {
       if (!SD.begin(this->_chipselect_pin)) {
         return false;
       } else {
@@ -83,7 +83,7 @@ public:
           delayMicroseconds(10); // SPI安定化検証用
         }
       }
-      if (true == flag_write) {
+      if (flag_write) {
         uint8_t rand_number_tmp;
         // ファイルからの読み込みを実行
         sd_file = SD.open(this->_test_file, FILE_READ);
@@ -96,7 +96,7 @@ public:
           }
         }
       }
-      if (true == flag_write) {
+      if (flag_write) {
         result &= SD.remove(this->_test_file);
       }
     } else {

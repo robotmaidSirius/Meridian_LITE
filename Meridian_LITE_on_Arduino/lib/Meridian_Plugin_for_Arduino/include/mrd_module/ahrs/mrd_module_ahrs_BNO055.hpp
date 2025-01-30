@@ -28,10 +28,11 @@ struct st_data {
   imu::Vector<3> gyroscope;    ///< ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
   imu::Vector<3> magnetometer; ///< 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
   imu::Vector<3> euler;        ///< センサフュージョンによる方向推定値 - VECTOR_EULER - degrees
+  int temperature = 0;
   unsigned long timestamp = 0;
 };
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_bno055 = PTHREAD_MUTEX_INITIALIZER;
 volatile bool flag_mrd_ahrs_bno055_loop = false;
 st_data a_data;
 inline float deg2rad(float deg) { return (deg * M_PI) / 180.0; }
@@ -46,6 +47,7 @@ inline float deg_correction(float deg) {
   }
 }
 struct thread_args {
+  int start_delay_ms;
   int delay_ms;
   int32_t sensorID;
   uint8_t address;
@@ -57,6 +59,7 @@ void thread_mrd_ahrs_bno055(void *args) {
   st_data a_ahrs;
   thread_args param = *(thread_args *)args;
   int delay_ms = param.delay_ms;
+  delay(param.start_delay_ms);
 
   Adafruit_BNO055 bno = Adafruit_BNO055(param.sensorID, param.address, param.theWire);
   while (true == flag_mrd_ahrs_bno055_loop) {
@@ -81,13 +84,14 @@ void thread_mrd_ahrs_bno055(void *args) {
       // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
       a_ahrs.euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
 
+      a_ahrs.temperature = bno.getTemp(); ///! 温度センサ値
       // タイムスタンプの更新
       a_ahrs.timestamp = (a_ahrs.timestamp + 1) % 0xFFFFu;
       // データの更新
-      if (0 == pthread_mutex_lock(&mutex)) {
+      if (0 == pthread_mutex_lock(&mutex_bno055)) {
         memcpy(&a_data, &a_ahrs, sizeof(st_data));
       }
-      pthread_mutex_unlock(&mutex);
+      pthread_mutex_unlock(&mutex_bno055);
     }
     delay(delay_ms);
   }
@@ -97,6 +101,7 @@ void thread_mrd_ahrs_bno055(void *args) {
 
 class MrdAhrsBNO055 : public IMeridianI2C {
 public:
+  virtual const char *get_name() { return "BNO055"; };
   MrdAhrsBNO055(int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A, TwoWire *theWire = &Wire) : IMeridianI2C(address) {
     if (nullptr == theWire) {
       theWire = &Wire;
@@ -108,11 +113,12 @@ public:
     this->param->address = address;
     this->param->theWire = theWire;
     this->param->delay_ms = 10;
+    this->param->start_delay_ms = 1000;
   }
   ~MrdAhrsBNO055() {
     ahrs_bno055::flag_mrd_ahrs_bno055_loop = false;
     vTaskDelete(this->task_handle);
-    pthread_mutex_destroy(&ahrs_bno055::mutex);
+    pthread_mutex_destroy(&ahrs_bno055::mutex_bno055);
   }
 
 public:
@@ -130,10 +136,10 @@ public:
     return true;
   }
   bool input(Meridim90 &a_meridim) override {
-    if (0 == pthread_mutex_lock(&ahrs_bno055::mutex)) {
+    if (0 == pthread_mutex_lock(&ahrs_bno055::mutex_bno055)) {
       memcpy(&this->a_ahrs, &ahrs_bno055::a_data, sizeof(ahrs_bno055::st_data));
     }
-    if (0 == pthread_mutex_unlock(&ahrs_bno055::mutex)) {
+    if (0 == pthread_mutex_unlock(&ahrs_bno055::mutex_bno055)) {
       // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
       if (MCMD_SENSOR_YAW_CALIB == a_meridim.master_command) {
         this->reset();
@@ -149,10 +155,10 @@ public:
       a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetometer.y()); ///! 磁力センサY値
       a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetometer.z()); ///! 磁力センサZ値
 
-      // a_meridim.temperature = this->float2HfShort(0); ///! 温度センサ値
+      a_meridim.temperature = this->float2HfShort(this->a_ahrs.temperature); ///! 温度センサ値
 
       // Estimated heading value using DMP.
-      if (true == this->m_rest_flag) {
+      if (this->m_rest_flag) {
         this->yaw_origin = this->float2HfShort(this->a_ahrs.euler.x());
         this->m_rest_flag = false;
       }

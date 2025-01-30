@@ -309,8 +309,8 @@ void test_loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = _servo_l->mrd_servos_make_errcode_lite();
-  s_udp_meridim.ubval[MRD_ERR_l] = _servo_r->mrd_servos_make_errcode_lite();
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_l->make_errcode_lite();
+  s_udp_meridim.ubval[MRD_ERR_l] = _servo_r->make_errcode_lite();
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -386,8 +386,8 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    _servo_l->mrd_servo_all_off();
-    _servo_r->mrd_servo_all_off();
+    _servo_l->all_off();
+    _servo_r->all_off();
     return true;
   }
 

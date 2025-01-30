@@ -20,23 +20,24 @@ namespace core {
 namespace communication {
 using namespace meridian::core::meridim;
 
-class IMeridianDiagnosticStatus {
-public:
-  bool initalized = false;
-  bool setup = false;
-  bool happened_error = false;
-  bool no_device = false;
-
-public:
-  void all_ok() {
-    this->initalized = true;
-    this->setup = true;
-    this->happened_error = false;
-    this->no_device = true;
-  }
-};
-
 class IMeridianDiagnostic {
+public:
+  class Status {
+  public:
+    bool initalized = false;
+    bool setup = false;
+    bool happened_error = false;
+    bool no_device = false;
+
+  public:
+    void all_ok() {
+      this->initalized = true;
+      this->setup = true;
+      this->happened_error = false;
+      this->no_device = true;
+    }
+  };
+
 public:
   // @brief Define log level
   typedef enum output_log_level_t {
@@ -89,7 +90,7 @@ public:
 
   void log(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_OPERATIONAL;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -124,7 +125,7 @@ public:
   }
   void log_trace(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_TRACE;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -159,7 +160,7 @@ public:
   }
   void log_debug(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_DEBUG;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -194,7 +195,7 @@ public:
   }
   void log_info(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_INFO;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -229,7 +230,7 @@ public:
   }
   void log_warn(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_WARN;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -264,7 +265,7 @@ public:
   }
   void log_error(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_ERROR;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -299,7 +300,7 @@ public:
   }
   void log_fatal(const char *format, ...) {
     OUTPUT_LOG_LEVEL a_level = OUTPUT_LOG_LEVEL::LEVEL_FATAL;
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -333,7 +334,7 @@ public:
     return;
   }
   size_t printf(OUTPUT_LOG_LEVEL a_level, const char *format, ...) {
-    if (true == this->_output_log) {
+    if (this->_output_log) {
       if (this->_level <= a_level) {
         char loc_buf[this->_BUFFER_SIZE];
         char *message = loc_buf;
@@ -373,7 +374,7 @@ private:
   const int _BUFFER_SIZE = 128;
 
 public:
-  void get_status(IMeridianDiagnosticStatus &state) {
+  void get_status(Status &state) {
     state.initalized = this->a_state.initalized;
     state.setup = this->a_state.setup;
     state.happened_error = this->a_state.happened_error;
@@ -381,7 +382,7 @@ public:
   }
 
 protected:
-  IMeridianDiagnosticStatus a_state;
+  Status a_state;
 };
 
 } // namespace communication

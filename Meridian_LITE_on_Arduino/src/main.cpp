@@ -45,9 +45,9 @@
 #include <mrd_module/gpio/mrd_module_gpio_out.hpp>
 
 //////////////////////////////////////////////////////////////////////////
-#define PINS_BOARD_LED_CONNECT (2)
+#define PINS_BOARD_LED_CONNECT (0xFF)
 #define PINS_BOARD_LED_SIGNAL  (0xFF)
-#define SETTING_LOG_LEVEL      (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_DEBUG)
+#define SETTING_LOG_LEVEL      (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_ALL)
 #define EEPROM_SIZE            (540)
 //////////////////////////////////////////////////////////////////////////
 // 使用するモジュールの設定
@@ -83,7 +83,7 @@ mrd_entity entity = {
         },
         .i2c = {
 #if defined(MODULE_AHRS_BNO055)
-            new MrdAhrsBNO055(0x00),
+            new MrdAhrsBNO055(),
 #elif defined(MODULE_AHRS_MPU6050)
             new MrdAhrsMPU6050(0x00),
 #else
@@ -168,21 +168,21 @@ void setup() {
   entity.plugin.servo_right = &app_default.servo_right;
 
   //////////////////////
-  if (true == board_setup(&entity, new mrd_parameters())) {
+  if (board_setup(&entity, new mrd_parameters())) {
     result = sample_app_setup(entity);
-  }
-  if (true == result) {
-    con_wifi.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
-    result = con_wifi.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT);
+    if (result) {
+      con_wifi.add_target(WIFI_SEND_IP, UDP_SEND_PORT);
+      result = con_wifi.connect(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RESV_PORT);
+    }
   }
 
   if (false == result) {
     setup_error();
   } else {
-    diag_uart.log_info("This machine IP: %s\n", con_wifi.get_ip_address());
+    diag_uart.log_info("This machine IP: %s", con_wifi.get_ip_address());
     for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
       if (0 != con_wifi.target[i].port) {
-        diag_uart.log_info("  Send Target[%s:%d]\n", con_wifi.target[i].ip.toString().c_str(), con_wifi.target[i].port);
+        diag_uart.log_info("  Send Target[%s:%d]", con_wifi.target[i].ip.toString().c_str(), con_wifi.target[i].port);
       }
     }
   }
@@ -207,5 +207,5 @@ void loop() {
     log_e("======== output failed.");
   }
   // 待機
-  delay(mrd_delay());
+  mrd_timer_delay();
 }

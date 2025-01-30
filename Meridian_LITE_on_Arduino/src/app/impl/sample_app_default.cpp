@@ -15,6 +15,8 @@
 void SampleAppDefault::loop(Meridim90 &a_meridim90) {
 }
 void SampleAppDefault::setup() {
+  this->servo_left.set_meridim90_start_index(0, 15);
+  this->servo_right.set_meridim90_start_index(15, 15);
 }
 
 SampleAppDefault::SampleAppDefault() {

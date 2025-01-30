@@ -43,8 +43,8 @@ public:
   /// @brief 通信用のインターフェースと診断用のインターフェースをまとめた構造体
   struct mrd_communicationStatus {
   public:
-    IMeridianConversationStatus con; ///< 通信用のインターフェース
-    IMeridianDiagnosticStatus diag;  ///< 診断用のインターフェース
+    IMeridianConversation::Status con; ///< 通信用のインターフェース
+    IMeridianDiagnostic::Status diag;  ///< 診断用のインターフェース
   };
   /// @brief プラグインのインターフェースをまとめた構造体
   struct mrd_pluginStatus {
@@ -127,10 +127,8 @@ struct mrd_parameters {
 };
 
 bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param);
-
 Meridim90 mrd_input();
 bool mrd_output(Meridim90 &a_meridim90);
-int mrd_delay();
 
 } // namespace meridian_board_lite
 } // namespace board
