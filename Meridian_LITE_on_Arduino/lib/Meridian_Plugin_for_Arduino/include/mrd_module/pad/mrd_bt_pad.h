@@ -7,6 +7,11 @@
 // ライブラリ導入
 #include <ESP32Wiimote.h>       // Wiiコントローラー
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+
+#define PIN_LED_BT       26    // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
+#define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
+#define PAD_GENERALIZE   1     // ジョイパッドの入力値をPS系に一般化する
+
 ESP32Wiimote wiimote;
 
 typedef union {

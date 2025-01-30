@@ -78,6 +78,7 @@ public:
         a_meridim.servo[this->_start_index + i].id = this->servo[i].id;
         a_meridim.servo[this->_start_index + i].value = this->servo[i].value;
       }
+      a_meridim.err = this->make_errcode_lite();
     }
     return true;
   }
@@ -96,8 +97,7 @@ public:
         int a_tmp = 0;
         int cmd = ~(COMMAND_READ_ONLY) & this->servo[i].cmd;
         bool read_only = (0 < (this->servo[i].cmd & COMMAND_READ_ONLY)) ? true : false;
-
-        switch (this->servo[i].cmd) {
+        switch (cmd) {
         case COMMAND_SET_POS: ///! サーボのトルクON
           if (false == read_only) {
             a_tmp = this->ics.setPos(this->servo[i].id, this->servo[i].value);
