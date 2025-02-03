@@ -23,8 +23,10 @@
 //////////////////////////////////////////////////////////////////////////
 #if defined(MODULE_AHRS_BNO055)
 #include <mrd_module/ahrs/mrd_module_ahrs_BNO055.hpp>
+MrdAhrsBNO055 ahrs_BNO055;
 #elif defined(MODULE_AHRS_MPU6050)
 #include <mrd_module/ahrs/mrd_module_imu_MPU6050.hpp>
+MrdAhrsMPU6050 ahrs_MPU6050(0x00);
 #endif
 
 #if defined(MODULE_FS_EEPROM)
@@ -45,10 +47,18 @@
 #include <mrd_module/gpio/mrd_module_gpio_out.hpp>
 
 //////////////////////////////////////////////////////////////////////////
+#ifndef PINS_BOARD_LED_CONNECT
 #define PINS_BOARD_LED_CONNECT (0xFF)
-#define PINS_BOARD_LED_SIGNAL  (0xFF)
-#define SETTING_LOG_LEVEL      (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_ALL)
-#define EEPROM_SIZE            (540)
+#endif
+#ifndef PINS_BOARD_LED_SIGNAL
+#define PINS_BOARD_LED_SIGNAL (0xFF)
+#endif
+#ifndef SETTING_LOG_LEVEL
+#define SETTING_LOG_LEVEL (MrdDiagnosticUart::OUTPUT_LOG_LEVEL::LEVEL_ALL)
+#endif
+#ifndef EEPROM_SIZE
+#define EEPROM_SIZE (540)
+#endif
 //////////////////////////////////////////////////////////////////////////
 // 使用するモジュールの設定
 //////////////////////////////////////////////////////////////////////////
@@ -83,9 +93,9 @@ mrd_entity entity = {
         },
         .i2c = {
 #if defined(MODULE_AHRS_BNO055)
-            new MrdAhrsBNO055(),
+            &ahrs_BNO055,
 #elif defined(MODULE_AHRS_MPU6050)
-            new MrdAhrsMPU6050(0x00),
+            &ahrs_MPU6050,
 #else
             nullptr,
 #endif
@@ -113,54 +123,56 @@ mrd_entity entity = {
 };
 
 void setup_error() {
-  while (true) {
-    log_e("Board setup failed.");
-    if (false == diagnosis.communication.con.initalized) {
-      log_e("  communication::conversation");
+  log_e("Board setup failed.");
+  if (false == diagnosis.communication.con.initalized) {
+    log_e("  communication::conversation");
+  }
+  if (false == diagnosis.communication.diag.initalized) {
+    log_e("  communication::diagnostic");
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
+    if (false == diagnosis.plugin.analog[i].initalized) {
+      log_e("  plugin::analog[%d]", i);
     }
-    if (false == diagnosis.communication.diag.initalized) {
-      log_e("  communication::diagnostic");
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
+    if (false == diagnosis.plugin.gpio[i].initalized) {
+      log_e("  plugin::gpio[%d]", i);
     }
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_ANALOG_NUM; i++) {
-      if (false == diagnosis.plugin.analog[i].initalized) {
-        log_e("  plugin::analog[%d]", i);
-      }
+  }
+  for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
+    if (false == diagnosis.plugin.i2c[i].initalized) {
+      log_e("  plugin::i2c[%d]", i);
     }
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_GPIO_NUM; i++) {
-      if (false == diagnosis.plugin.gpio[i].initalized) {
-        log_e("  plugin::gpio[%d]", i);
-      }
-    }
-    for (int i = 0; i < MERIDIAN_BOARD_LITE_I2C_NUM; i++) {
-      if (false == diagnosis.plugin.i2c[i].initalized) {
-        log_e("  plugin::i2c[%d]", i);
-      }
-    }
-    if (false == diagnosis.plugin.eeprom.initalized) {
-      log_e("  plugin::eeprom");
-    }
-    if (false == diagnosis.plugin.sd_card.initalized) {
-      log_e("  plugin::sd_card");
-    }
-    if (false == diagnosis.plugin.spi.initalized) {
-      log_e("  plugin::common_spi");
-    }
-    if ((false == diagnosis.plugin.servo_left.initalized) || (false == diagnosis.plugin.servo_right.initalized)) {
-      log_e("  plugin::servo %s%s",
-            (false == diagnosis.plugin.servo_left.initalized) ? "L" : "",
-            (false == diagnosis.plugin.servo_right.initalized) ? "R" : "");
-    }
-    if (false == diagnosis.plugin.pad.initalized) {
-      log_e("  plugin::pad");
-    }
-
-    delay(1000);
+  }
+  if (false == diagnosis.plugin.eeprom.initalized) {
+    log_e("  plugin::eeprom");
+  }
+  if (false == diagnosis.plugin.sd_card.initalized) {
+    log_e("  plugin::sd_card");
+  }
+  if (false == diagnosis.plugin.spi.initalized) {
+    log_e("  plugin::common_spi");
+  }
+  if ((false == diagnosis.plugin.servo_left.initalized) || (false == diagnosis.plugin.servo_right.initalized)) {
+    log_e("  plugin::servo %s%s",
+          (false == diagnosis.plugin.servo_left.initalized) ? "L" : "",
+          (false == diagnosis.plugin.servo_right.initalized) ? "R" : "");
+  }
+  if (false == diagnosis.plugin.pad.initalized) {
+    log_e("  plugin::pad");
   }
 }
 
 /// @brief セットアップ関数
 void setup() {
   bool result = false;
+  //////////////////////
+#if defined(MODULE_AHRS_BNO055)
+  ahrs_BNO055.set_pin(13, 0xFF);
+#elif defined(MODULE_AHRS_MPU6050)
+  // ahrs_MPU6050.set_pin(13, 0xFF);
+#endif
   //////////////////////
   app_default.setup();
   entity.plugin.pad = &app_default.pad;
@@ -177,7 +189,10 @@ void setup() {
   }
 
   if (false == result) {
-    setup_error();
+    while (true) {
+      setup_error();
+      delay(5000);
+    }
   } else {
     diag_uart.log_info("This machine IP: %s", con_wifi.get_ip_address());
     for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
@@ -196,7 +211,7 @@ void loop() {
   // アプリ処理
   bool result = sample_app_loop(mrd_meridim, entity);
   if (false == result) {
-    log_e("======== application failed.");
+    log_e("Application failed.");
   }
   //////////////////////
   app_default.loop(mrd_meridim);
@@ -204,7 +219,7 @@ void loop() {
   // 出力処理
   result &= mrd_output(mrd_meridim);
   if (false == result) {
-    log_e("======== output failed.");
+    log_e("Output failed.");
   }
   // 待機
   mrd_timer_delay();

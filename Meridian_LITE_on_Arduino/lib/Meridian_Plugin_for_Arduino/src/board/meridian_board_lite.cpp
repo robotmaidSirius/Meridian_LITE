@@ -137,9 +137,6 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
       entity->communication.diag->setup();
       result = true;
     }
-    entity->communication.diag->printf(
-        result ? IMeridianDiagnostic::OUTPUT_LOG_LEVEL::LEVEL_INFO : IMeridianDiagnostic::OUTPUT_LOG_LEVEL::LEVEL_ERROR,
-        "[%s] Setup/communication::diagnostic", result ? "Succeeded" : "Failed");
   }
 
   // Setting I2C
@@ -153,12 +150,7 @@ bool board_setup(mrd_entity *a_entity, mrd_parameters *a_param) {
     }
   }
   if (flag_ic2_begin) {
-    if (PINS_DEFAULT_I2C_SDA == SDA && PINS_DEFAULT_I2C_SCL == SCL) {
-      result = Wire.begin();
-    } else {
-      result = Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL);
-    }
-    result &= Wire.setClock(param.i2c_speed);
+    result = Wire.begin(PINS_DEFAULT_I2C_SDA, PINS_DEFAULT_I2C_SCL, param.i2c_speed);
     if (false == result) {
       entity->communication.diag->log_error("Failed to setup I2C");
     }

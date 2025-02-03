@@ -92,6 +92,7 @@ public:
     if (this->_output_log) {
       this->m_diag->log("\n");
     }
+    this->a_udp.setTimeout(this->_timeout_ms);
     uint8_t result = this->a_udp.begin(this->_open_port);
     if (0 != result) {
       if (nullptr != this->_gpio_connect) {
@@ -108,19 +109,22 @@ public:
 
   bool received(Meridim90 &a_meridim) {
     static int a_len = MERIDIM90_BYTE_LEN;
-    if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
-    {
-      if (nullptr != this->_gpio_signal) {
-        this->_gpio_signal->write(1, true);
-      }
-      byte a_meridim_array[a_len] = {0};
-      this->a_udp.read(a_meridim_array, a_len); // データの受信
-      meridian::core::execution::mrd_convert_Meridim90(a_meridim, a_meridim_array, a_len);
+    if (this->a_udp.available() >= a_len) {
+      if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
+      {
+        if (nullptr != this->_gpio_signal) {
+          this->_gpio_signal->write(1, true);
+        }
 
-      if (nullptr != this->_gpio_signal) {
-        this->_gpio_signal->write(0, true);
+        byte a_meridim_array[a_len] = {0};
+        this->a_udp.read(a_meridim_array, a_len); // データの受信
+        meridian::core::execution::mrd_convert_Meridim90(a_meridim, a_meridim_array, a_len);
+
+        if (nullptr != this->_gpio_signal) {
+          this->_gpio_signal->write(0, true);
+        }
+        return true;
       }
-      return true;
     }
     return false; // バッファにデータがない
   }
@@ -182,6 +186,7 @@ private:
     uint16_t port = 0;
   };
   bool _output_log = true;
+  int _timeout_ms = 5;
 
 public:
   static const int NUMBER_ALLOWED = 1;

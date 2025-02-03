@@ -129,9 +129,10 @@ bool sample_app_setup(mrd_entity &entity) {
   static_cast<meridian::modules::plugin::MrdGpioOut *>(entity.plugin.gpio[1])->write(true);
   return true;
 }
-#define TEST_ENABLE_LED       1
-#define TEST_ENABLE_BOARD_LED 0
-#define TEST_ENABLE_LOG       0
+#define TEST_ENABLE_LED        0
+#define TEST_ENABLE_OUTPUT_SEQ 0
+#define TEST_ENABLE_BOARD_LED  0
+#define TEST_ENABLE_LOG        0
 bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
 
   // LED Test
@@ -148,7 +149,8 @@ bool sample_app_loop(Meridim90 &mrd_meridim, mrd_entity &entity) {
   test_log(mrd_meridim, entity);
 #endif
 
+#if TEST_ENABLE_OUTPUT_SEQ
   log_i("SEQ[%04X] CH-SUM[%04X]", mrd_meridim.sequential, mrd_meridim.checksum);
-
+#endif
   return true;
 }

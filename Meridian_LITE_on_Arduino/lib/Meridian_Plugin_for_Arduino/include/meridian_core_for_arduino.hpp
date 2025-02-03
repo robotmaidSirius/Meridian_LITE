@@ -30,7 +30,7 @@ bool mrd_timeout_check(unsigned long a_limit);
 void mrd_timeout_reset();
 
 bool mrd_timer_setup(int a_duration_ms);
-int mrd_timer_delay();
+void mrd_timer_delay();
 void mrd_timer_clear();
 
 } // namespace execution

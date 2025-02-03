@@ -50,63 +50,161 @@ void mrd_timeout_reset() {
 //------------------------------------------------------------------------------------
 //  タイムアウト監視用タイマー
 //------------------------------------------------------------------------------------
-
+#ifdef TEST_CODE_FOR_TIMER
 // ハードウェアタイマーとカウンタ用変数の定義
-const int TIMER_SECTION_US = 100;                              ///! タイマーの分解能(100us)
-hw_timer_t *timer = NULL;                                      ///! ハードウェアタイマーの設定
-portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED;         ///! ハードウェアタイマー用のミューテックス
-volatile SemaphoreHandle_t timer_semaphore;                    ///! ハードウェアタイマー用のセマフォ
-volatile unsigned long count_timer = 0;                        ///! フレーム用タイマーのカウントアップ
-unsigned long timer_waypoint = 10 * (1000 / TIMER_SECTION_US); ///! タイマーの目標値
+const int TIMER_SECTION_US = 100;              ///! タイマーの分解能(100us)
+const double TIMER_HOT_SLEEP_RATE = 0.9;       ///! スリープモードの割合
+hw_timer_t *timer = NULL;                      ///! ハードウェアタイマーの設定
+uint8_t timer_no = 0;                          ///! タイマー番号
+volatile unsigned long count_timer = 0;        ///! フレーム用タイマーのカウントアップ
+volatile bool flag_reset_count_timer = false;  ///! フレーム用タイマーのカウントリセット
+volatile bool flag_reduce_count_timer = false; ///! フレーム用タイマーのカウントを減少させる
+
+unsigned long timer_waypoint = 10.0 * (1000.0 / TIMER_SECTION_US);                               ///! タイマーの目標値
+unsigned long timer_waypoint_keep = (10.0 * TIMER_HOT_SLEEP_RATE) * (1000.0 / TIMER_SECTION_US); ///! スリープモードの目標値
 
 void mrd_timer_clear() {
-  portENTER_CRITICAL(&timer_mux);
-  count_timer = 0;
-  portEXIT_CRITICAL(&timer_mux);
+  flag_reset_count_timer = true;
 }
 /// @brief count_timerを保護しつつ1ずつインクリメント
 void IRAM_ATTR frame_timer() {
-  portENTER_CRITICAL_ISR(&timer_mux);
   count_timer++;
-  portEXIT_CRITICAL_ISR(&timer_mux);
-  xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
+  if (flag_reduce_count_timer) {
+    count_timer = count_timer % timer_waypoint;
+    flag_reduce_count_timer = false;
+  }
+  if (flag_reset_count_timer) {
+    count_timer = 0;
+    flag_reset_count_timer = false;
+  }
 }
 
 bool mrd_timer_setup(int a_duration_ms) {
-  timer_waypoint = (unsigned long)(a_duration_ms * (1000 / TIMER_SECTION_US));
+  timer_waypoint = (unsigned long)(a_duration_ms * (1000.0 / TIMER_SECTION_US));
+  timer_waypoint_keep = (unsigned long)((a_duration_ms * TIMER_HOT_SLEEP_RATE) * (1000.0 / TIMER_SECTION_US));
   // タイマーの初期化
   mrd_timer_clear();
   // タイマーの設定
-  timer_semaphore = xSemaphoreCreateBinary();      // セマフォの作成
-  timer = timerBegin(0, 80, true);                 // タイマーの設定(1つ目のタイマーを使用, 分周比80)
-  timerAttachInterrupt(timer, &frame_timer, true); // frame_timer関数をタイマーの割り込みに登録
-  timerAlarmWrite(timer, TIMER_SECTION_US, true);  // タイマーを1msごとにトリガー
-  timerAlarmEnable(timer);                         // タイマーを開始
+  timer = timerBegin(timer_no, getApbFrequency() / 1000000, true); // タイマーの設定(1つ目のタイマーを使用, 分周比80)
+  timerAttachInterrupt(timer, &frame_timer, false);                // frame_timer関数をタイマーの割り込みに登録
+  timerAlarmWrite(timer, TIMER_SECTION_US, true);                  // トリガー時間の設定
+  timerAlarmEnable(timer);                                         // タイマーを開始
 
   return true;
 }
 
-int mrd_timer_delay() {
+void mrd_timer_delay() {
   unsigned long current_count_timer = 0;
+  bool loop_count = false;
   bool flag_loop = true;
   while (flag_loop) {
-    if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
-      portENTER_CRITICAL(&timer_mux);
+    current_count_timer = count_timer; // ハードウェアタイマーの値を読む
+    if (current_count_timer >= timer_waypoint) {
+      flag_reduce_count_timer = true;
+      flag_loop = false;
+      break;
+    } else if (current_count_timer < timer_waypoint_keep) {
+      // delay sleep
+      delay(1);
+    } else {
+      // hot sleep
+    }
+    loop_count = true;
+  }
+  if (false == loop_count) {
+    mrd_timer_clear();
+  }
+}
+#else
+
+// ハードウェアタイマーとカウンタ用変数の定義
+const int TIMER_SECTION_US = 100;           ///! タイマーの分解能(100us)
+const double TIMER_HOT_SLEEP_RATE = 0.9;    ///! スリープモードの割合
+hw_timer_t *timer = NULL;                   ///! ハードウェアタイマーの設定
+uint8_t timer_no = 0;                       ///! タイマー番号
+volatile SemaphoreHandle_t timer_semaphore; ///! ハードウェアタイマー用のセマフォ
+volatile unsigned long count_timer = 0;     ///! フレーム用タイマーのカウントアップ
+
+// portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; ///! ハードウェアタイマー用のミューテックス
+
+volatile bool flag_reset_count_timer = false;  ///! フレーム用タイマーのカウントリセット
+volatile bool flag_reduce_count_timer = false; ///! フレーム用タイマーのカウントを減少させる
+
+unsigned long timer_waypoint = 10.0 * (1000.0 / TIMER_SECTION_US);                               ///! タイマーの目標値
+unsigned long timer_waypoint_keep = (10.0 * TIMER_HOT_SLEEP_RATE) * (1000.0 / TIMER_SECTION_US); ///! スリープモードの目標値
+
+int OVERFLOW_COUNT_MAX = 10;
+
+void mrd_timer_clear() {
+  flag_reset_count_timer = true;
+}
+/// @brief count_timerを保護しつつ1ずつインクリメント
+void IRAM_ATTR frame_timer() {
+  count_timer++;
+  if (flag_reduce_count_timer) {
+    count_timer = count_timer % timer_waypoint;
+    flag_reduce_count_timer = false;
+  }
+  if (flag_reset_count_timer) {
+    count_timer = 0;
+    flag_reset_count_timer = false;
+  }
+
+  xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
+}
+
+bool mrd_timer_setup(int a_duration_ms) {
+  timer_waypoint = (unsigned long)(a_duration_ms * (1000.0 / TIMER_SECTION_US));
+  timer_waypoint_keep = (unsigned long)((a_duration_ms * TIMER_HOT_SLEEP_RATE) * (1000.0 / TIMER_SECTION_US));
+  // タイマーの初期化
+  mrd_timer_clear();
+  // タイマーの設定
+  timer_semaphore = xSemaphoreCreateBinary();                      // セマフォの作成
+  timer = timerBegin(timer_no, getApbFrequency() / 1000000, true); // タイマーの設定(1つ目のタイマーを使用, 分周比80)
+  timerAttachInterrupt(timer, &frame_timer, false);                // frame_timer関数をタイマーの割り込みに登録
+  timerAlarmWrite(timer, TIMER_SECTION_US, true);                  // トリガー時間の設定
+  timerAlarmEnable(timer);                                         // タイマーを開始
+
+  return true;
+}
+
+void mrd_timer_delay() {
+  static int overflow_count = OVERFLOW_COUNT_MAX;
+  unsigned long current_count_timer = 0;
+  int skip_counting = 0;
+  bool loop_count = false;
+  bool flag_loop = true;
+  while (flag_loop) {
+    if (xSemaphoreTake(timer_semaphore, TIMER_SECTION_US) == pdTRUE) {
+      // portENTER_CRITICAL(&timer_mux);
       current_count_timer = count_timer; // ハードウェアタイマーの値を読む
-      portEXIT_CRITICAL(&timer_mux);
+      // portEXIT_CRITICAL(&timer_mux);
       if (current_count_timer >= timer_waypoint) {
-        portENTER_CRITICAL(&timer_mux);
-        count_timer = count_timer - timer_waypoint;
-        portEXIT_CRITICAL(&timer_mux);
+        flag_reduce_count_timer = true;
         flag_loop = false;
         break;
-      } else {
-        delay(1);
       }
     }
+    if (true == flag_loop) {
+      skip_counting++;
+      if (current_count_timer < timer_waypoint_keep) {
+        // delay sleep
+        delay(1);
+      } else {
+        // hot sleep
+      }
+      loop_count = true;
+    }
   }
-  return 0;
+  if (false == loop_count) {
+    overflow_count--;
+    if (overflow_count < 0) {
+      mrd_timer_clear();
+      overflow_count = OVERFLOW_COUNT_MAX;
+    }
+  }
 }
+#endif
 
 } // namespace execution
 } // namespace core
