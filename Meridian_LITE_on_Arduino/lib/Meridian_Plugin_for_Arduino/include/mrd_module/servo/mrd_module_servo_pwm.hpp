@@ -24,10 +24,10 @@ public:
   ~MrdServoPWM() {}
 
 public:
-  const char *get_name() { return "single PWM"; };
-  bool setup() override { return true; };
-  bool input(Meridim90 &a_meridim) override { return true; };
-  bool output(Meridim90 &a_meridim) override { return true; };
+  const char *get_name() { return "single PWM"; }
+  bool setup() override { return true; }
+  bool input(Meridim90 &a_meridim) override { return true; }
+  bool output(Meridim90 &a_meridim) override { return true; }
 };
 
 } // namespace plugin

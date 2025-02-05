@@ -13,7 +13,6 @@
 #include "mrd_communication/mrd_conversation_wifi.hpp"
 #include "mrd_module/filesystem/mrd_module_eeprom.hpp"
 #include "mrd_module/filesystem/mrd_module_sd.hpp"
-#include "mrd_module/pad/mrd_bt_pad.h"
 #include "mrd_module/servo/mrd_module_servo_ics.hpp"
 
 // ライブラリ導入
@@ -268,7 +267,7 @@ void test_setup() {
     sv.ixr_cw[i] = IXR_CW[i];
     sv.ixl_trim[i] = IDL_TRIM[i];
     sv.ixr_trim[i] = IDR_TRIM[i];
-  };
+  }
 
   // EEPROMの開始, ダンプ表示
   MrdEEPROM::UnionEEPROM array_tmp = {0};
@@ -387,19 +386,6 @@ void test_loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
-  // @[5-1] リモコンデータの書き込み
-  if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
-
-    // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
-
-#if 0
-// リモコンの値をmeridimに格納する
-    // 引数の修正が必要
-    meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
-#endif
-  }
-
   //------------------------------------------------------------------------------------
   //  [ 6 ] MastarCommand group2 の処理
   //------------------------------------------------------------------------------------
@@ -482,18 +468,6 @@ void test_loop() {
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
   mrd_meriput90_cksm(s_udp_meridim);
-
-  //------------------------------------------------------------------------------------
-  //   [ 12 ] フレーム終端処理
-  //------------------------------------------------------------------------------------
-
-  // @[12-1] count_timerがcount_frameに追いつくまで待機
-  mrd_timer_delay();
-
-  // @[12-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
-  if (flg.count_frame_reset) {
-    mrd_timer_clear();
-  }
 }
 
 //================================================================================================================

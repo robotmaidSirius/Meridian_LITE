@@ -313,7 +313,7 @@ Meridim90 mrd_input() {
     //////////////////////////////////////////////////////////
     if (nullptr != entity->communication.con) {
       // TODO: 通信処理は失敗してもOK
-      entity->communication.con->received(a_meridim90);
+      entity->communication.con->notify_received(a_meridim90);
     }
     //////////////////////////////////////////////////////////
     // Input Plugin
@@ -397,7 +397,7 @@ bool mrd_output(Meridim90 &a_meridim90) {
     // Output Communication
     //////////////////////////////////////////////////////////
     if (nullptr != entity->communication.con) {
-      entity->communication.con->send(a_meridim90);
+      entity->communication.con->notify_send(a_meridim90);
     }
     //////////////////////////////////////////////////////////
     // Copy the data to the shared memory

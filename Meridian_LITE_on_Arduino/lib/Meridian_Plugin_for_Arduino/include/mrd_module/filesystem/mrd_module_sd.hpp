@@ -26,7 +26,7 @@ namespace plugin {
 
 namespace sd_card {
 
-}; // namespace sd_card
+} // namespace sd_card
 
 class MrdSdCard : public IMeridianSD {
 private:
@@ -40,8 +40,8 @@ public:
   ~MrdSdCard() {}
 
 public:
-  bool input(Meridim90 &a_meridim) override { return true; };
-  bool output(Meridim90 &a_meridim) override { return true; };
+  bool input(Meridim90 &a_meridim) override { return true; }
+  bool output(Meridim90 &a_meridim) override { return true; }
   bool write(uint16_t address, uint8_t data) override { return true; }
   uint8_t read(uint16_t address) override { return 0; }
   bool setup() override {

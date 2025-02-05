@@ -17,9 +17,47 @@
 // ライブラリ導入
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 
+#define PAD_GENERALIZE 1 // ジョイパッドの入力値をPS系に一般化する
+
+//================================================================================================================
+//  サーボIDとロボット部位、軸との対応表 (KHR-3HVの例)
+//================================================================================================================
+// ID    Parts/Axis ＜ICS_Left_Upper SIO1,SIO2＞
+// [L00] 頭/ヨー
+// [L01] 左肩/ピッチ
+// [L02] 左肩/ロール
+// [L03] 左肘/ヨー
+// [L04] 左肘/ピッチ
+// [L05] -
+// ID    Parts/Axis ＜ICS_Left_Lower SIO3,SIO4＞
+// [L06] 左股/ロール
+// [L07] 左股/ピッチ
+// [L08] 左膝/ピッチ
+// [L09] 左足首/ピッチ
+// [L10] 左足首/ロール
+// ID    Parts/Axis  ＜ICS_Right_Upper SIO5,SIO6＞
+// [R00] 腰/ヨー
+// [R01] 右肩/ピッチ
+// [R02] 右肩/ロール
+// [R03] 右肘/ヨー
+// [R04] 右肘/ピッチ
+// [R05] -
+// ID    Parts/Axis  ＜ICS_Right_Lower SIO7,SIO8＞
+// [R06] 右股/ロール
+// [R07] 右股/ピッチ
+// [R08] 右膝/ピッチ
+// [R09] 右足首/ピッチ
+// [R10] 右足首/ロール
+
 namespace meridian {
 namespace modules {
 namespace plugin {
+namespace krc5fh {
+
+// リモコン受信ボタンデータの変換テーブル
+constexpr unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
+    0, 64, 32, 128, 1, 4, 2, 8, 1024, 4096, 512, 2048, 16, 64, 32, 256};
+} // namespace krc5fh
 
 class MrdServoICS : public IMeridianServo {
 public:
@@ -66,17 +104,90 @@ public:
     return this->_enable;
   }
   bool input(Meridim90 &a_meridim) override {
-    if (this->_enable) {
+    int a_interval = 10;
+
+    static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
+    int8_t pad_analog_tmp[4] = {0};  // アナログ入力のデータ組み立て用
+    static int calib[4] = {0};       // アナログスティックのキャリブレーション値
+
+    static unsigned long last_time_tmp = 0; // 最後に関数が呼ばれた時間を記録
+    unsigned long current_time_tmp = millis();
+
+    if (current_time_tmp - last_time_tmp >= a_interval) {
+      unsigned short krr_button_tmp;     // krrからのボタン入力データ
+      int krr_analog_tmp[4];             // krrからのアナログ入力データ
+      unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
+      bool rcvd_tmp;                     // 受信機がデータを受信成功したか
+      rcvd_tmp = this->ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
+      delayMicroseconds(2);
+
+      if (rcvd_tmp) // リモコンデータが受信できていたら
+      {
+        // ボタンデータの処理
+        int button_tmp = krr_button_tmp; // 受信ボタンデータの読み込み用
+
+        if (PAD_GENERALIZE) {            // ボタンデータの一般化処理
+          if ((button_tmp & 15) == 15) { // 左側十字ボタン全部押しなら select押下とみなす
+            pad_common_tmp += 1;
+            button_tmp &= 0b1111111111110000; // 左十字ボタンのクリア
+          }
+
+          if ((button_tmp & 368) == 368) {
+            pad_common_tmp += 8;              // 右側十字ボタン全部押しなら start押下とみなす
+            button_tmp &= 0b1111111010001111; // 右十字ボタンのクリア
+          }
+
+          // ボタン値の変換(一般化)
+          for (int i = 0; i < 16; i++) {
+            uint16_t mask_tmp = 1 << i;
+            if (krc5fh::PAD_TABLE_KRC5FH_TO_COMMON[i] & button_tmp) {
+              pad_common_tmp |= mask_tmp;
+            }
+          }
+          pad_common_tmp &= 0b11111111111111001; // 2と4のビットのクリア(謎のデータ調整)
+
+          // アナログ入力データの処理
+          if (krr_analog_tmp[0] + krr_analog_tmp[1] + krr_analog_tmp[2] + krr_analog_tmp[3]) {
+            for (int i = 0; i < 4; i++) {
+              pad_analog_tmp[i] = (krr_analog_tmp[i] - 62) << 2;
+              pad_analog_tmp[i] = (pad_analog_tmp[i] < -127) ? -127 : pad_analog_tmp[i];
+              pad_analog_tmp[i] = (pad_analog_tmp[i] > 127) ? 127 : pad_analog_tmp[i];
+            }
+          } else
+            for (int i = 0; i < 4; i++) {
+              pad_analog_tmp[i] = 0;
+            }
+        } else {
+          pad_common_tmp = button_tmp; // ボタンの変換なし生値を使用
+        }
+      }
+
+      // アナログスティックのキャリブレーション
+      // [WIP]
+
+      // データの組み立て
+      uint64_t updated_val_tmp = static_cast<uint64_t>(pad_common_tmp);
+      updated_val_tmp |= ((uint64_t)pad_analog_tmp[0] & 0xFF) << 16;
+      updated_val_tmp |= ((uint64_t)pad_analog_tmp[1] & 0xFF) << 24;
+
+      last_time_tmp = current_time_tmp; // 最後の実行時間を更新
+      pre_val_tmp = updated_val_tmp;
+      a_meridim.input_data.control.buttons = pad_analog_tmp[0];
+      a_meridim.input_data.control.stick_l = pad_analog_tmp[1];
+      a_meridim.input_data.control.stick_r = pad_analog_tmp[2];
+      a_meridim.input_data.control.analog_l = (updated_val_tmp >> 16) & 0xFF;
+      a_meridim.input_data.control.analog_r = (updated_val_tmp) & 0xFF;
     }
     return true;
   }
+
   bool output(Meridim90 &a_meridim) override {
     if (this->_enable) {
       this->mrd_servos_drive_lite();
       for (int i = 0; i < this->_servo_max; i++) {
-        a_meridim.servo[this->_start_index + i].cmd = this->servo[i].cmd;
-        a_meridim.servo[this->_start_index + i].id = this->servo[i].id;
-        a_meridim.servo[this->_start_index + i].value = this->servo[i].value;
+        a_meridim.userdata.servo[this->_start_index + i].cmd = this->servo[i].cmd;
+        a_meridim.userdata.servo[this->_start_index + i].id = this->servo[i].id;
+        a_meridim.userdata.servo[this->_start_index + i].value = this->servo[i].value;
       }
       a_meridim.err = this->make_errcode_lite();
     }
@@ -216,6 +327,16 @@ public:
   } // IDチェック
 
 public:
+  inline unsigned int range(unsigned int val, unsigned int min, unsigned int max) {
+    if (val < min) {
+      return min;
+    } else if (val > max) {
+      return max;
+    }
+    return val;
+
+  } // 範囲指定
+
   // IcsBaseClassのメソッドを呼び出し
 
   // サーボ位置決め設定
@@ -223,11 +344,11 @@ public:
 
   // 各種パラメータ書込み
   int setID(byte id) { return this->ics.setFree(id); }
-  int setPos(byte id, unsigned int pos) { return this->ics.setPos(id, pos); }                     // 目標値設定
-  int setStrc(byte id, unsigned int strc) { return this->ics.setStrc(id, strc); }                 // ストレッチ書込 1～127  1(弱）  <=>    127(強）
-  int setSpd(byte id, unsigned int spd) { return this->ics.setSpd(id, spd); }                     // スピード書込   1～127  1(遅い) <=>    127(速い)
-  int setCur(byte id, unsigned int current_limit) { return this->ics.setCur(id, current_limit); } // 電流制限値書込 1～63   1(低い) <=>    63 (高い)
-  int setTmp(byte id, unsigned int tmp_limit) { return this->ics.setTmp(id, tmp_limit); }         // 温度上限書込   1～127  127(低温） <=> 1(高温)
+  int setPos(byte id, unsigned int pos) { return this->ics.setPos(id, pos); }                                         // 目標値設定
+  int setStrc(byte id, unsigned int strc) { return this->ics.setStrc(id, this->range(strc, 1, 127)); }                // ストレッチ書込 1～127  1(弱）  <=>    127(強）
+  int setSpd(byte id, unsigned int spd) { return this->ics.setSpd(id, this->range(spd, 1, 127)); }                    // スピード書込   1～127  1(遅い) <=>    127(速い)
+  int setCur(byte id, unsigned int current_limit) { return this->ics.setCur(id, this->range(current_limit, 1, 63)); } // 電流制限値書込 1～63   1(低い) <=>    63 (高い)
+  int setTmp(byte id, unsigned int tmp_limit) { return this->ics.setTmp(id, this->range(tmp_limit, 1, 127)); }        // 温度上限書込   1～127  127(低温） <=> 1(高温)
 
   // 各種パラメータ読込み
   int getID() { return this->ics.getID(); }
@@ -260,5 +381,7 @@ public:
 } // namespace plugin
 } // namespace modules
 } // namespace meridian
+
+#undef PAD_GENERALIZE
 
 #endif // __MRD_MODULE_SERVO_ICS_HPP__

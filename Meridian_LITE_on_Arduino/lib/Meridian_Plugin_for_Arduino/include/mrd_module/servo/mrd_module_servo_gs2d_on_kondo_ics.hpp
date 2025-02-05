@@ -29,11 +29,11 @@ public:
   ~MrdServoGS2DonICS() {}
 
 public:
-  const char *get_name() { return "ICS(KONDO,gs2d)"; };
+  const char *get_name() { return "ICS(KONDO,gs2d)"; }
   bool setup() override { return true; }
 
-  bool write(int a_id, int value) override {};
-  int read(int a_id) override {};
+  bool write(int a_id, int value) override {}
+  int read(int a_id) override {}
 
   bool refresh(Meridim90Union &a_meridim) override { return true; }
 

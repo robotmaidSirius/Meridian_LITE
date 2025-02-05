@@ -31,9 +31,9 @@ protected:
   };
 
 public:
-  virtual bool setup() { return true; };
-  virtual bool input(Meridim90 &a_meridim) { return true; };
-  virtual bool output(Meridim90 &a_meridim) { return true; };
+  virtual bool setup() { return true; }
+  virtual bool input(Meridim90 &a_meridim) { return true; }
+  virtual bool output(Meridim90 &a_meridim) { return true; }
 };
 
 } // namespace plugin

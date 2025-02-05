@@ -36,7 +36,7 @@ namespace plugin {
 
 namespace eeprom {
 
-}; // namespace eeprom
+} // namespace eeprom
 
 class MrdEEPROM : public IMeridianEEPROM {
 public:
@@ -51,8 +51,8 @@ private:
   int _size = 0;
 
 public:
-  bool input(Meridim90 &a_meridim) override { return true; };
-  bool output(Meridim90 &a_meridim) override { return true; };
+  bool input(Meridim90 &a_meridim) override { return true; }
+  bool output(Meridim90 &a_meridim) override { return true; }
   bool write(uint16_t address, uint8_t data) override { return true; }
   uint8_t read(uint16_t address) override { return EEPROM.read(address); }
   bool setup() override {

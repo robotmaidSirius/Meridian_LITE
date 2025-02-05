@@ -47,7 +47,7 @@ public:
   }
 
   bool input(Meridim90 &a_meridim) override {
-    a_meridim.user_data[this->m_index] = this->read();
+    a_meridim.userdata.options[this->m_index] = this->read();
     return true;
   }
 

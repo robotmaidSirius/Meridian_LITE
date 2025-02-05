@@ -126,26 +126,53 @@ struct Meridim90Controller {
   uint8_t analog_l; ///! リモコンのL2ボタンアナログ値
   uint8_t analog_r; ///! リモコンのR2ボタンアナログ値
 };
+struct Meridim90Input {
+  Meridim90Vector accelerator;  ///! 加速度センサ値
+  Meridim90Vector gyroscope;    ///! 加速度センサ値
+  Meridim90Vector magnetometer; ///! 加速度センサ値
+  int16_t temperature;          ///! 温度センサ値
+  Meridim90RPY dmp;             ///! DMP推定
+  Meridim90Controller control;  ///! リモコンの基本ボタン値
+};
+struct Meridim90Userdata {
+  uint8_t motion_frames;  ///! モーション設定のフレーム数
+  uint8_t stop_frames_ms; ///! ボード停止時のフレーム数
+
+  Meridim90Servo servo[MERIDIM90_SERVO_NUM]; ///! サーボのコマンドと値
+  int16_t options[MERIDIM90_USER_DATA_SIZE]; ///! ユーザー定義用
+};
 
 //! @brief Meridim90の構造体
 struct Meridim90 {
-  int16_t master_command;       ///!	マスターコマンド
+  int16_t master_command; ///!	マスターコマンド
+  uint16_t sequential;    ///! シーケンス番号
+#if 0
   uint16_t sequential;          ///! シーケンス番号
   Meridim90Vector accelerator;  ///! 加速度センサ値
   Meridim90Vector gyroscope;    ///! 加速度センサ値
   Meridim90Vector magnetometer; ///! 加速度センサ値
   int16_t temperature;          ///! 温度センサ値
   Meridim90RPY dmp;             ///! DMP推定
-
   Meridim90Controller control; ///! リモコンの基本ボタン値
-  uint8_t motion_frames;       ///! モーション設定のフレーム数
-  uint8_t stop_frames_ms;      ///! ボード停止時のフレーム数
+#else
+  Meridim90Input input_data; ///! リモコンの基本ボタン値
+#endif
+#if 0
+  uint8_t motion_frames;  ///! モーション設定のフレーム数
+  uint8_t stop_frames_ms; ///! ボード停止時のフレーム数
 
   Meridim90Servo servo[MERIDIM90_SERVO_NUM];   ///! サーボのコマンドと値
   int16_t user_data[MERIDIM90_USER_DATA_SIZE]; ///! ユーザー定義用
+#else
+  Meridim90Userdata userdata; ///! ユーザー定義用
+#endif
 
   uint16_t err;      ///! ERROR CODE
   uint16_t checksum; ///! CHECK SUM
+};
+
+struct Meridim90EX {
+  Meridim90 meridim;
 };
 
 } // namespace meridim

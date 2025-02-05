@@ -25,13 +25,7 @@ namespace core {
 namespace communication {
 
 class MrdConversationWifi : public IMeridianConversation {
-private:
-  int _open_port = 22224;
-  MrdGpioOut *_gpio_connect = nullptr;
-  MrdGpioOut *_gpio_signal = nullptr;
-
 public:
-  const char *get_name() override { return "Wifi"; };
   MrdConversationWifi(MrdGpioOut *connect = nullptr, MrdGpioOut *signal = nullptr) {
     this->_gpio_connect = connect;
     this->_gpio_signal = signal;
@@ -44,6 +38,59 @@ public:
       this->_gpio_signal->write(0, true);
     }
   }
+
+public:
+  const char *get_name() override { return "Wifi"; }
+  bool setup() override {
+    return true;
+  }
+
+private:
+  bool received(Meridim90 &a_meridim) {
+    static int a_len = MERIDIM90_BYTE_LEN;
+    if (this->a_udp.available() >= a_len) {
+      if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
+      {
+        if (nullptr != this->_gpio_signal) {
+          this->_gpio_signal->write(1, true);
+        }
+
+        byte a_meridim_array[a_len] = {0};
+        this->a_udp.read(a_meridim_array, a_len); // データの受信
+        meridian::core::execution::mrd_convert_Meridim90(a_meridim, a_meridim_array, a_len);
+
+        if (nullptr != this->_gpio_signal) {
+          this->_gpio_signal->write(0, true);
+        }
+        return true;
+      }
+    }
+    return false; // バッファにデータがない
+  }
+  bool send(Meridim90 &a_meridim) {
+    bool result = this->check_connect();
+    if (result) {
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(1, true);
+      }
+      meridian::core::execution::meridim_countup(a_meridim);
+      uint8_t a_meridim_array[MERIDIM90_BYTE_LEN] = {0};
+      meridian::core::execution::mrd_convert_array(a_meridim_array, MERIDIM90_BYTE_LEN, a_meridim);
+      for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
+        if (0 != target[i].port) {
+          this->a_udp.beginPacket(target[i].ip, target[i].port);  // UDPパケットの開始
+          this->a_udp.write(a_meridim_array, MERIDIM90_BYTE_LEN); // データの書き込み
+          this->a_udp.endPacket();                                // UDPパケットの終了
+        }
+      }
+      if (nullptr != this->_gpio_signal) {
+        this->_gpio_signal->write(0, true);
+      }
+    }
+    return result;
+  }
+
+public:
   void set_diagnostic(IMeridianDiagnostic &ref) override {
     this->m_diag = &ref;
     if (nullptr != this->_gpio_connect) {
@@ -108,55 +155,6 @@ public:
     return false;
   }
 
-  bool setup() override {
-    return true;
-  }
-
-  bool received(Meridim90 &a_meridim) {
-    static int a_len = MERIDIM90_BYTE_LEN;
-    if (this->a_udp.available() >= a_len) {
-      if (this->a_udp.parsePacket() >= a_len) // データの受信バッファ確認
-      {
-        if (nullptr != this->_gpio_signal) {
-          this->_gpio_signal->write(1, true);
-        }
-
-        byte a_meridim_array[a_len] = {0};
-        this->a_udp.read(a_meridim_array, a_len); // データの受信
-        meridian::core::execution::mrd_convert_Meridim90(a_meridim, a_meridim_array, a_len);
-
-        if (nullptr != this->_gpio_signal) {
-          this->_gpio_signal->write(0, true);
-        }
-        return true;
-      }
-    }
-    return false; // バッファにデータがない
-  }
-  bool send(Meridim90 &a_meridim) {
-    bool result = this->check_connect();
-    if (result) {
-      if (nullptr != this->_gpio_signal) {
-        this->_gpio_signal->write(1, true);
-      }
-      meridian::core::execution::meridim_countup(a_meridim);
-      uint8_t a_meridim_array[MERIDIM90_BYTE_LEN] = {0};
-      meridian::core::execution::mrd_convert_array(a_meridim_array, MERIDIM90_BYTE_LEN, a_meridim);
-      for (int i = 0; i < MrdConversationWifi::NUMBER_ALLOWED; i++) {
-        if (0 != target[i].port) {
-          this->a_udp.beginPacket(target[i].ip, target[i].port);  // UDPパケットの開始
-          this->a_udp.write(a_meridim_array, MERIDIM90_BYTE_LEN); // データの書き込み
-          this->a_udp.endPacket();                                // UDPパケットの終了
-        }
-      }
-      if (nullptr != this->_gpio_signal) {
-        this->_gpio_signal->write(0, true);
-      }
-    }
-    return result;
-  }
-
-public:
   const char *get_ip_address() {
     return WiFi.localIP().toString().c_str();
   }
@@ -185,6 +183,10 @@ public:
   }
 
 private:
+  int _open_port = 22224;
+  MrdGpioOut *_gpio_connect = nullptr;
+  MrdGpioOut *_gpio_signal = nullptr;
+
   WiFiUDP a_udp; // wifi設定
   struct target_send {
     IPAddress ip;

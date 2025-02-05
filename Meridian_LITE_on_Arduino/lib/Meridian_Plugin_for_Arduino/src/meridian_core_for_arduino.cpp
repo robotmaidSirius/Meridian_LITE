@@ -11,6 +11,8 @@
 #include "meridian_core.hpp"
 #include <Arduino.h>
 
+#define DEBUG_MERIDIAN_CORE 0
+
 namespace meridian {
 namespace core {
 namespace execution {
@@ -202,6 +204,11 @@ void mrd_timer_delay() {
       mrd_timer_clear();
       overflow_count = OVERFLOW_COUNT_MAX;
     }
+#if DEBUG_MERIDIAN_CORE
+    log_e("cycle: [BOARDER:%d] %d(skip:%5d)", timer_waypoint, current_count_timer, skip_counting);
+  } else {
+    log_i("cycle: [BOARDER:%d] %d(skip:%5d)", timer_waypoint, current_count_timer, skip_counting);
+#endif
   }
 }
 #endif

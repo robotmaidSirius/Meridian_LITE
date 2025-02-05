@@ -128,21 +128,20 @@ class IMeridianPad : public IMeridianPlugin {
 public:
   pad::ButtonInfo buttons;
   virtual bool setup() {
-    this->buttons.linked = false;
+    this->m_state.initalized = false;
     return true;
-  };
-  virtual bool input(Meridim90 &a_meridim) { return true; };
-  virtual bool output(Meridim90 &a_meridim) { return true; };
+  }
+  virtual bool input(Meridim90 &a_meridim) { return true; }
+  virtual bool output(Meridim90 &a_meridim) { return true; }
 
-  bool isConnected() { return this->buttons.linked; };
-  bool disable() {
-    this->buttons.enabled = false;
-    return this->buttons.enabled;
-  };
-  bool enable() {
-    this->buttons.enabled = true;
-    return this->buttons.enabled;
-  };
+  bool isConnected() { return this->m_state.option[IMeridianPad::OPTION_INDEX_LINKED]; }
+  void disable() { this->m_state.option[IMeridianPad::OPTION_INDEX_ENABLE] = 0; }
+  void enable() { this->m_state.option[IMeridianPad::OPTION_INDEX_ENABLE] = 1; }
+
+protected:
+  const int OPTION_INDEX_LINKED = 0;
+  const int OPTION_INDEX_PAIRING = 1;
+  const int OPTION_INDEX_ENABLE = 2;
 };
 
 } // namespace plugin

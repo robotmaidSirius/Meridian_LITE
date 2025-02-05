@@ -21,7 +21,7 @@ using namespace meridian::core::communication;
 
 class IMeridianPlugin {
 public:
-  virtual const char *get_name() { return "Unknow"; };
+  virtual const char *get_name() { return "Unknow"; }
   virtual bool setup() = 0;
   virtual bool input(Meridim90 &a_meridim) = 0;
   virtual bool output(Meridim90 &a_meridim) = 0;

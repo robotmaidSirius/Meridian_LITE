@@ -19,37 +19,37 @@ void meridim_clear(Meridim90 &a_meridim) {
 
   a_meridim.sequential = 0; ///! シーケンス番号
 
-  a_meridim.accelerator.x = 0;  ///! 加速度センサX値
-  a_meridim.accelerator.y = 0;  ///! 加速度センサY値
-  a_meridim.accelerator.z = 0;  ///! 加速度センサZ値
-  a_meridim.gyroscope.x = 0;    ///! ジャイロセンサX値
-  a_meridim.gyroscope.y = 0;    ///! ジャイロセンサY値
-  a_meridim.gyroscope.z = 0;    ///! ジャイロセンサZ値
-  a_meridim.magnetometer.x = 0; ///! 磁気コンパスX値
-  a_meridim.magnetometer.y = 0; ///! 磁気コンパスY値
-  a_meridim.magnetometer.z = 0; ///! 磁気コンパスZ値
-  a_meridim.temperature = 0;    ///! 温度センサ値
-  a_meridim.dmp.roll = 0;       ///! DMP推定ロール方向値
-  a_meridim.dmp.pitch = 0;      ///! DMP推定ピッチ方向値
-  a_meridim.dmp.yaw = 0;        ///! DMP推定ヨー方向値
+  a_meridim.input_data.accelerator.x = 0;  ///! 加速度センサX値
+  a_meridim.input_data.accelerator.y = 0;  ///! 加速度センサY値
+  a_meridim.input_data.accelerator.z = 0;  ///! 加速度センサZ値
+  a_meridim.input_data.gyroscope.x = 0;    ///! ジャイロセンサX値
+  a_meridim.input_data.gyroscope.y = 0;    ///! ジャイロセンサY値
+  a_meridim.input_data.gyroscope.z = 0;    ///! ジャイロセンサZ値
+  a_meridim.input_data.magnetometer.x = 0; ///! 磁気コンパスX値
+  a_meridim.input_data.magnetometer.y = 0; ///! 磁気コンパスY値
+  a_meridim.input_data.magnetometer.z = 0; ///! 磁気コンパスZ値
+  a_meridim.input_data.temperature = 0;    ///! 温度センサ値
+  a_meridim.input_data.dmp.roll = 0;       ///! DMP推定ロール方向値
+  a_meridim.input_data.dmp.pitch = 0;      ///! DMP推定ピッチ方向値
+  a_meridim.input_data.dmp.yaw = 0;        ///! DMP推定ヨー方向値
 
-  a_meridim.control.buttons = 0;  ///! リモコンの基本ボタン値
-  a_meridim.control.stick_l = 0;  ///! リモコンの左スティックアナログ値
-  a_meridim.control.stick_r = 0;  ///! リモコンの右スティックアナログ値
-  a_meridim.control.analog_l = 0; ///! リモコンのL2R2ボタンアナログ値
-  a_meridim.control.analog_r = 0; ///! リモコンのL2R2ボタンアナログ値
+  a_meridim.input_data.control.buttons = 0;  ///! リモコンの基本ボタン値
+  a_meridim.input_data.control.stick_l = 0;  ///! リモコンの左スティックアナログ値
+  a_meridim.input_data.control.stick_r = 0;  ///! リモコンの右スティックアナログ値
+  a_meridim.input_data.control.analog_l = 0; ///! リモコンのL2R2ボタンアナログ値
+  a_meridim.input_data.control.analog_r = 0; ///! リモコンのL2R2ボタンアナログ値
 
-  a_meridim.motion_frames = 0;  ///! モーション設定のフレーム数
-  a_meridim.stop_frames_ms = 0; ///! ボード停止時のフレーム数
+  a_meridim.userdata.motion_frames = 0;  ///! モーション設定のフレーム数
+  a_meridim.userdata.stop_frames_ms = 0; ///! ボード停止時のフレーム数
 
   for (int i = 0; i < MERIDIM90_SERVO_NUM; i++) {
-    a_meridim.servo[i].id = 0;
-    a_meridim.servo[i].cmd = 0;
-    a_meridim.servo[i].value = 0;
+    a_meridim.userdata.servo[i].id = 0;
+    a_meridim.userdata.servo[i].cmd = 0;
+    a_meridim.userdata.servo[i].value = 0;
   }
 
   for (int i = 0; i < MERIDIM90_USER_DATA_SIZE; i++) {
-    a_meridim.user_data[i] = 0; ///! ユーザー定義用
+    a_meridim.userdata.options[i] = 0; ///! ユーザー定義用
   }
 
   a_meridim.err = (int16_t)ErrorBit::ERRBIT_COMMON; ///! ERROR CODE

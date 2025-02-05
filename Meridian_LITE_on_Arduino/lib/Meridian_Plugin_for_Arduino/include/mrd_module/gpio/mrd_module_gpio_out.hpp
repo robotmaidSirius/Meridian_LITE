@@ -68,9 +68,9 @@ public:
     digitalWrite(this->m_pin, this->m_flag ? HIGH : LOW);
     if (this->m_output) {
       if (this->m_flag) {
-        a_meridim.user_data[this->m_index] = this->m_pos | a_meridim.user_data[this->m_index];
+        a_meridim.userdata.options[this->m_index] = this->m_pos | a_meridim.userdata.options[this->m_index];
       } else {
-        a_meridim.user_data[this->m_index] = ~(this->m_pos) & a_meridim.user_data[this->m_index];
+        a_meridim.userdata.options[this->m_index] = ~(this->m_pos) & a_meridim.userdata.options[this->m_index];
       }
     }
     return true;

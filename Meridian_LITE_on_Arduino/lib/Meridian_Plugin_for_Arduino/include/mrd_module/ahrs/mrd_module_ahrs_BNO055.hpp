@@ -149,7 +149,7 @@ void thread_mrd_ahrs_bno055(void *args) {
 
 class MrdAhrsBNO055 : public IMeridianI2C {
 public:
-  virtual const char *get_name() { return "BNO055"; };
+  virtual const char *get_name() { return "BNO055"; }
   void set_pin(uint8_t reset_pin, uint8_t int_pin = 0xFF) {
     if (nullptr == this->param) {
       this->param = new ahrs_bno055::thread_args();
@@ -206,22 +206,22 @@ public:
       }
 
       if (this->is_zero_range(this->a_ahrs.acceleration.x()) || this->is_zero_range(this->a_ahrs.acceleration.y()) || this->is_zero_range(this->a_ahrs.acceleration.z())) {
-        a_meridim.accelerator.x = this->float2HfShort(this->a_ahrs.acceleration.x()); ///! 加速度センサX値
-        a_meridim.accelerator.y = this->float2HfShort(this->a_ahrs.acceleration.y()); ///! 加速度センサY値
-        a_meridim.accelerator.z = this->float2HfShort(this->a_ahrs.acceleration.z()); ///! 加速度センサZ値
+        a_meridim.input_data.accelerator.x = this->float2HfShort(this->a_ahrs.acceleration.x()); ///! 加速度センサX値
+        a_meridim.input_data.accelerator.y = this->float2HfShort(this->a_ahrs.acceleration.y()); ///! 加速度センサY値
+        a_meridim.input_data.accelerator.z = this->float2HfShort(this->a_ahrs.acceleration.z()); ///! 加速度センサZ値
       }
       if (this->is_zero_range(this->a_ahrs.gyro.x()) || this->is_zero_range(this->a_ahrs.gyro.y()) || this->is_zero_range(this->a_ahrs.gyro.z())) {
-        a_meridim.gyroscope.x = this->float2HfShort(this->a_ahrs.gyro.x()); ///! ジャイロセンサX値
-        a_meridim.gyroscope.y = this->float2HfShort(this->a_ahrs.gyro.y()); ///! ジャイロセンサY値
-        a_meridim.gyroscope.z = this->float2HfShort(this->a_ahrs.gyro.z()); ///! ジャイロセンサZ値
+        a_meridim.input_data.gyroscope.x = this->float2HfShort(this->a_ahrs.gyro.x()); ///! ジャイロセンサX値
+        a_meridim.input_data.gyroscope.y = this->float2HfShort(this->a_ahrs.gyro.y()); ///! ジャイロセンサY値
+        a_meridim.input_data.gyroscope.z = this->float2HfShort(this->a_ahrs.gyro.z()); ///! ジャイロセンサZ値
       }
       if (this->is_zero_range(this->a_ahrs.magnetic.x()) || this->is_zero_range(this->a_ahrs.magnetic.y()) || this->is_zero_range(this->a_ahrs.magnetic.z())) {
-        a_meridim.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetic.x()); ///! 磁力センサX値
-        a_meridim.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetic.y()); ///! 磁力センサY値
-        a_meridim.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetic.z()); ///! 磁力センサZ値
+        a_meridim.input_data.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetic.x()); ///! 磁力センサX値
+        a_meridim.input_data.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetic.y()); ///! 磁力センサY値
+        a_meridim.input_data.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetic.z()); ///! 磁力センサZ値
       }
 
-      a_meridim.temperature = this->float2HfShort(this->a_ahrs.temperature); ///! 温度センサ値
+      a_meridim.input_data.temperature = this->float2HfShort(this->a_ahrs.temperature); ///! 温度センサ値
 
       // Estimated heading value using DMP.
       if (this->is_zero_range(this->a_ahrs.orientation.x()) || this->is_zero_range(this->a_ahrs.orientation.y()) || this->is_zero_range(this->a_ahrs.orientation.z())) {
@@ -229,9 +229,9 @@ public:
           this->yaw_origin = this->float2HfShort(this->a_ahrs.orientation.x());
           this->m_rest_flag = false;
         }
-        a_meridim.dmp.roll = this->float2HfShort(this->a_ahrs.orientation.z());                                         ///! DMP推定ロール方向値
-        a_meridim.dmp.pitch = this->float2HfShort(this->a_ahrs.orientation.y());                                        ///! DMP推定ピッチ方向値
-        a_meridim.dmp.yaw = this->float2HfShort(this->deg_correction(this->a_ahrs.orientation.x() - this->yaw_origin)); ///! DMP推定ヨー方向値
+        a_meridim.input_data.dmp.roll = this->float2HfShort(this->a_ahrs.orientation.z());                                         ///! DMP推定ロール方向値
+        a_meridim.input_data.dmp.pitch = this->float2HfShort(this->a_ahrs.orientation.y());                                        ///! DMP推定ピッチ方向値
+        a_meridim.input_data.dmp.yaw = this->float2HfShort(this->deg_correction(this->a_ahrs.orientation.x() - this->yaw_origin)); ///! DMP推定ヨー方向値
       }
     }
     return true;

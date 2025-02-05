@@ -19,14 +19,15 @@ namespace communication {
 
 class MrdDiagnosticUart : public meridian::core::communication::IMeridianDiagnostic {
 public:
-  const char *get_name() override { return "UART"; };
   MrdDiagnosticUart(HardwareSerial *serial, uint32_t baudrate = 115200, OUTPUT_LOG_LEVEL level = OUTPUT_LOG_LEVEL::LEVEL_INFO) {
     this->disable();
     this->_serial = serial;
     this->_baudrate = baudrate;
     this->set_level(level);
-  };
+  }
 
+public:
+  const char *get_name() override { return "UART"; }
   bool setup() override {
     if (nullptr != this->_serial) {
       Serial1.begin(this->_baudrate);
@@ -34,7 +35,7 @@ public:
       return true;
     }
     return false;
-  };
+  }
 
   size_t message(OUTPUT_LOG_LEVEL level, const char *message) override {
     if (nullptr != this->_serial) {
@@ -45,7 +46,7 @@ public:
       }
     }
     return 0;
-  };
+  }
 
 private:
   HardwareSerial *_serial;
