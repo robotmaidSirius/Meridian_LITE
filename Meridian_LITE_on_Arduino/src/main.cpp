@@ -26,7 +26,7 @@
 MrdAhrsBNO055 ahrs_BNO055;
 #elif defined(MODULE_AHRS_MPU6050)
 #include <mrd_module/ahrs/mrd_module_imu_MPU6050.hpp>
-MrdAhrsMPU6050 ahrs_MPU6050(0x00);
+MrdAhrsMPU6050 ahrs_MPU6050;
 #endif
 
 #if defined(MODULE_FS_EEPROM)
@@ -169,9 +169,11 @@ void setup() {
   bool result = false;
   //////////////////////
 #if defined(MODULE_AHRS_BNO055)
+  // IntPinをG13に設定
   ahrs_BNO055.set_pin(13, 0xFF);
 #elif defined(MODULE_AHRS_MPU6050)
-  // ahrs_MPU6050.set_pin(13, 0xFF);
+  // IntPinをG12に設定
+  ahrs_MPU6050.set_pin(12);
 #endif
   //////////////////////
   app_default.setup();

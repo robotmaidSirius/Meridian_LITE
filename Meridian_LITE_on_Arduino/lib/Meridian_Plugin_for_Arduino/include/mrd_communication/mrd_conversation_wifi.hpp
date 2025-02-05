@@ -76,20 +76,25 @@ public:
     if (nullptr != this->_gpio_signal) {
       this->_gpio_signal->write(0, true);
     }
+    bool flag_output_once = false;
     while (WiFi.status() != WL_CONNECTED) { // https://www.arduino.cc/en/Reference/WiFiStatus 戻り値一覧
       timeout_ms -= delay_ms;
       if (this->_output_log) {
         if (0 == timeout_ms % logging_time_ms) { // 0.5秒ごとに接続状況を出力
           this->m_diag->log(".");
+          flag_output_once = true;
         }
       }
       delay(delay_ms);       // 接続が完了するまでループで待つ
       if (0 >= timeout_ms) { // 10秒でタイムアウト
+        if (flag_output_once) {
+          this->m_diag->log("\n");
+        }
         this->m_diag->log_error("Wifi init TIMEOUT.");
         return false;
       }
     }
-    if (this->_output_log) {
+    if (this->_output_log && flag_output_once) {
       this->m_diag->log("\n");
     }
     this->a_udp.setTimeout(this->_timeout_ms);

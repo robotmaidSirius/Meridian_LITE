@@ -22,6 +22,14 @@
  *
  *  スレッドじゃなくて、定期的なタイマーに変更する？
  *
+ * [ISSUE]
+ *  タイムアウト(i2cWriteReadNonStop returned Error 263)時に値を取得しなおすようにライブラリから手を加えないといけないかも
+ *    - エラーハンドリング出来ておらず、エラー検知時の対応が出来ずにいるため
+ *
+ * @note
+ *  ENABLE_SEMAPHORE_BNO055はoutput()関数の最後にセマフォを与える処理を行うため、
+ *  最大１サイクル遅れで更新する仕組みにしている
+ *  理由は、他デバイスと通信するためinput()関数時に更新を行うと、更新時間が発生するため
  */
 #ifndef __MRD_MODULE_AHRS_BNO055_HPP__
 #define __MRD_MODULE_AHRS_BNO055_HPP__
@@ -36,7 +44,7 @@
 
 #define DEBUG_OUTPUT_BNO055     0
 #define ENABLE_PIN_BNO055       0
-#define ENABLE_SEMAPHORE_BNO055 0
+#define ENABLE_SEMAPHORE_BNO055 1
 
 namespace meridian {
 namespace modules {
@@ -53,13 +61,6 @@ struct st_data {
   int temperature = 0;
   unsigned long timestamp = 0;
 };
-
-#if ENABLE_SEMAPHORE_BNO055
-volatile SemaphoreHandle_t semaphore_bno055; ///! ハードウェアタイマー用のセマフォ
-#endif
-pthread_mutex_t mutex_bno055 = PTHREAD_MUTEX_INITIALIZER;
-volatile bool flag_mrd_ahrs_bno055_loop = false;
-st_data a_data;
 struct thread_args {
   int start_delay_ms;
   int search_ms;
@@ -69,6 +70,13 @@ struct thread_args {
   uint8_t address;
   TwoWire *theWire;
 };
+
+#if ENABLE_SEMAPHORE_BNO055
+volatile SemaphoreHandle_t semaphore_bno055; ///! ハードウェアタイマー用のセマフォ
+#endif
+pthread_mutex_t mutex_bno055 = PTHREAD_MUTEX_INITIALIZER;
+volatile bool flag_mrd_ahrs_bno055_loop = false;
+st_data a_data;
 
 void thread_mrd_ahrs_bno055(void *args) {
   flag_mrd_ahrs_bno055_loop = true;
@@ -104,7 +112,7 @@ void thread_mrd_ahrs_bno055(void *args) {
   sensors_event_t sensors_data;
   while (true == flag_mrd_ahrs_bno055_loop) {
 #if ENABLE_SEMAPHORE_BNO055
-    if (xSemaphoreTake(semaphore_bno055, delay_ms) == pdTRUE)
+    if (xSemaphoreTake(semaphore_bno055, portMAX_DELAY) == pdTRUE)
 #else
     delay(delay_ms);
 #endif
@@ -146,13 +154,8 @@ public:
     if (nullptr == this->param) {
       this->param = new ahrs_bno055::thread_args();
     }
-#if ENABLE_PIN_BNO055
     this->param->reset_pin = reset_pin;
     this->param->int_pin = int_pin;
-#else
-    this->param->reset_pin = 0xFF;
-    this->param->int_pin = 0xFF;
-#endif
   }
   MrdAhrsBNO055(int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A, TwoWire *theWire = &Wire) : IMeridianI2C(address) {
     if (nullptr == theWire) {
@@ -177,8 +180,6 @@ public:
   }
 
 public:
-  void write(uint8_t address, uint8_t data) {}
-  uint8_t read(uint8_t address) { return 0; }
   bool setup() override {
     bool result = true;
     if (true == ahrs_bno055::a_data.initalized) {
@@ -233,21 +234,21 @@ public:
         a_meridim.dmp.yaw = this->float2HfShort(this->deg_correction(this->a_ahrs.orientation.x() - this->yaw_origin)); ///! DMP推定ヨー方向値
       }
     }
-#if ENABLE_SEMAPHORE_BNO055
-    xSemaphoreGiveFromISR(ahrs_bno055::semaphore_bno055, NULL); // セマフォを与える
-#endif
     return true;
   }
 
   bool output(Meridim90 &a_meridim) override {
 #if DEBUG_OUTPUT_BNO055
     if (true == ahrs_bno055::a_data.initalized) {
-      this->m_diag->log_trace("  BN0055-ACC[%7.2f,%7.2f,%7.2f]GYR[%7.2f,%7.2f,%7.2f]MAG[%7.2f,%7.2f,%7.2f]TMP[%3d]",
+      this->m_diag->log_trace("  BN0055-ACC[%7.2f,%7.2f,%7.2f]GYR[%7.2f,%7.2f,%7.2f]MAG[%7.2f,%7.2f,%7.2f]TMP[%3d] %lu",
                               this->a_ahrs.acceleration.x(), this->a_ahrs.acceleration.y(), this->a_ahrs.acceleration.z(),
                               this->a_ahrs.gyro.x(), this->a_ahrs.gyro.y(), this->a_ahrs.gyro.z(),
                               this->a_ahrs.magnetic.x(), this->a_ahrs.magnetic.y(), this->a_ahrs.magnetic.z(),
-                              this->a_ahrs.temperature);
+                              this->a_ahrs.temperature, a_ahrs.timestamp);
     }
+#endif
+#if ENABLE_SEMAPHORE_BNO055
+    xSemaphoreGiveFromISR(ahrs_bno055::semaphore_bno055, NULL); // セマフォを与える
 #endif
     return true;
   }

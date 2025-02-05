@@ -22,10 +22,6 @@ public:
     this->m_address = address;
   }
 
-public:
-  virtual void write(uint8_t address, uint8_t data) = 0;
-  virtual uint8_t read(uint8_t address) = 0;
-
 protected:
   uint8_t m_address;
 };
