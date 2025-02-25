@@ -1,6 +1,37 @@
 {
     "cSpell.words": [
+        "AHRS",
+        "BLUERETRO",
+        "DYNAMIXEL",
         "EEPROM",
-        "Meridim"
+        "electroniccats",
+        "espressif",
+        "FEETECH",
+        "FTBRSX",
+        "FTCSCS",
+        "FTCSTS",
+        "FUTABA",
+        "HIPJOINT",
+        "IMUAHRS",
+        "IRAM",
+        "JOYPAD",
+        "JRPROPO",
+        "JRXBUS",
+        "KOICS",
+        "KONDO",
+        "KOPMX",
+        "MCMD",
+        "MERIDIANFLOW",
+        "Meridim",
+        "MERIMOTE",
+        "motionplay",
+        "MRDM",
+        "NOSERVO",
+        "nunchuk",
+        "PROPO",
+        "SBDBT",
+        "SDCARD",
+        "wiimote",
+        "XBUS"
     ]
 }
