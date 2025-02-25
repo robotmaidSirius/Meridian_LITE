@@ -5,7 +5,7 @@ on:
       - 'v*'
 
 jobs:
-  Meridian_LITE_for_ESP32:
+  Build_Meridian_LITE_for_ESP32:
     uses: ./.github/workflows/_WORKFLOW_CALL_RunningPlatformIO.yml
     with:
       target_dir: Meridian_LITE_for_ESP32
@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write
     if: success()
-    needs: Meridian_LITE_for_ESP32
+    needs: Build_Meridian_LITE_for_ESP32
     name: Build Releases on tags
     runs-on: ubuntu-latest
 
