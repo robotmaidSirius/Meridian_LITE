@@ -1,0 +1,3 @@
+[submodule "lib/3rd_party/Arduino/gs2d-cpp"]
+	path = lib/3rd_party/Arduino/gs2d-cpp
+	url = https://github.com/karakuri-products/gs2d-cpp.git
