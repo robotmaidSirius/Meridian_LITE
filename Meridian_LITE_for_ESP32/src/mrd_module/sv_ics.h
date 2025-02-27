@@ -5,7 +5,10 @@
 #include "main.h"
 #include "mrd_disp.h"
 
-#include "gs2d_krs.h"
+// ライブラリ導入
+// #include "gs2d_krs.h"
+#include <IcsHardSerialClass.h>
+#include <meridim90.hpp>
 
 //==================================================================================================
 //  KONDO ICSサーボ関連の処理

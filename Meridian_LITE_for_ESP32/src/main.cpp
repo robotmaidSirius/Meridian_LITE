@@ -29,7 +29,14 @@
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
 
+// ライブラリ導入
+#include <meridim90.hpp> // meridim90を定義
+// #include <Arduino.h> // Arduinoの基本機能を使うためのライブラリ
+
 MERIDIANFLOW::Meridian mrd;
+Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
+Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
+Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 

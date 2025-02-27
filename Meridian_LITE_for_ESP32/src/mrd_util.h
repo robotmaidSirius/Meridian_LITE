@@ -4,6 +4,8 @@
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "main.h"
+#include <Arduino.h>     // Arduinoの基本機能を使うためのライブラリ
+#include <meridim90.hpp> // meridim90を定義
 
 //==================================================================================================
 // Utility ごく小規模な汎用関数

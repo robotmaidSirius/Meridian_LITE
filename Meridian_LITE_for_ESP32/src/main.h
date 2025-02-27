@@ -8,6 +8,7 @@
 #include <Adafruit_BNO055.h>            // 9軸センサBNO055用
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
 #include <Meridian.h>                   // Meridianのライブラリ導入
+#include <meridim90.hpp>                // meridim90を定義
 extern MERIDIANFLOW::Meridian mrd;
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 extern IcsHardSerialClass ics_L;
@@ -86,28 +87,12 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
 //------------------------------------------------------------------------------------
 
 // システム用の変数
-const int MRDM_BYTE = MRDM_LEN * 2;    // Meridim配列のバイト型の長さ
-const int MRD_ERR = MRDM_LEN - 2;      // エラーフラグの格納場所（配列の末尾から2つめ）
-const int MRD_ERR_u = MRD_ERR * 2 + 1; // エラーフラグの格納場所（上位8ビット）
-const int MRD_ERR_l = MRD_ERR * 2;     // エラーフラグの格納場所（下位8ビット）
-const int MRD_CKSM = MRDM_LEN - 1;     // チェックサムの格納場所（配列の末尾）
-const int PAD_LEN = 5;                 // リモコン用配列の長さ
-TaskHandle_t thp[4];                   // マルチスレッドのタスクハンドル格納用
+const int PAD_LEN = 5; // リモコン用配列の長さ
+TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
 //------------------------------------------------------------------------------------
-
-// Meridim配列用の共用体の設定
-typedef union {
-  short sval[MRDM_LEN + 4];           // short型で90個の配列データを持つ
-  unsigned short usval[MRDM_LEN + 2]; // 上記のunsigned short型
-  uint8_t bval[+4];                   // byte型で180個の配列データを持つ
-  uint8_t ubval[MRDM_BYTE + 4];       // 上記のunsigned byte型
-} Meridim90Union;
-Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
-Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
-Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 // フラグ用変数
 struct MrdFlags {

@@ -19,7 +19,6 @@
 		"editor.rulers": [
 			100
 		],
-		"git.detectSubmodules": false,
 		"files.exclude": {
 			"**/.git": true,
 			"**/.svn": true,
