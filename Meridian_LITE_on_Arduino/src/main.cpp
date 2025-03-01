@@ -22,10 +22,10 @@
 // mrd_module
 //////////////////////////////////////////////////////////////////////////
 #if defined(MODULE_AHRS_BNO055)
-#include <mrd_module/ahrs/mrd_module_ahrs_BNO055.hpp>
+#include <mrd_module/imu/mrd_module_ahrs_BNO055.hpp>
 MrdAhrsBNO055 ahrs_BNO055;
 #elif defined(MODULE_AHRS_MPU6050)
-#include <mrd_module/ahrs/mrd_module_imu_MPU6050.hpp>
+#include <mrd_module/imu/mrd_module_imu_MPU6050.hpp>
 MrdAhrsMPU6050 ahrs_MPU6050;
 #endif
 

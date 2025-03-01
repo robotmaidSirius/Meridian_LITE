@@ -64,3 +64,16 @@
   * SD Cardの実装
   * EEPROMの実装
 
+アプリの持ち方を変える？
+
+/// @brief ボード初期化前に実行する関数
+bool setup(){return true;} ;
+
+/// @brief ボード初期化後に実行する関数
+bool begin(){return true;} ;
+
+/// @brief 周期的に呼ばれる関数
+/// @details 渡されたMeridianを加工してください。後続処理がその設定に従って動作します。
+bool process(Meridim90 &a_mrd){return true;} ;
+
+
