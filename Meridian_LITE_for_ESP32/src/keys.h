@@ -1,6 +1,22 @@
 #ifndef __MERIDIAN_KEYS_H__
 #define __MERIDIAN_KEYS_H__
 
+namespace meridian {
+namespace core {
+namespace execution {
+
+} // namespace execution
+} // namespace core
+} // namespace meridian
+
+namespace meridian {
+namespace modules {
+namespace config {
+
+} // namespace config
+} // namespace modules
+} // namespace meridian
+
 // Wifiアクセスポイントの設定
 #define WIFI_AP_SSID  "xxxxxxxx"     // アクセスポイントのWIFI_AP_SSID
 #define WIFI_AP_PASS  "xxxxxxxx"     // アクセスポイントのパスワード
