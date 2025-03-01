@@ -4,8 +4,8 @@
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "main.h"
-#include "mrd_module/sv_ftbrx.h"
-#include "mrd_module/sv_ics.h"
+#include "sv_ftbrx.h"
+#include "sv_ics.h"
 
 //==================================================================================================
 //  Servo 関連の処理
