@@ -7,6 +7,14 @@
 #include "mrd_module/sv_ftbrx.h"
 #include "mrd_module/sv_ics.h"
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdServoNone {
+public:
+};
+
 //==================================================================================================
 //  Servo 関連の処理
 //==================================================================================================
@@ -113,5 +121,9 @@ uint8_t mrd_servos_make_errcode_lite(ServoParam a_sv) {
   }
   return servo_ix_tmp;
 }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_SERVO_DISTRIBUTOR_H__

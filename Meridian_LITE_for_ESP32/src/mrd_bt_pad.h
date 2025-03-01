@@ -7,6 +7,23 @@
 
 // ライブラリ導入
 #include <ESP32Wiimote.h> // Wiiコントローラー
+
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdJoypadNone {
+public:
+};
+
+class MrdJoypadWiimote {
+public:
+};
+
+class MrdJoypadKRR5FH {
+public:
+};
+
 ESP32Wiimote wiimote;
 
 // リモコン受信ボタンデータの変換テーブル
@@ -292,5 +309,9 @@ bool meriput90_pad(Meridim90Union &a_meridim, PadUnion a_pad_array, bool a_marge
   }
   return true;
 }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_BT_PAD_H__

@@ -4,6 +4,14 @@
 #include "config.h"
 #include "main.h"
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdServoDynamixel20 {
+public:
+};
+
 //==================================================================================================
 //  DYNAMIXELサーボ関連の処理  ----------------------------------------------------------------------
 //==================================================================================================
@@ -13,5 +21,9 @@
 bool mrd_servo_dxl20_x() {
   return false;
 }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_SERVO_DYNAMIXEL_H__

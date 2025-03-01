@@ -9,6 +9,15 @@
 // ライブラリ導入
 #include <WiFi.h>
 #include <WiFiUdp.h>
+
+namespace meridian {
+namespace core {
+namespace communication {
+
+class MrdConversation {
+public:
+};
+
 WiFiUDP udp; // wifi設定
 
 //==================================================================================================
@@ -68,5 +77,9 @@ bool mrd_wifi_udp_send(byte *a_meridim_bval, int a_len, WiFiUDP &a_udp) {
   a_udp.endPacket();                              // UDPパケットの終了
   return true;
 }
+
+} // namespace communication
+} // namespace core
+} // namespace meridian
 
 #endif // __MERIDIAN_WIFI_H__

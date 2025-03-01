@@ -8,6 +8,14 @@
 // ライブラリ導入
 #include <EEPROM.h>
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdFsEEPROM {
+public:
+};
+
 // EEPROM読み書き用共用体
 typedef union {
   uint8_t bval[EEPROM_SIZE];            // 1バイト単位で540個のデータを持つ
@@ -196,5 +204,9 @@ int8_t mrd_eeprom_read_byte(int index_y, int index_x, int low_high) //
 {
   return int8_t(EEPROM.read(index_y * 180 + index_x * 2 + low_high));
 }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_EEPROM_H__

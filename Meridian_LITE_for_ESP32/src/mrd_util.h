@@ -5,6 +5,10 @@
 #include "config.h"
 #include "main.h"
 
+namespace meridian {
+namespace core {
+namespace execution {
+
 //==================================================================================================
 // Utility ごく小規模な汎用関数
 //==================================================================================================
@@ -79,22 +83,6 @@ void mrd_timeout_reset() {
   flg_timer_started = false; // タイマーをリセットして次回の呼び出しに備える
 }
 
-/// @brief 列挙型(L,R,C)から文字列を取得する関数.
-/// @param a_line 列挙型 enum UartLine
-/// @return 列挙型の内容に応じて文字列"L","R","C"返す.
-const char *mrd_get_line_name(UartLine a_line) {
-  switch (a_line) {
-  case L:
-    return "L";
-  case R:
-    return "R";
-  case C:
-    return "C";
-  default:
-    return "Unknown";
-  }
-}
-
 //------------------------------------------------------------------------------------
 //  meriput / meridimへのデータ書き込み
 //------------------------------------------------------------------------------------
@@ -110,5 +98,9 @@ bool mrd_meriput90_cksm(Meridim90Union &a_meridim, int len = 90) {
   a_meridim.sval[len - 1] = short(~a_cksm);
   return true;
 }
+
+} // namespace execution
+} // namespace core
+} // namespace meridian
 
 #endif //__MERIDIAN_UTILITY_H__

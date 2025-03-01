@@ -270,7 +270,7 @@ struct MrdMonitor {
 MrdMonitor monitor;
 
 #include "mrd_disp.h"
-MrdMsgHandler mrd_disp(Serial);
+meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
 
 //==================================================================================================
 //  関数各種

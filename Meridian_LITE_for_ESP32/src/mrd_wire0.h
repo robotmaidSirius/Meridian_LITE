@@ -8,6 +8,20 @@
 // ライブラリ導入
 #include <Wire.h>
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdImuNone {
+public:
+};
+class MrdImuMPU6050 {
+public:
+};
+class MrdImuBNO055 {
+public:
+};
+
 //==================================================================================================
 //  I2C wire0 関連の処理
 //==================================================================================================
@@ -265,5 +279,9 @@ bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type
   }
   return false;
 }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_WIRE0_H__

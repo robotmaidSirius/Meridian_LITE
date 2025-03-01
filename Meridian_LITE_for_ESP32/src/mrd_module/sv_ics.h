@@ -7,6 +7,14 @@
 
 #include "gs2d_krs.h"
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdServoICS {
+public:
+};
+
 //==================================================================================================
 //  KONDO ICSサーボ関連の処理
 //==================================================================================================
@@ -105,5 +113,9 @@ void mrd_sv_drive_ics_double(Meridim90Union &a_meridim, ServoParam &a_sv) {
 
 //   return mrd.Krs2Deg(val_tmp, a_trim, a_cw);
 // }
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // __MERIDIAN_SERVO_KONDO_ICS_H__

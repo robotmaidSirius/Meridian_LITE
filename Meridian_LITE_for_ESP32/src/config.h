@@ -1,6 +1,22 @@
 #ifndef __MERIDIAN_CONFIG__
 #define __MERIDIAN_CONFIG__
 
+namespace meridian {
+namespace core {
+namespace execution {
+
+} // namespace execution
+} // namespace core
+} // namespace meridian
+
+namespace meridian {
+namespace modules {
+namespace config {
+
+} // namespace config
+} // namespace modules
+} // namespace meridian
+
 //==================================================================================================
 //  MERIDIAN - LITE - ESP32の配線
 //==================================================================================================
@@ -99,9 +115,9 @@
 #define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無 (0:なし, 1:あり)
-#define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
-#define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
+#define MOUNT_SD      0      // SDカードリーダーの有無 (0:なし, 1:あり)
+#define MOUNT_IMUAHRS NO_IMU // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
+#define MOUNT_PAD     PC     // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
 // 動作モード
 #define MODE_ESP32_STANDALONE 0 // ESP32をボードに挿さず動作確認（0:NO, 1:YES）
@@ -118,10 +134,10 @@
 #define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
 #define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
 #define EEPROM_DUMP    0   // 起動時のEEPROM内容のダンプ表示
-#define EEPROM_STYLE   Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
+#define EEPROM_STYLE   Hex // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
 
 // 動作チェックモード
-#define CHECK_SD_RW     1 // 起動時のSDカードリーダーの読み書きチェック
+#define CHECK_SD_RW     0 // 起動時のSDカードリーダーの読み書きチェック
 #define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
 
 // シリアルモニタリング
@@ -173,8 +189,8 @@
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-#define MOUNT_SERVO_TYPE_L 43 // L系統のコマンドサーボの種類
-#define MOUNT_SERVO_TYPE_R 43 // R系統のコマンドサーボの種類
+#define MOUNT_SERVO_TYPE_L KOICS3 // L系統のコマンドサーボの種類
+#define MOUNT_SERVO_TYPE_R KOICS3 // R系統のコマンドサーボの種類
 
 // サーボ関連設定
 #define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps

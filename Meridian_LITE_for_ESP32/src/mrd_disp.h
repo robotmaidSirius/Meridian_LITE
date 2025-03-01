@@ -10,6 +10,10 @@
 // ライブラリ導入
 #include <WiFi.h>
 
+namespace meridian {
+namespace core {
+namespace communication {
+
 //==================================================================================================
 //  シリアルモニタ表示用の関数
 //==================================================================================================
@@ -103,6 +107,22 @@ public:
   /// @param a_ssid 接続先のSSID.
   void esp_wifi(const char *a_ssid) {
     m_serial.println("WiFi connecting to => " + String(a_ssid)); // WiFi接続完了通知
+  }
+
+  /// @brief 列挙型(L,R,C)から文字列を取得する関数.
+  /// @param a_line 列挙型 enum UartLine
+  /// @return 列挙型の内容に応じて文字列"L","R","C"返す.
+  const char *mrd_get_line_name(UartLine a_line) {
+    switch (a_line) {
+    case L:
+      return "L";
+    case R:
+      return "R";
+    case C:
+      return "C";
+    default:
+      return "Unknown";
+    }
   }
 
   /// @brief 指定されたUARTラインとサーボタイプに基づいてサーボの通信プロトコルを表示する.
@@ -285,5 +305,9 @@ public:
     return false;
   }
 };
+
+} // namespace communication
+} // namespace core
+} // namespace meridian
 
 #endif // __MERIDIAN_MESSAGE_H__

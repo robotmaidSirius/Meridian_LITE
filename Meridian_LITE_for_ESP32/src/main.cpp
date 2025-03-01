@@ -29,6 +29,12 @@
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
 
+using namespace meridian::core::execution;
+using namespace meridian::core::communication;
+using namespace meridian::modules::config;
+using namespace meridian::modules::plugin;
+using namespace meridian::app;
+
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
@@ -204,7 +210,7 @@ void loop() {
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= UDP_TIMEOUT) {
         if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
-          Serial.println("UDP timeout");
+          Serial.printf("UDP timeout[%d]\n", mrdsq.s_increment);
         }
         flg.udp_rcvd = false;
         break;
