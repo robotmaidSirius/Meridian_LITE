@@ -1,8 +1,11 @@
 {
     "cSpell.words": [
         "AHRS",
+        "ARDUHAL",
         "BLUERETRO",
+        "coryjfowler",
         "DYNAMIXEL",
+        "earlephilhower",
         "EEPROM",
         "electroniccats",
         "espressif",
@@ -29,6 +32,7 @@
         "NOSERVO",
         "nunchuk",
         "PROPO",
+        "robotis",
         "SBDBT",
         "SDCARD",
         "wiimote",
