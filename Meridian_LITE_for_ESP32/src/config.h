@@ -2,13 +2,13 @@
 #define __MERIDIAN_CONFIG__
 
 #include "board/meridian_board_lite_for_esp32.hpp"
+#include <Meridim90.hpp>
 
 //-------------------------------------------------------------------------
 //  各種設定
 //-------------------------------------------------------------------------
 
 // Meridimの基本設定
-#define MRDM_LEN       90  // Meridim配列の長さ設定（デフォルトは90）
 #define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
 #define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
@@ -68,8 +68,6 @@
 
 // ピンアサイン
 #define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
-#define PIN_EN_L          33 // サーボL系統のENピン
-#define PIN_EN_R          4  // サーボR系統のENピン
 #define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
 #define PIN_I2C0_SDA      22 // I2CのSDAピン
 #define PIN_I2C0_SCL      21 // I2CのSCLピン
@@ -88,13 +86,6 @@
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
 #define MOUNT_SERVO_TYPE_L 43 // L系統のコマンドサーボの種類
 #define MOUNT_SERVO_TYPE_R 43 // R系統のコマンドサーボの種類
-
-// サーボ関連設定
-#define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
-#define SERVO_BAUDRATE_R    1250000 // R系統のICSサーボの通信速度bps
-#define SERVO_TIMEOUT_L     2       // L系統のICS返信待ちのタイムアウト時間
-#define SERVO_TIMEOUT_R     2       // R系統のICS返信待ちのタイムアウト時間
-#define SERVO_LOST_ERR_WAIT 6       // 連続何フレームサーボ信号をロストしたら異常とするか
 
 // 各サーボ系統の最大サーボマウント数
 #define IXL_MAX 15 // L系統の最大サーボ数. 標準は15.
@@ -266,42 +257,5 @@ float IDR_TRIM[IXR_MAX] = {
     0,      // [13]追加サーボ用
     0,      // [14]追加サーボ用
 };
-
-//-------------------------------------------------------------------------
-//  固定値, マスターコマンド定義
-//-------------------------------------------------------------------------
-// 固定値, マスターコマンド定義
-#define MCMD_TORQUE_ALL_OFF         0      // すべてのサーボトルクをオフにする（脱力）
-#define MCMD_DUMMY_DATA             -32768 // SPI送受信用のダミーデータ判定用
-#define MCMD_TEST_VALUE             -32767 // テスト用の仮設変数
-#define MCMD_SENSOR_YAW_CALIB       10002  // センサの推定ヨー軸を現在値センターとしてリセット
-#define MCMD_SENSOR_ALL_CALIB       10003  // センサの3軸について現在値を原点としてリセット
-#define MCMD_ERR_CLEAR_SERVO_ID     10004  // 通信エラーのサーボのIDをクリア(MRD_ERR_l)
-#define MCMD_BOARD_TRANSMIT_ACTIVE  10005  // ボードが定刻で送信を行うモード（PC側が受信待ち）
-#define MCMD_BOARD_TRANSMIT_PASSIVE 10006  // ボードが受信を待ち返信するモード（PC側が定刻送信）
-#define MCMD_FRAMETIMER_RESET       10007  // フレームタイマーを現在時刻にリセット
-#define MCMD_BOARD_STOP_DURING      10008  // ボードの末端処理を[MRD_STOP_FRAMES]ミリ秒止める
-#define MCMD_EEPROM_ENTER_WRITE     10009  // EEPROM書き込みモードのスタート
-#define MCMD_EEPROM_EXIT_WRITE      10010  // EEPROM書き込みモードの終了
-#define MCMD_EEPROM_ENTER_READ      10011  // EEPROM読み出しモードのスタート
-#define MCMD_EEPROM_EXIT_READ       10012  // EEPROM読み出しモードの終了
-#define MCMD_SDCARD_ENTER_WRITE     10013  // SDCARD書き込みモードのスタート
-#define MCMD_SDCARD_EXIT_WRITE      10014  // SDCARD書き込みモードの終了
-#define MCMD_SDCARD_ENTER_READ      10015  // SDCARD読み出しモードのスタート
-#define MCMD_SDCARD_EXIT_READ       10016  // SDCARD読み出しモードの終了
-#define MCMD_EEPROM_SAVE_TRIM       10101  // 現在の姿勢をトリム値としてサーボに書き込む
-#define MCMD_EEPROM_LOAD_TRIM       10102  // EEPROMのトリム値をサーボに反映する
-#define MCMD_NAK                    32766  // コマンド実行の失敗を応答
-#define MCMD_ACK                    32767  // コマンド実行の成功を応答
-
-// エラービット MRD_ERR_CODEの上位8bit分
-#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
-#define ERRBIT_14_PC_ESP       14 // PC → ESP32 のUDP受信エラー
-#define ERRBIT_13_ESP_TSY      13 // ESP32 → TeensyのSPI受信エラー
-#define ERRBIT_12_TSY_ESP      12 // Teensy → ESP32 のSPI受信エラー
-#define ERRBIT_11_BOARD_DELAY  11 // Teensy or ESP32の処理ディレイ (末端で捕捉)
-#define ERRBIT_10_UDP_ESP_SKIP 10 // PC → ESP32 のUDPフレームスキップエラー
-#define ERRBIT_9_BOARD_SKIP    9  // PC → ESP32 → Teensy のフレームスキップエラー(末端で捕捉)
-#define ERRBIT_8_PC_SKIP       8  // Teensy → ESP32 → PC のフレームスキップエラー(末端で捕捉)
 
 #endif // __MERIDIAN_CONFIG__

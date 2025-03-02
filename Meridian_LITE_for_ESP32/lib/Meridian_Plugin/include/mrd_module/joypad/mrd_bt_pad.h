@@ -43,7 +43,7 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
     int krr_analog_tmp[4];             // krrからのアナログ入力データ
     unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
     bool rcvd_tmp;                     // 受信機がデータを受信成功したか
-    rcvd_tmp = ics_R.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
+    rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
     delayMicroseconds(2);
 
     if (rcvd_tmp) // リモコンデータが受信できていたら
@@ -187,10 +187,10 @@ uint64_t mrd_bt_read_wiimote() {
 /// @param a_pad_data 64ビットのボタンデータ
 /// @return 64ビット整数に変換された受信データ
 /// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
-uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data) {
+uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data, IcsHardSerialClass &a_ics) {
 
   if (a_pad_type == KRR5FH) { // KRR5FH
-    return mrd_pad_read_krc(PAD_INTERVAL, ics_R);
+    return mrd_pad_read_krc(PAD_INTERVAL, a_ics);
   }
 
   if (a_pad_type == WIIMOTE) { // Wiimote

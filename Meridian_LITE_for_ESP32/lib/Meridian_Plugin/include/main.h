@@ -22,20 +22,6 @@ enum UartLine { // サーボ系統の列挙型(L,R,C)
   C             // Center
 };
 
-enum ServoType { // サーボプロトコルのタイプ
-  NOSERVO = 0,   // サーボなし
-  PWM_S = 1,     // Single PWM (WIP)
-  PCA9685 = 11,  // I2C_PCA9685 to PWM (WIP)
-  FTBRSX = 21,   // FUTABA_RSxTTL (WIP)
-  DXL1 = 31,     // DYNAMIXEL 1.0 (WIP)
-  DXL2 = 32,     // DYNAMIXEL 2.0 (WIP)
-  KOICS3 = 43,   // KONDO_ICS 3.5 / 3.6
-  KOPMX = 44,    // KONDO_PMX (WIP)
-  JRXBUS = 51,   // JRPROPO_XBUS (WIP)
-  FTCSTS = 61,   // FEETECH_STS (WIP)
-  FTCSCS = 62    // FEETECH_SCS (WIP)
-};
-
 enum ImuAhrsType { // 6軸9軸センサ種の列挙型(NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS)
   NO_IMU = 0,      // IMU/AHRS なし.
   MPU6050_IMU = 1, // MPU6050
@@ -85,29 +71,12 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
 //------------------------------------------------------------------------------------
 
 // システム用の変数
-const int MRDM_BYTE = MRDM_LEN * 2;    // Meridim配列のバイト型の長さ
-const int MRD_ERR = MRDM_LEN - 2;      // エラーフラグの格納場所（配列の末尾から2つめ）
-const int MRD_ERR_u = MRD_ERR * 2 + 1; // エラーフラグの格納場所（上位8ビット）
-const int MRD_ERR_l = MRD_ERR * 2;     // エラーフラグの格納場所（下位8ビット）
-const int MRD_CKSM = MRDM_LEN - 1;     // チェックサムの格納場所（配列の末尾）
-const int PAD_LEN = 5;                 // リモコン用配列の長さ
-TaskHandle_t thp[4];                   // マルチスレッドのタスクハンドル格納用
+const int PAD_LEN = 5; // リモコン用配列の長さ
+TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
 //------------------------------------------------------------------------------------
-
-// Meridim配列用の共用体の設定
-typedef union {
-  short sval[MRDM_LEN + 4];           // short型で90個の配列データを持つ
-  unsigned short usval[MRDM_LEN + 2]; // 上記のunsigned short型
-  uint8_t bval[+4];                   // byte型で180個の配列データを持つ
-  uint8_t ubval[MRDM_BYTE + 4];       // 上記のunsigned byte型
-} Meridim90Union;
-Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
-Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
-Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
-
 // フラグ用変数
 struct MrdFlags {
   bool imuahrs_available = true;        // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機

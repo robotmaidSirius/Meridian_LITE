@@ -21,15 +21,17 @@
 #include "mrd_module/filesystem/mrd_sd.h"
 #include "mrd_module/joypad/mrd_bt_pad.h"
 #include "mrd_module/network/mrd_wifi.h"
-#include "mrd_module/servo/mrd_servo.h"
+#include "mrd_module/servo/mrd_servo_kondo_ics_3_5.hpp"
 #include "mrd_util.h"
 
 // ライブラリ導入
 #include <Arduino.h>
 
 MERIDIANFLOW::Meridian mrd;
-IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
-IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
+MrdServoKondoIcs35 mrd_servo(Serial1, Serial2);
+Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
+Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
+Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -90,8 +92,7 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L);         // サーボモータの通信初期設定. Serial2
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R);         // サーボモータの通信初期設定. Serial3
+  mrd_servo.begin();                              // サーボモータの通信初期設定.
   mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
   mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
 
@@ -276,7 +277,7 @@ void loop() {
   if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
+    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, *mrd_servo.ics_R);
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
@@ -319,9 +320,8 @@ void loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
-
-    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
+  if (!MODE_ESP32_STANDALONE) {              // サーボ処理を行うかどうか
+    mrd_servo.drive_lite(s_udp_meridim, sv); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -358,7 +358,7 @@ void loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
+  s_udp_meridim.ubval[MRD_ERR_l] = mrd_servo.make_errcode_lite(sv);
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -449,7 +449,7 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    mrd_servo_all_off(s_udp_meridim);
+    mrd_servo.all_off(s_udp_meridim);
     return true;
   }
 
