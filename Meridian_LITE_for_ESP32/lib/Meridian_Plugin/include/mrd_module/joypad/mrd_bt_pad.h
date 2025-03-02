@@ -6,7 +6,9 @@
 #include "main.h"
 
 // ライブラリ導入
-#include <ESP32Wiimote.h> // Wiiコントローラー
+#include <ESP32Wiimote.h>       // Wiiコントローラー
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+
 ESP32Wiimote wiimote;
 
 // リモコン受信ボタンデータの変換テーブル
