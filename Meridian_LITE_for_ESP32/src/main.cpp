@@ -48,6 +48,22 @@ void IRAM_ATTR frame_timer() {
   xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
 }
 
+/// @brief config.hにあるサーボの諸設定からEEPROM格納用の配列データを作成する.
+/// @return config.hから作成したEEPROM格納用の配列データを返す.
+UnionEEPROM mrd_eeprom_make_data_from_config() {
+  UnionEEPROM array_tmp = {0};
+  for (int i = 0; i < 15; i++) {
+    // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
+    // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
+    array_tmp.saval[0][20 + i * 2] = short(sv.ixl_mount[i] * sv.ixl_cw[i]);
+    array_tmp.saval[0][50 + i * 2] = short(sv.ixr_mount[i] * sv.ixr_cw[i]);
+    // 各サーボの直立デフォルト値 degree
+    array_tmp.saval[1][21 + i * 2] = mrd.float2HfShort(sv.ixl_trim[i]);
+    array_tmp.saval[1][51 + i * 2] = mrd.float2HfShort(sv.ixr_trim[i]);
+  };
+  return array_tmp;
+}
+
 //==================================================================================================
 //  SETUP
 //==================================================================================================
@@ -101,13 +117,13 @@ void setup() {
 
   // EEPROMの開始, ダンプ表示
   mrd_eeprom_init(EEPROM_SIZE);                                   // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);             // 内容のダンプ表示
+  mrd_eeprom_dump_at_boot(EEPROM_DUMP);                           // 内容のダンプ表示
   mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), // EEPROMのリードライトテスト
-                              CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+                              CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_PROTECT);
 
   // SDカードの初期設定とチェック
-  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
+  mrd_sd_init(PIN_CHIPSELECT_SD);
+  mrd_sd_check();
 
   // I2Cの初期化と開始
   mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
@@ -430,7 +446,7 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:MCMD_EEPROM_ENTER_WRITE (10009) EEPROMの書き込みモードスタート
   if (a_meridim.sval[MRD_MASTER] == MCMD_EEPROM_ENTER_WRITE) {
-    flg.eeprom_write_mode = true; // 書き込みモードのフラグをセット
+    // flg.eeprom_write_mode = true; // 書き込みモードのフラグをセット
     flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     return true;
   }

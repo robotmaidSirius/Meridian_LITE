@@ -56,12 +56,6 @@ enum PadButton {  // リモコンボタンの列挙型
   PAD_bL = 32768  // ◻︎ 左
 };
 
-enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
-  Bin = 0,       // BIN
-  Hex = 1,       // HEX
-  Dec = 2,       // DEC
-};
-
 //------------------------------------------------------------------------------------
 //  変数
 //------------------------------------------------------------------------------------
@@ -75,23 +69,26 @@ TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
 //------------------------------------------------------------------------------------
 // フラグ用変数
 struct MrdFlags {
-  bool imuahrs_available = true;        // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
-  bool udp_board_passive = false;       // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
-  bool count_frame_reset = false;       // フレーム管理時計をリセットする
-  bool stop_board_during = false;       // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
-  bool eeprom_write_mode = false;       // EEPROMへの書き込みモード.
-  bool eeprom_read_mode = false;        // EEPROMからの読み込みモード.
-  bool eeprom_protect = EEPROM_PROTECT; // EEPROMの書き込みプロテクト.
-  bool eeprom_load = EEPROM_LOAD;       // 起動時にEEPROMの内容を読み込む
-  bool eeprom_set = EEPROM_SET;         // 起動時にEEPROMに規定値をセット
-  bool sdcard_write_mode = false;       // SDCARDへの書き込みモード.
-  bool sdcard_read_mode = false;        // SDCARDからの読み込みモード.
-  bool wire0_init = false;              // I2C 0系統の初期化合否
-  bool wire1_init = false;              // I2C 1系統の初期化合否
-  bool bt_busy = false;                 // Bluetoothの受信中フラグ（UDPコンフリクト回避用）
-  bool spi_rcvd = true;                 // SPIのデータ受信判定
-  bool udp_rcvd = false;                // UDPのデータ受信判定
-  bool udp_busy = false;                // UDPスレッドでの受信中フラグ（送信抑制）
+  bool imuahrs_available = true;  // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
+  bool udp_board_passive = false; // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
+  bool count_frame_reset = false; // フレーム管理時計をリセットする
+  bool stop_board_during = false; // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
+#if 0
+  // 使用していないためコメントアウト
+  bool eeprom_write_mode = false; // EEPROMへの書き込みモード.
+  bool eeprom_read_mode = false;  // EEPROMからの読み込みモード.
+  // bool eeprom_protect = EEPROM_PROTECT; // EEPROMの書き込みプロテクト.
+  // bool eeprom_load = EEPROM_LOAD;       // 起動時にEEPROMの内容を読み込む
+  // bool eeprom_set = EEPROM_SET;         // 起動時にEEPROMに規定値をセット
+#endif
+  bool sdcard_write_mode = false; // SDCARDへの書き込みモード.
+  bool sdcard_read_mode = false;  // SDCARDからの読み込みモード.
+  bool wire0_init = false;        // I2C 0系統の初期化合否
+  bool wire1_init = false;        // I2C 1系統の初期化合否
+  bool bt_busy = false;           // Bluetoothの受信中フラグ（UDPコンフリクト回避用）
+  bool spi_rcvd = true;           // SPIのデータ受信判定
+  bool udp_rcvd = false;          // UDPのデータ受信判定
+  bool udp_busy = false;          // UDPスレッドでの受信中フラグ（送信抑制）
 
   bool udp_receive_mode = MODE_UDP_RECEIVE; // PCからのデータ受信実施（0:OFF, 1:ON, 通常は1）
   bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）

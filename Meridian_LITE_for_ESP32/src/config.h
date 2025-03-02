@@ -13,7 +13,6 @@
 #define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無 (0:なし, 1:あり)
 #define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
 #define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
@@ -26,16 +25,7 @@
 #define MODE_FIXED_IP 0 // IPアドレスを固定するか（0:NO, 1:YES）
 #define UDP_TIMEOUT   4 // UDPの待受タイムアウト（単位ms,推奨値0）
 
-// EEPROMの設定
-#define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
-#define EEPROM_SET     0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
-#define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
-#define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
-#define EEPROM_DUMP    0   // 起動時のEEPROM内容のダンプ表示
-#define EEPROM_STYLE   Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
-
 // 動作チェックモード
-#define CHECK_SD_RW     1 // 起動時のSDカードリーダーの読み書きチェック
 #define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
 
 // シリアルモニタリング
