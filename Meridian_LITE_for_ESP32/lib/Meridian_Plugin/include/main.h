@@ -6,10 +6,9 @@
 
 // ライブラリ導入
 #include <Adafruit_BNO055.h>            // 9軸センサBNO055用
+#include <IcsHardSerialClass.h>         // ICSサーボのインスタンス設定
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
-#include <Meridian.h>                   // Meridianのライブラリ導入
-extern MERIDIANFLOW::Meridian mrd;
-#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+
 extern IcsHardSerialClass ics_L;
 extern IcsHardSerialClass ics_R;
 

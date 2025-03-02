@@ -9,10 +9,6 @@
 /// This code is licensed under the MIT License.
 /// Copyright (c) 2022 Izumi Ninagawa & Project Meridian
 
-//==================================================================================================
-//  初期設定
-//==================================================================================================
-
 // ヘッダファイルの読み込み
 #include "main.h"
 #include "config.h"
@@ -24,16 +20,16 @@
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
 #include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/network/mrd_wifi.h"
 #include "mrd_module/servo/mrd_servo.h"
 #include "mrd_util.h"
-#include "mrd_wifi.h"
+
+// ライブラリ導入
+#include <Arduino.h>
 
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
-
-// ライブラリ導入
-#include <Arduino.h>
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -324,8 +320,8 @@ void loop() {
 
   // @[8-1] サーボ受信値の処理
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
-    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R,
-                          sv); // サーボ動作を実行する
+
+    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
