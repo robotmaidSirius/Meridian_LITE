@@ -12,12 +12,6 @@
 //  列挙型
 //------------------------------------------------------------------------------------
 
-enum UartLine { // サーボ系統の列挙型(L,R,C)
-  L,            // Left
-  R,            // Right
-  C             // Center
-};
-
 enum ImuAhrsType { // 6軸9軸センサ種の列挙型(NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS)
   NO_IMU = 0,      // IMU/AHRS なし.
   MPU6050_IMU = 1, // MPU6050
@@ -61,8 +55,7 @@ enum PadButton {  // リモコンボタンの列挙型
 //------------------------------------------------------------------------------------
 
 // システム用の変数
-const int PAD_LEN = 5; // リモコン用配列の長さ
-TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
+TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
@@ -111,7 +104,10 @@ struct MrdTimer {
   int count_loop_max = 359999;    // 循環カウンタの最大値
   unsigned long count_frame = 0;  // メインフレームのカウント
 
+#if 0
+  // 使用していないためコメントアウト
   int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
+#endif
 };
 MrdTimer tmr;
 
@@ -126,33 +122,6 @@ struct MrdErr {
   int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
 };
 MrdErr err;
-
-typedef union // リモコン値格納用
-{
-  short sval[PAD_LEN];        // short型で4個の配列データを持つ
-  uint16_t usval[PAD_LEN];    // 上記のunsigned short型
-  int8_t bval[PAD_LEN * 2];   // 上記のbyte型
-  uint8_t ubval[PAD_LEN * 2]; // 上記のunsigned byte型
-  uint64_t ui64val;           // 上記のunsigned int16型
-                              // [0]button, [1]pad.stick_L_x:pad.stick_L_y,
-                              // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
-} PadUnion;
-PadUnion pad_array = {0}; // pad値の格納用配列
-PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
-
-// リモコンのアナログ入力データ
-struct PadValue {
-  unsigned short stick_R = 0;
-  int stick_R_x = 0;
-  int stick_R_y = 0;
-  unsigned short stick_L = 0;
-  int stick_L_x = 0;
-  int stick_L_y = 0;
-  unsigned short stick_L2R2V = 0;
-  int R2_val = 0;
-  int L2_val = 0;
-};
-PadValue pad_analog;
 
 // 6軸or9軸センサーの値
 struct AhrsValue {

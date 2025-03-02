@@ -15,6 +15,13 @@
 //==================================================================================================
 
 class MrdMsgHandler {
+public:
+  enum UartLine { // サーボ系統の列挙型(L,R,C)
+    L,            // Left
+    R,            // Right
+    C             // Center
+  };
+
 private:
   Stream &m_serial; // シリアルオブジェクトの参照を保持
 
@@ -103,6 +110,22 @@ public:
   /// @param a_ssid 接続先のSSID.
   void esp_wifi(const char *a_ssid) {
     m_serial.println("WiFi connecting to => " + String(a_ssid)); // WiFi接続完了通知
+  }
+
+  /// @brief 列挙型(L,R,C)から文字列を取得する関数.
+  /// @param a_line 列挙型 enum UartLine
+  /// @return 列挙型の内容に応じて文字列"L","R","C"返す.
+  const char *mrd_get_line_name(UartLine a_line) {
+    switch (a_line) {
+    case L:
+      return "L";
+    case R:
+      return "R";
+    case C:
+      return "C";
+    default:
+      return "Unknown";
+    }
   }
 
   /// @brief 指定されたUARTラインとサーボタイプに基づいてサーボの通信プロトコルを表示する.

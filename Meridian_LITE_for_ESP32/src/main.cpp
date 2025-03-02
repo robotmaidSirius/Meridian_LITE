@@ -19,7 +19,8 @@
 #include "mrd_module/ahrs/mrd_wire0.h"
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
-#include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/joypad/mrd_joypad_krc5fh.hpp"
+#include "mrd_module/joypad/mrd_joypad_wiimote.hpp"
 #include "mrd_module/network/mrd_wifi_esp32.hpp"
 #include "mrd_module/servo/mrd_servo_kondo_ics_3_5.hpp"
 #include "mrd_util.h"
@@ -66,6 +67,30 @@ UnionEEPROM mrd_eeprom_make_data_from_config() {
   return array_tmp;
 }
 
+//------------------------------------------------------------------------------------
+//  meridimへのデータ書き込み
+//------------------------------------------------------------------------------------
+/// @brief meridim配列にPADデータを書き込む.
+/// @param a_meridim Meridim配列の共用体. 参照渡し.
+/// @param a_pad_array PAD受信値の格納用配列.
+/// @param a_marge PADボタンデータをマージするかどうかのブール値.
+/// trueの場合は既存のデータにビット単位でOR演算を行い, falseの場合は新しいデータで上書きする.
+bool meriput90_pad(Meridim90Union &a_meridim, PadUnion a_pad_array, bool a_marge) {
+
+  // ボタンデータの処理 (マージ or 上書き)
+  if (a_marge) {
+    a_meridim.usval[MRD_PAD_BUTTONS] |= a_pad_array.usval[0];
+  } else {
+    a_meridim.usval[MRD_PAD_BUTTONS] = a_pad_array.usval[0];
+  }
+
+  // アナログ入力データの処理 (上書きのみ)
+  for (int i = 1; i < 4; i++) {
+    a_meridim.usval[MRD_PAD_BUTTONS + i] = a_pad_array.usval[i];
+  }
+  return true;
+}
+
 //==================================================================================================
 //  SETUP
 //==================================================================================================
@@ -110,9 +135,9 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo.begin();                              // サーボモータの通信初期設定.
-  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
+  mrd_servo.begin();                                                       // サーボモータの通信初期設定.
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, MOUNT_SERVO_TYPE_R);
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -295,7 +320,11 @@ void loop() {
   if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, *mrd_servo.ics_R);
+    if (MOUNT_PAD == KRR5FH) { // KRR5FH
+      pad_array.ui64val = mrd_pad_read_krc(*mrd_servo.ics_R);
+    } else if (MOUNT_PAD == WIIMOTE) { // Wiimote
+      pad_array.ui64val = mrd_pad_read_wiimote();
+    }
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
