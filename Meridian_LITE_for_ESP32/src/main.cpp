@@ -20,7 +20,7 @@
 #include "mrd_module/filesystem/mrd_eeprom.h"
 #include "mrd_module/filesystem/mrd_sd.h"
 #include "mrd_module/joypad/mrd_bt_pad.h"
-#include "mrd_module/network/mrd_wifi.h"
+#include "mrd_module/network/mrd_wifi_esp32.hpp"
 #include "mrd_module/servo/mrd_servo_kondo_ics_3_5.hpp"
 #include "mrd_util.h"
 
@@ -29,6 +29,8 @@
 
 MERIDIANFLOW::Meridian mrd;
 MrdServoKondoIcs35 mrd_servo(Serial1, Serial2);
+MrdWifiESP32 mrd_wifi;
+
 Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
 Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
 Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
@@ -137,7 +139,7 @@ void setup() {
 
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(WIFI_AP_SSID);
-  if (mrd_wifi_init(udp, WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+  if (mrd_wifi.init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
     // wifiIPの表示
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
@@ -189,7 +191,7 @@ void loop() {
   if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
   {
     flg.udp_busy = true; // UDP使用中フラグをアゲる
-    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
+    mrd_wifi.udp_send(s_udp_meridim.bval, MRDM_BYTE);
     flg.udp_busy = false; // UDP使用中フラグをサゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
   }
@@ -207,7 +209,7 @@ void loop() {
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp)) // 受信確認
+      if (mrd_wifi.udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
       {
         flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
       }
