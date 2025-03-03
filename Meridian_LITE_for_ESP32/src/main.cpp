@@ -29,18 +29,20 @@
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
 
+// ライブラリ導入
+#include <Arduino.h>
+
 using namespace meridian::core::execution;
 using namespace meridian::core::communication;
 using namespace meridian::modules::config;
 using namespace meridian::modules::plugin;
 using namespace meridian::app;
 
+MrdConversation mrd_wifi(WIFI_SEND_IP, UDP_SEND_PORT, UDP_RESV_PORT);
+
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
-
-// ライブラリ導入
-#include <Arduino.h>
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -131,7 +133,7 @@ void setup() {
 
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(WIFI_AP_SSID);
-  if (mrd_wifi_init(udp, WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+  if (mrd_wifi.init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
     // wifiIPの表示
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
@@ -183,7 +185,7 @@ void loop() {
   if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
   {
     flg.udp_busy = true; // UDP使用中フラグをアゲる
-    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
+    mrd_wifi.udp_send(s_udp_meridim.bval, MRDM_BYTE);
     flg.udp_busy = false; // UDP使用中フラグをサゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
   }
@@ -201,7 +203,7 @@ void loop() {
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp)) // 受信確認
+      if (mrd_wifi.udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
       {
         flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
       }
