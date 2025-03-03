@@ -19,6 +19,7 @@
 #include "config.h"
 #include "keys.h"
 
+#include "application/mrd_app.hpp"
 #include "mrd_bt_pad.h"
 #include "mrd_disp.h"
 #include "mrd_eeprom.h"
@@ -112,10 +113,7 @@ void setup() {
   mrd_disp.servo_mounts_2lines(sv);
 
   // EEPROMの開始, ダンプ表示
-  mrd_eeprom_init(EEPROM_SIZE);                                   // EEPROMの初期化
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE);             // 内容のダンプ表示
-  mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(), // EEPROMのリードライトテスト
-                              CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+  app_eeprom_setup();
 
   // SDカードの初期設定とチェック
   mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
@@ -443,7 +441,7 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:MCMD_EEPROM_ENTER_WRITE (10009) EEPROMの書き込みモードスタート
   if (a_meridim.sval[MRD_MASTER] == MCMD_EEPROM_ENTER_WRITE) {
-    flg.eeprom_write_mode = true; // 書き込みモードのフラグをセット
+    mrd_set_eeprom();
     flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     return true;
   }

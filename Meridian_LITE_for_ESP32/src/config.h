@@ -128,17 +128,21 @@ namespace config {
 #define MODE_FIXED_IP 0 // IPアドレスを固定するか（0:NO, 1:YES）
 #define UDP_TIMEOUT   4 // UDPの待受タイムアウト（単位ms,推奨値0）
 
+//////////////////////////////////////////////////////////
 // EEPROMの設定
-#define EEPROM_SIZE    540 // 使用するEEPROMのサイズ(バイト)
-#define EEPROM_SET     0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
-#define EEPROM_PROTECT 0   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
-#define EEPROM_LOAD    0   // 起動時にEEPROMの内容を諸設定にロードする(未導入)
-#define EEPROM_DUMP    0   // 起動時のEEPROM内容のダンプ表示
-#define EEPROM_STYLE   Dec // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
+//////////////////////////////////////////////////////////
+// TODO: 使用を確認できなかったのでコメントアウト
+// #define EEPROM_SET      0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
+#define EEPROM_CHECK_RW 0   // 起動時のEEPROMの動作チェック
+#define EEPROM_SIZE     100 // EEPROMでデータサイズ(2byte/1データ)
+#define EEPROM_PROTECT  1   // EEPROMの書き込み保護(0:保護しない, 1:書き込み禁止)
+#define EEPROM_LOAD     0   // 起動時にEEPROMの内容を諸設定にロードする
+#define EEPROM_DUMP     0   // 起動時のEEPROM内容のダンプ表示
+
+#define EEPROM_STYLE meridian::modules::plugin::MrdFsEEPROM::Hexadecimal::Hex // 起動時のEEPROM内容のダンプ表示の書式(Bin,Hex,Dec)
 
 // 動作チェックモード
-#define CHECK_SD_RW     1 // 起動時のSDカードリーダーの読み書きチェック
-#define CHECK_EEPROM_RW 0 // 起動時のEEPROMの動作チェック
+#define CHECK_SD_RW 1 // 起動時のSDカードリーダーの読み書きチェック
 
 // シリアルモニタリング
 #define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示（0:OFF, 1:ON）
@@ -210,7 +214,7 @@ namespace config {
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-int IXL_MT[IXL_MAX] = {
+static int IXL_MT[IXL_MAX] = {
     // L系統のマウント状態
     43, // [00]頭ヨー
     43, // [01]左肩ピッチ
@@ -236,7 +240,7 @@ int IXL_MT[IXL_MAX] = {
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-int IXR_MT[IXR_MAX] = {
+static int IXR_MT[IXR_MAX] = {
     // R系統のマウント状態
     43, // [00]腰ヨー
     43, // [01]右肩ピッチ
@@ -256,7 +260,7 @@ int IXR_MT[IXR_MAX] = {
 };
 
 // L系統のコード上のサーボIndexに対し, 実際に呼び出すハードウェアのID番号
-int IXL_ID[IXL_MAX] = {
+static int IXL_ID[IXL_MAX] = {
     0,  // [00]頭ヨー
     1,  // [01]左肩ピッチ
     2,  // [02]左肩ロール
@@ -275,7 +279,7 @@ int IXL_ID[IXL_MAX] = {
 };
 
 // R系統のコード上のサーボIndexに対し, 実際に呼び出すハードウェアのID番号
-int IXR_ID[IXR_MAX] = {
+static int IXR_ID[IXR_MAX] = {
     0,  // [00]腰ヨー
     1,  // [01]右肩ピッチ
     2,  // [02]右肩ロール
@@ -294,7 +298,7 @@ int IXR_ID[IXR_MAX] = {
 };
 
 // L系統のサーボ回転方向補正(1:変更なし, -1:逆転)
-int IXL_CW[IXL_MAX] = {
+static int IXL_CW[IXL_MAX] = {
     1, // [00]頭ヨー
     1, // [01]左肩ピッチ
     1, // [02]左肩ロール
@@ -313,7 +317,7 @@ int IXL_CW[IXL_MAX] = {
 };
 
 // R系統のサーボ回転方向補正(1:変更なし, -1:逆転)
-int IXR_CW[IXR_MAX] = {
+static int IXR_CW[IXR_MAX] = {
     // R系統の正転逆転
     1, // [00]腰ヨー
     1, // [01]右肩ピッチ
@@ -333,7 +337,7 @@ int IXR_CW[IXR_MAX] = {
 };
 
 // L系統のトリム値(degree)
-float IDL_TRIM[IXL_MAX] = {
+static float IDL_TRIM[IXL_MAX] = {
     0,      // [00]頭ヨー
     -2.36,  // [01]左肩ピッチ
     -91.13, // [02]左肩ロール
@@ -352,7 +356,7 @@ float IDL_TRIM[IXL_MAX] = {
 };
 
 // R系統のトリム値(degree)
-float IDR_TRIM[IXR_MAX] = {
+static float IDR_TRIM[IXR_MAX] = {
     0,      // [00]腰ヨー
     0,      // [01]右肩ピッチ
     -89.44, // [02]右肩ロール
