@@ -10,9 +10,7 @@
 #include "application/mrd_app.hpp"
 #include "mrd_eeprom.h"
 
-using namespace meridian::modules::plugin;
-
-MrdFsEEPROM mrd_eeprom(EEPROM_SIZE);
+meridian::modules::plugin::MrdFsEEPROM mrd_eeprom(EEPROM_SIZE);
 
 void app_eeprom_setup() {
   if (mrd_eeprom.init()) {              // EEPROMの初期化
