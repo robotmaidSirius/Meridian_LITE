@@ -177,7 +177,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 1 ] UDP送信
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[1]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[1]", monitor.flow); // デバグ用フロー表示
 
   // @[1-1] UDP送信の実行
   if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
@@ -191,7 +191,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 2 ] UDP受信
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[2]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[2]", monitor.flow); // デバグ用フロー表示
 
   // @[2-1] UDPの受信待ち受けループ
   if (flg.udp_receive_mode) // UDPの受信実施フラグの確認（モード確認）
@@ -223,7 +223,7 @@ void loop() {
   // @[2-2] チェックサムを確認
   if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) // Check sum OK!
   {
-    mrd.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
+    mrd_disp.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
@@ -237,7 +237,7 @@ void loop() {
     // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
     mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
     err.pc_esp++;
-    mrd.monitor_check_flow("CsErr*", monitor.flow); // デバグ用フロー表示
+    mrd_disp.monitor_check_flow("CsErr*", monitor.flow); // デバグ用フロー表示
   }
 
   // @[2-5] シーケンス番号チェック
@@ -265,7 +265,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 3 ] MasterCommand group1 の処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[3]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[3]", monitor.flow); // デバグ用フロー表示
 
   // @[3-1] MasterCommand group1 の処理
   execute_master_command_1(s_udp_meridim, flg.meridim_rcvd);
@@ -273,7 +273,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 4 ] センサー類読み取り
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
   meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
@@ -281,7 +281,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
   // @[5-1] リモコンデータの書き込み
   if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
@@ -296,7 +296,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 6 ] MasterCommand group2 の処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[6]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[6]", monitor.flow); // デバグ用フロー表示
 
   // @[6-1] MasterCommand group2 の処理
   execute_master_command_2(s_udp_meridim, flg.meridim_rcvd);
@@ -304,7 +304,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 7 ] ESP32内部で位置制御する場合の処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[7]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[7]", monitor.flow); // デバグ用フロー表示
 
   // @[7-1] 前回のラストに読み込んだサーボ位置をサーボ配列に書き込む
   for (int i = 0; i <= sv.num_max; i++) {
@@ -327,7 +327,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 8 ] サーボ動作の実行
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
@@ -341,7 +341,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 9 ] サーボ受信値の処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[9]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[9]", monitor.flow); // デバグ用フロー表示
 
   // @[9-1] サーボIDごとにの現在位置もしくは計算結果を配列に格納
   for (int i = 0; i <= sv.num_max; i++) {
@@ -353,7 +353,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 10 ] エラーリポートの作成
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[10]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[10]", monitor.flow); // デバグ用フロー表示
 
   // @[10-1] エラーリポートの表示
   // mrd_msg_all_err(err, monitor.all_err);
@@ -362,7 +362,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //  [ 11 ] UDP送信信号作成
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[11]", monitor.flow); // デバグ用フロー表示
+  mrd_disp.monitor_check_flow("[11]", monitor.flow); // デバグ用フロー表示
 
   // @[11-1] フレームスキップ検出用のカウントをカウントアップして送信用に格納
   mrdsq.s_increment = mrd.seq_increase_num(mrdsq.s_increment);
@@ -378,7 +378,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   //   [ 12 ] フレーム終端処理
   //------------------------------------------------------------------------------------
-  mrd.monitor_check_flow("[12]", monitor.flow); // 動作チェック用シリアル表示
+  mrd_disp.monitor_check_flow("[12]", monitor.flow); // 動作チェック用シリアル表示
 
   // @[12-1] count_timerがcount_frameに追いつくまで待機
   count_frame++;
@@ -400,7 +400,7 @@ void loop() {
     portEXIT_CRITICAL(&timer_mux);
   }
 
-  mrd.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示
+  mrd_disp.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示
 }
 
 //==================================================================================================

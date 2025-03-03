@@ -304,6 +304,12 @@ public:
     }
     return false;
   }
+
+  void monitor_check_flow(const String &text, bool monitor_flow) {
+    if (monitor_flow) {
+      Serial.print(text);
+    }
+  }
 };
 
 } // namespace communication
