@@ -17,6 +17,8 @@ namespace communication {
 //==================================================================================================
 //  Wifi 関連の処理
 //==================================================================================================
+
+/// @brief Wifi通信のためのクラス
 class MrdConversation {
 public:
   MrdConversation(const char *a_send_ip, uint16_t a_send_port, uint16_t a_receive_port) {
