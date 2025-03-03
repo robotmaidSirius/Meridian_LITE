@@ -23,7 +23,6 @@
 #include "mrd_bt_pad.h"
 #include "mrd_disp.h"
 #include "mrd_move.h"
-#include "mrd_sd.h"
 #include "mrd_servo.h"
 #include "mrd_util.h"
 #include "mrd_wifi.h"
@@ -115,8 +114,7 @@ void setup() {
   app_eeprom_setup();
 
   // SDカードの初期設定とチェック
-  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
+  app_sd_setup();
 
   // I2Cの初期化と開始
   mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);

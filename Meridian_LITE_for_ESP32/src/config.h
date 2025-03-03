@@ -115,7 +115,6 @@ namespace config {
 #define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      1           // SDカードリーダーの有無 (0:なし, 1:あり)
 #define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
 #define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
@@ -144,8 +143,8 @@ namespace config {
 //-------------------------------------------------------------------------
 // SD Cardの設定
 //-------------------------------------------------------------------------
-#define SD_MOUNT    1 // SDカードリーダーの有無 (0:なし, 1:あり)
-#define SD_CHECK_RW 1 // 起動時のSDカードリーダーの読み書きチェック
+#define SD_MOUNT    0 // SDカードリーダーの有無 (0:なし, 1:あり)
+#define SD_CHECK_RW 0 // 起動時のSDカードリーダーの読み書きチェック
 
 //-------------------------------------------------------------------------
 // シリアルモニタリング
