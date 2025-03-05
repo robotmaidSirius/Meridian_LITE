@@ -4,6 +4,7 @@
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "main.h"
+#include <Meridim90.hpp>
 
 namespace meridian {
 namespace core {

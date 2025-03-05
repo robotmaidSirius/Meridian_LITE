@@ -5,7 +5,7 @@
 #include "main.h"
 #include "mrd_disp.h"
 
-#include "gs2d_krs.h"
+#include <Meridim90.hpp>
 
 namespace meridian {
 namespace modules {

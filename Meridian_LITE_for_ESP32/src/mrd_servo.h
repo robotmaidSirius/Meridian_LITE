@@ -6,6 +6,7 @@
 #include "main.h"
 #include "mrd_module/sv_ftbrx.h"
 #include "mrd_module/sv_ics.h"
+#include <Meridim90.hpp>
 
 namespace meridian {
 namespace modules {

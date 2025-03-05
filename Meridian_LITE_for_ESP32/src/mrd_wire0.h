@@ -6,6 +6,7 @@
 #include "main.h"
 
 // ライブラリ導入
+#include <Meridim90.hpp>
 #include <Wire.h>
 
 namespace meridian {

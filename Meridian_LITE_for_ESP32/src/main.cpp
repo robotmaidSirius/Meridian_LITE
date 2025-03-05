@@ -27,6 +27,7 @@
 #include "mrd_util.h"
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
+#include <Meridim90.hpp>
 
 // ライブラリ導入
 #include <Arduino.h>
@@ -38,6 +39,10 @@ using namespace meridian::modules::plugin;
 using namespace meridian::app;
 
 MrdConversation mrd_wifi(WIFI_SEND_IP, UDP_SEND_PORT, UDP_RESV_PORT);
+
+Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
+Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
+Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
@@ -57,6 +62,13 @@ void IRAM_ATTR frame_timer() {
   portEXIT_CRITICAL_ISR(&timer_mux);
   xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
 }
+
+//==================================================================================================
+//  プロテクト宣言
+//==================================================================================================
+// 予約用
+bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe);
+bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe);
 
 //==================================================================================================
 //  SETUP

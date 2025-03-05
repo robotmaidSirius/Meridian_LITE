@@ -4,6 +4,7 @@
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "main.h"
+#include <Meridim90.hpp>
 
 // ライブラリ導入
 #include <ESP32Wiimote.h> // Wiiコントローラー
