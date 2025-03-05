@@ -1,9 +1,6 @@
 #ifndef __MERIDIAN_MOVEMENT_MOTIONPLAY_H__
 #define __MERIDIAN_MOVEMENT_MOTIONPLAY_H__
 
-#include "config.h"
-#include "main.h"
-
 namespace meridian {
 namespace app {
 

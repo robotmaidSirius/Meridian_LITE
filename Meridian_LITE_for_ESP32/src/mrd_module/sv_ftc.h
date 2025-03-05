@@ -1,9 +1,6 @@
 #ifndef __MERIDIAN_SERVO_FEETECH_H__
 #define __MERIDIAN_SERVO_FEETECH_H__
 
-#include "config.h"
-#include "main.h"
-
 namespace meridian {
 namespace modules {
 namespace plugin {

@@ -1,12 +1,8 @@
 #ifndef __MERIDIAN_WIRE0_H__
 #define __MERIDIAN_WIRE0_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
 // ライブラリ導入
-#include <Meridim90.hpp>
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 #include <Wire.h>
 
 namespace meridian {

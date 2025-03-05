@@ -1,8 +1,8 @@
 #ifndef __MERIDIAN_MOVEMENT_H__
 #define __MERIDIAN_MOVEMENT_H__
 
-// ヘッダファイルの読み込み
-#include <Meridim90.hpp>
+// ライブラリ導入
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace app {

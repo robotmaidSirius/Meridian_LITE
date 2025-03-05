@@ -1,15 +1,14 @@
 #ifndef __MERIDIAN_SERVO_FUTABA_RSxTTL_H__
 #define __MERIDIAN_SERVO_FUTABA_RSxTTL_H__
 
-#include "config.h"
-#include "main.h"
-
 namespace meridian {
 namespace modules {
 namespace plugin {
 
-class MrdServoFutabaRsxTTL {
+class MrdServoFutabaRSxTTL {
 public:
+  MrdServoFutabaRSxTTL() {
+  }
 };
 
 //==================================================================================================

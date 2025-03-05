@@ -1,11 +1,6 @@
 #ifndef __MERIDIAN_WIFI_H__
 #define __MERIDIAN_WIFI_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "keys.h"
-#include "main.h"
-
 // ライブラリ導入
 #include <WiFi.h>
 #include <WiFiUdp.h>

@@ -5,7 +5,8 @@
 #include "main.h"
 #include "mrd_disp.h"
 
-#include <Meridim90.hpp>
+// ライブラリ導入
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace modules {

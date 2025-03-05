@@ -1,13 +1,9 @@
 #ifndef __MERIDIAN_BT_PAD_H__
 #define __MERIDIAN_BT_PAD_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-#include <Meridim90.hpp>
-
 // ライブラリ導入
 #include <ESP32Wiimote.h> // Wiiコントローラー
+#include <Meridim90.hpp>  // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace modules {

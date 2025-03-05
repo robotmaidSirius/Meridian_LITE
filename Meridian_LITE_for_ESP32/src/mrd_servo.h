@@ -1,12 +1,10 @@
 #ifndef __MERIDIAN_SERVO_DISTRIBUTOR_H__
 #define __MERIDIAN_SERVO_DISTRIBUTOR_H__
 
-// ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
+// ライブラリ導入
 #include "mrd_module/sv_ftbrx.h"
 #include "mrd_module/sv_ics.h"
-#include <Meridim90.hpp>
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace modules {

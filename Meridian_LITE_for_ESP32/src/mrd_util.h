@@ -2,9 +2,7 @@
 #define __MERIDIAN_UTILITY_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-#include <Meridim90.hpp>
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace core {
