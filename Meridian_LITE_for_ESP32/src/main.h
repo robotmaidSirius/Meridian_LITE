@@ -81,8 +81,7 @@ enum PadButton {  // リモコンボタンの列挙型
 //------------------------------------------------------------------------------------
 
 // システム用の変数
-const int PAD_LEN = 5; // リモコン用配列の長さ
-TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
+TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
@@ -90,7 +89,6 @@ TaskHandle_t thp[4];   // マルチスレッドのタスクハンドル格納用
 
 // フラグ用変数
 struct MrdFlags {
-  bool imuahrs_available = true;  // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
   bool udp_board_passive = false; // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
   bool count_frame_reset = false; // フレーム管理時計をリセットする
   bool stop_board_during = false; // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
@@ -107,14 +105,12 @@ struct MrdFlags {
   bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）
   bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
 };
-MrdFlags flg;
 
 // シーケンス番号理用の変数
 struct MrdSq {
   int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
   int r_expect = 0;    // フレーム毎に0-59999をカウントし, 受信値と比較
 };
-MrdSq mrdsq;
 
 // タイマー管理用の変数
 struct MrdTimer {
@@ -126,7 +122,6 @@ struct MrdTimer {
 
   int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
 };
-MrdTimer tmr;
 
 // エラーカウント用
 struct MrdErr {
@@ -138,20 +133,6 @@ struct MrdErr {
   int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
   int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
 };
-MrdErr err;
-
-typedef union // リモコン値格納用
-{
-  short sval[PAD_LEN];        // short型で4個の配列データを持つ
-  uint16_t usval[PAD_LEN];    // 上記のunsigned short型
-  int8_t bval[PAD_LEN * 2];   // 上記のbyte型
-  uint8_t ubval[PAD_LEN * 2]; // 上記のunsigned byte型
-  uint64_t ui64val;           // 上記のunsigned int16型
-                              // [0]button, [1]pad.stick_L_x:pad.stick_L_y,
-                              // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
-} PadUnion;
-PadUnion pad_array = {0}; // pad値の格納用配列
-PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
 
 // リモコンのアナログ入力データ
 struct PadValue {
@@ -165,38 +146,6 @@ struct PadValue {
   int R2_val = 0;
   int L2_val = 0;
 };
-PadValue pad_analog;
-
-// 6軸or9軸センサーの値
-struct AhrsValue {
-  Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire); // BNO055のインスタンス
-
-  MPU6050 mpu6050;        // MPU6050のインスタンス
-  uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
-  uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
-  uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
-  uint8_t fifoBuffer[64]; // FIFO storage buffer
-  Quaternion q;           // [w, x, y, z]         quaternion container
-  VectorFloat gravity;    // [x, y, z]            gravity vector
-  float ypr[3];           // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
-  float yaw_origin = 0;   // ヨー軸の補正センター値
-  float yaw_source = 0;   // ヨー軸のソースデータ保持用
-
-  float read[16]; // mpuからの読み込んだ一次データacc_x,y,z,gyro_x,y,z,mag_x,y,z,gr_x,y,z,rpy_r,p,y,temp
-
-  float zeros[16] = {0};               // リセット用
-  float ave_data[16];                  // 上記の移動平均値を入れる
-  float result[16];                    // 加工後の最新のmpuデータ（二次データ）
-  float stock_data[IMUAHRS_STOCK][16]; // 上記の移動平均値計算用のデータストック
-  int stock_count = 0;                 // 上記の移動平均値計算用のデータストックを輪番させる時の変数
-  VectorInt16 aa;                      // [x, y, z]            加速度センサの測定値
-  VectorInt16 gyro;                    // [x, y, z]            角速度センサの測定値
-  VectorInt16 mag;                     // [x, y, z]            磁力センサの測定値
-  long temperature;                    // センサの温度測定値
-};
-AhrsValue ahrs;
-
-ServoParam sv;
 
 // モニタリング設定
 struct MrdMonitor {
@@ -206,10 +155,6 @@ struct MrdMonitor {
   bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
   bool pad = MONITOR_PAD;             // リモコンのデータを表示
 };
-MrdMonitor monitor;
-
-#include "mrd_disp.h"
-meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
 
 //==================================================================================================
 //  関数各種

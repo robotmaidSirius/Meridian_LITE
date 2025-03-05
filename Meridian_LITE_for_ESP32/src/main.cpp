@@ -48,6 +48,19 @@ MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
+MrdFlags flg;
+MrdSq mrdsq;
+MrdTimer tmr;
+MrdErr err;
+PadUnion pad_array = {0}; // pad値の格納用配列
+PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
+PadValue pad_analog;
+AhrsValue ahrs;
+ServoParam sv;
+MrdMonitor monitor;
+
+meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
+
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
 volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ

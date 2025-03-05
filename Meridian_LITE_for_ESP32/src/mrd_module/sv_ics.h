@@ -1,10 +1,6 @@
 #ifndef __MERIDIAN_SERVO_KONDO_ICS_H__
 #define __MERIDIAN_SERVO_KONDO_ICS_H__
 
-#include "config.h"
-#include "main.h"
-#include "mrd_disp.h"
-
 // ライブラリ導入
 #include <Meridim90.hpp> // Meridim90のライブラリ導入
 

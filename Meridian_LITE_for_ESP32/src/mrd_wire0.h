@@ -9,6 +9,8 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 
+volatile bool imuahrs_available = true; // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
+
 class MrdImuNone {
 public:
 };
@@ -233,7 +235,7 @@ bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引�
       // Temperature
       a_ahrs.read[15] = 0; // Not implemented.
 
-      if (flg.imuahrs_available) {
+      if (imuahrs_available) {
         memcpy(a_ahrs.result, a_ahrs.read, sizeof(float) * 16);
       }
       return true;
@@ -257,7 +259,7 @@ bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引�
 /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
 bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type) {
   if (a_type == BNO055_AHRS) {
-    flg.imuahrs_available = false;
+    imuahrs_available = false;
     a_meridim.sval[2] = mrd.float2HfShort(a_ahrs_result[0]);   // IMU/AHRS_acc_x
     a_meridim.sval[3] = mrd.float2HfShort(a_ahrs_result[1]);   // IMU/AHRS_acc_y
     a_meridim.sval[4] = mrd.float2HfShort(a_ahrs_result[2]);   // IMU/AHRS_acc_z
@@ -271,7 +273,7 @@ bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type
     a_meridim.sval[12] = mrd.float2HfShort(a_ahrs_result[12]); // DMP_ROLL推定値
     a_meridim.sval[13] = mrd.float2HfShort(a_ahrs_result[13]); // DMP_PITCH推定値
     a_meridim.sval[14] = mrd.float2HfShort(a_ahrs_result[14]); // DMP_YAW推定値
-    flg.imuahrs_available = true;
+    imuahrs_available = true;
     return true;
   }
   return false;
