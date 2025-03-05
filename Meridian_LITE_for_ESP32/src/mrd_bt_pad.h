@@ -2,8 +2,9 @@
 #define __MERIDIAN_BT_PAD_H__
 
 // ライブラリ導入
-#include <ESP32Wiimote.h> // Wiiコントローラー
-#include <Meridim90.hpp>  // Meridim90のライブラリ導入
+#include <ESP32Wiimote.h>       // Wiiコントローラー
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
+#include <Meridim90.hpp>        // Meridim90のライブラリ導入
 
 const int PAD_LEN = 5; // リモコン用配列の長さ
 
@@ -18,37 +19,51 @@ typedef union // リモコン値格納用
                               // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
 } PadUnion;
 
-// 6軸or9軸センサーの値
-struct AhrsValue {
-  Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire); // BNO055のインスタンス
+enum PadType {   // リモコン種の列挙型(NONE, PC, MERIMOTE, BLUERETRO, SBDBT, KRR5FH)
+  NONE = 0,      // リモコンなし
+  PC = 0,        // PCからのPD入力情報を使用
+  MERIMOTE = 1,  // MERIMOTE(未導入)
+  BLUERETRO = 2, // BLUERETRO(未導入)
+  SBDBT = 3,     // SBDBT(未導入)
+  KRR5FH = 4,    // KRR5FH
+  WIIMOTE = 5,   // WIIMOTE / WIIMOTE + Nunchuk
+  WIIMOTE_C = 6, // WIIMOTE+Classic
+};
 
-  MPU6050 mpu6050;        // MPU6050のインスタンス
-  uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
-  uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
-  uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
-  uint8_t fifoBuffer[64]; // FIFO storage buffer
-  Quaternion q;           // [w, x, y, z]         quaternion container
-  VectorFloat gravity;    // [x, y, z]            gravity vector
-  float ypr[3];           // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
-  float yaw_origin = 0;   // ヨー軸の補正センター値
-  float yaw_source = 0;   // ヨー軸のソースデータ保持用
+enum PadButton {  // リモコンボタンの列挙型
+  PAD_SELECT = 1, // Select
+  PAD_HOME = 2,   // HOME
+  PAD_L3 = 2,     // L3
+  PAD_R3 = 4,     // L4
+  PAD_START = 8,  // Start
+  PAD_UP = 16,    // 十字上
+  PAD_RIGHT = 32, // 十字右
+  PAD_DOWN = 64,  // 十字下
+  PAD_LEFT = 128, // 十字左
+  PAD_L2 = 256,   // L2
+  PAD_R2 = 512,   // R2
+  PAD_L1 = 1024,  // L1
+  PAD_R1 = 2048,  // R1
+  PAD_bU = 4096,  // △ 上
+  PAD_bR = 8192,  // o 右
+  PAD_bD = 16384, // x 下
+  PAD_bL = 32768  // ◻︎ 左
+};
 
-  float read[16]; // mpuからの読み込んだ一次データacc_x,y,z,gyro_x,y,z,mag_x,y,z,gr_x,y,z,rpy_r,p,y,temp
-
-  float zeros[16] = {0};               // リセット用
-  float ave_data[16];                  // 上記の移動平均値を入れる
-  float result[16];                    // 加工後の最新のmpuデータ（二次データ）
-  float stock_data[IMUAHRS_STOCK][16]; // 上記の移動平均値計算用のデータストック
-  int stock_count = 0;                 // 上記の移動平均値計算用のデータストックを輪番させる時の変数
-  VectorInt16 aa;                      // [x, y, z]            加速度センサの測定値
-  VectorInt16 gyro;                    // [x, y, z]            角速度センサの測定値
-  VectorInt16 mag;                     // [x, y, z]            磁力センサの測定値
-  long temperature;                    // センサの温度測定値
+// リモコンのアナログ入力データ
+struct PadValue {
+  unsigned short stick_R = 0;
+  int stick_R_x = 0;
+  int stick_R_y = 0;
+  unsigned short stick_L = 0;
+  int stick_L_x = 0;
+  int stick_L_y = 0;
+  unsigned short stick_L2R2V = 0;
+  int R2_val = 0;
+  int L2_val = 0;
 };
 
 extern PadUnion pad_array;
-extern AhrsValue ahrs;
-
 namespace meridian {
 namespace modules {
 namespace plugin {
@@ -101,7 +116,7 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
     int krr_analog_tmp[4];             // krrからのアナログ入力データ
     unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
     bool rcvd_tmp;                     // 受信機がデータを受信成功したか
-    rcvd_tmp = ics_R.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
+    rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
     delayMicroseconds(2);
 
     if (rcvd_tmp) // リモコンデータが受信できていたら
@@ -245,10 +260,10 @@ uint64_t mrd_bt_read_wiimote() {
 /// @param a_pad_data 64ビットのボタンデータ
 /// @return 64ビット整数に変換された受信データ
 /// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
-uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data) {
+uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data, IcsHardSerialClass &a_ics) {
 
   if (a_pad_type == KRR5FH) { // KRR5FH
-    return mrd_pad_read_krc(PAD_INTERVAL, ics_R);
+    return mrd_pad_read_krc(PAD_INTERVAL, a_ics);
   }
 
   if (a_pad_type == WIIMOTE) { // Wiimote

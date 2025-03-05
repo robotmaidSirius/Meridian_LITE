@@ -15,7 +15,6 @@
 //==================================================================================================
 
 // ヘッダファイルの読み込み
-#include "main.h"
 #include "config.h"
 #include "keys.h"
 
@@ -31,6 +30,7 @@
 
 // ライブラリ導入
 #include <Arduino.h>
+#include <Meridian.h> // Meridianのライブラリ導入
 
 using namespace meridian::core::execution;
 using namespace meridian::core::communication;
@@ -48,6 +48,60 @@ MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
+//------------------------------------------------------------------------------------
+//  クラス・構造体・共用体
+//------------------------------------------------------------------------------------
+
+// シーケンス番号理用の変数
+struct MrdSq {
+  int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
+  int r_expect = 0;    // フレーム毎に0-59999をカウントし, 受信値と比較
+};
+// モニタリング設定
+struct MrdMonitor {
+  bool flow = MONITOR_FLOW;           // フローを表示
+  bool all_err = MONITOR_ERR_ALL;     // 全経路の受信エラー率を表示
+  bool servo_err = MONITOR_ERR_SERVO; // サーボエラーを表示
+  bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
+  bool pad = MONITOR_PAD;             // リモコンのデータを表示
+};
+// フラグ用変数
+struct MrdFlags {
+  bool udp_board_passive = false; // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
+  bool count_frame_reset = false; // フレーム管理時計をリセットする
+  bool stop_board_during = false; // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
+  bool sdcard_write_mode = false; // SDCARDへの書き込みモード.
+  bool sdcard_read_mode = false;  // SDCARDからの読み込みモード.
+  bool wire0_init = false;        // I2C 0系統の初期化合否
+  bool wire1_init = false;        // I2C 1系統の初期化合否
+  bool bt_busy = false;           // Bluetoothの受信中フラグ（UDPコンフリクト回避用）
+  bool spi_rcvd = true;           // SPIのデータ受信判定
+  bool udp_rcvd = false;          // UDPのデータ受信判定
+  bool udp_busy = false;          // UDPスレッドでの受信中フラグ（送信抑制）
+
+  bool udp_receive_mode = MODE_UDP_RECEIVE; // PCからのデータ受信実施（0:OFF, 1:ON, 通常は1）
+  bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）
+  bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
+};
+// タイマー管理用の変数
+struct MrdTimer {
+  long frame_ms = FRAME_DURATION; // 1フレームあたりの単位時間(ms)
+  int count_loop = 0;             // サイン計算用の循環カウンタ
+  int count_loop_dlt = 2;         // サイン計算用の循環カウンタを1フレームにいくつ進めるか
+  int count_loop_max = 359999;    // 循環カウンタの最大値
+  unsigned long count_frame = 0;  // メインフレームのカウント
+
+  int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
+};
+
+//------------------------------------------------------------------------------------
+//  変数
+//------------------------------------------------------------------------------------
+
+// システム用の変数
+TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
+
+// 管理用変数
 MrdFlags flg;
 MrdSq mrdsq;
 MrdTimer tmr;
@@ -60,6 +114,10 @@ ServoParam sv;
 MrdMonitor monitor;
 
 meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
+
+//==================================================================================================
+//  タイマー管理
+//==================================================================================================
 
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
@@ -76,6 +134,21 @@ void IRAM_ATTR frame_timer() {
   xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
 }
 
+//==================================================================================================
+//  関数各種
+//==================================================================================================
+
+///@brief Generate expected sequence number from input.
+///@param a_previous_num Previous sequence number.
+///@return Expected sequence number. (0 to 59,999)
+uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
+  uint16_t x_tmp = a_previous_num + 1;
+  if (x_tmp > 59999) // Reset counter
+  {
+    x_tmp = 0;
+  }
+  return x_tmp;
+}
 //==================================================================================================
 //  プロテクト宣言
 //==================================================================================================
@@ -127,10 +200,11 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L);         // サーボモータの通信初期設定. Serial2
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R);         // サーボモータの通信初期設定. Serial3
-  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
+  mrd_servo_begin(ics_L); // サーボモータの通信初期設定. Serial2
+  mrd_servo_begin(ics_R); // サーボモータの通信初期設定. Serial3
+
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, MOUNT_SERVO_TYPE_R);
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -142,7 +216,7 @@ void setup() {
   app_sd_setup();
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
   // I2Cスレッドの開始
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
@@ -309,7 +383,7 @@ void loop() {
   if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
+    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
@@ -354,7 +428,7 @@ void loop() {
   // @[8-1] サーボ受信値の処理
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
     mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R,
-                          sv); // サーボ動作を実行する
+                          sv, ics_L, ics_R); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;

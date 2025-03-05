@@ -1,6 +1,10 @@
 #ifndef __MERIDIAN_SERVO_FEETECH_H__
 #define __MERIDIAN_SERVO_FEETECH_H__
 
+// ライブラリ導入
+#include <Meridim90.hpp>            // Meridim90のライブラリ導入
+#include <mrd_module/sv_common.hpp> // サーボ用定義
+
 namespace meridian {
 namespace modules {
 namespace plugin {

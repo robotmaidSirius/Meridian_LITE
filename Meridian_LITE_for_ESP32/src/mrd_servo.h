@@ -6,6 +6,20 @@
 #include "mrd_module/sv_ics.h"
 #include <Meridim90.hpp> // Meridim90のライブラリ導入
 
+enum ServoType { // サーボプロトコルのタイプ
+  NOSERVO = 0,   // サーボなし
+  PWM_S = 1,     // Single PWM (WIP)
+  PCA9685 = 11,  // I2C_PCA9685 to PWM (WIP)
+  FTBRSX = 21,   // FUTABA_RSxTTL (WIP)
+  DXL1 = 31,     // DYNAMIXEL 1.0 (WIP)
+  DXL2 = 32,     // DYNAMIXEL 2.0 (WIP)
+  KOICS3 = 43,   // KONDO_ICS 3.5 / 3.6
+  KOPMX = 44,    // KONDO_PMX (WIP)
+  JRXBUS = 51,   // JRPROPO_XBUS (WIP)
+  FTCSTS = 61,   // FEETECH_STS (WIP)
+  FTCSCS = 62    // FEETECH_SCS (WIP)
+};
+
 namespace meridian {
 namespace modules {
 namespace plugin {
@@ -22,70 +36,12 @@ public:
 //  各UARTの開始
 //------------------------------------------------------------------------------------
 
-/// @brief 指定されたUARTラインとサーボタイプに基づいてサーボの通信プロトコルを設定する.
-/// @param a_line UART通信ライン（L, R, またはC）.
-/// @param a_servo_type サーボのタイプを示す整数値.
-/// @return サーボがサポートされている場合はtrueを, サポートされていない場合はfalseを返す.
-bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
-  switch (a_servo_type) {
-  case 1:
-    // single PWM [WIP]
-    return false;
-  case 11:
-    // I2C_PCA9685 to PWM [WIP]
-    return false;
-  case 21:
-    // RSxTTL (FUTABA) [WIP]
-    return false;
-  case 31:
-    // DYNAMIXEL Protocol 1.0 [WIP]
-    return false;
-  case 32:
-    // DYNAMIXEL Protocol 2.0 [WIP]
-    return false;
-  case 43:
-    if (a_line == L)
-      ics_L.begin(); // サーボモータの通信初期設定. Serial2
-    else if (a_line == R)
-      ics_R.begin(); // サーボモータの通信初期設定. Serial3
+bool mrd_servo_begin(IcsHardSerialClass &a_ics) {
+  if (nullptr != &a_ics) {
+    a_ics.begin(); // サーボモータの通信初期設定.
     return true;
-  case 44:
-    // PMX(KONDO) [WIP]
-    return false;
-  case 51:
-    // XBUS(JR PROPO) [WIP]
-    return false;
-  case 61:
-    // STS(FEETECH) [WIP]
-    return false;
-  case 62:
-    // SCS(FEETECH) [WIP]
-    return false;
-  default:
-    // Not defined.
-    return false;
   }
-}
-
-//------------------------------------------------------------------------------------
-//  サーボ通信フォーメーションの分岐
-//------------------------------------------------------------------------------------
-
-/// @brief 指定されたサーボにコマンドを分配する.
-/// @param a_meridim サーボの動作パラメータを含むMeridim配列.
-/// @param a_L_type L系統のサーボタイプ.
-/// @param a_R_type R系統のサーボタイプ.
-/// @param a_sv サーボパラメータの構造体.
-/// @return サーボの駆動が成功した場合はtrueを, 失敗した場合はfalseを返す.
-bool mrd_servos_drive_lite(Meridim90Union &a_meridim, int a_L_type, int a_R_type,
-                           ServoParam &a_sv) {
-  if (a_L_type == 43 && a_R_type == 43) // ICSサーボがL系R系に設定されていた場合はLR均等送信を実行
-  {
-    mrd_sv_drive_ics_double(a_meridim, a_sv);
-    return true;
-  } else {
-    return false;
-  }
+  return false;
 }
 
 //------------------------------------------------------------------------------------

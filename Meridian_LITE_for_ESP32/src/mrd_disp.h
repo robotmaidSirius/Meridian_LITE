@@ -7,6 +7,18 @@
 // ライブラリ導入
 #include <WiFi.h>
 
+// エラーカウント用
+struct MrdErr {
+  int esp_pc = 0;   // PCの受信エラー（ESP32からのUDP）
+  int pc_esp = 0;   // ESP32の受信エラー（PCからのUDP）
+  int esp_tsy = 0;  // Teensyの受信エラー（ESP32からのSPI）
+  int tsy_esp = 0;  // ESP32の受信エラー（TeensyからのSPI）
+  int esp_skip = 0; // UDP→ESP受信のカウントの連番スキップ回数
+  int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
+  int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
+};
+extern MrdErr err;
+
 namespace meridian {
 namespace core {
 namespace communication {
@@ -16,6 +28,13 @@ namespace communication {
 //==================================================================================================
 
 class MrdMsgHandler {
+public:
+  enum UartLine { // サーボ系統の列挙型(L,R,C)
+    L,            // Left
+    R,            // Right
+    C             // Center
+  };
+
 private:
   Stream &m_serial; // シリアルオブジェクトの参照を保持
 
