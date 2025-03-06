@@ -183,18 +183,7 @@ void setup() {
   mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
 
   // サーボ値の初期設定
-  sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
-                   mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映させる
-    sv.ixl_mount[i] = IXL_MT[i];
-    sv.ixr_mount[i] = IXR_MT[i];
-    sv.ixl_id[i] = IXL_ID[i];
-    sv.ixr_id[i] = IXR_ID[i];
-    sv.ixl_cw[i] = IXL_CW[i];
-    sv.ixr_cw[i] = IXR_CW[i];
-    sv.ixl_trim[i] = IDL_TRIM[i];
-    sv.ixr_trim[i] = IDR_TRIM[i];
-  };
+  app_servo_setup(sv);
 
   // サーボUARTの通信速度の表示
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
@@ -518,12 +507,7 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
   if (a_meridim.sval[MRD_MASTER] == MCMD_ERR_CLEAR_SERVO_ID) {
     r_udp_meridim.bval[MRD_ERR_l] = 0;
     s_udp_meridim.bval[MRD_ERR_l] = 0;
-    for (int i = 0; i < IXL_MAX; i++) {
-      sv.ixl_err[i] = 0;
-    }
-    for (int i = 0; i < IXR_MAX; i++) {
-      sv.ixr_err[i] = 0;
-    }
+    app_servo_err_reset(sv);
     Serial.println("Servo Error ID reset.");
     return true;
   }

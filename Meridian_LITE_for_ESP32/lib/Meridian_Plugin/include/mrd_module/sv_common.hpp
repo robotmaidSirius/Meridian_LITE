@@ -10,6 +10,10 @@
 #ifndef SV_COMMON_HPP
 #define SV_COMMON_HPP
 
+// 各サーボ系統の最大サーボマウント数
+#define IXL_MAX 15 // L系統の最大サーボ数. 標準は15.
+#define IXR_MAX 15 // R系統の最大サーボ数. 標準は15.
+
 // サーボ用変数
 struct ServoParam {
   // サーボの最大接続 (サーボ送受信のループ処理数）
