@@ -23,6 +23,13 @@ public:
   }
 
 public:
+  /// @brief 送信フラグを有効にする.
+  /// @param a_enable 有効にする場合はtrueを, 無効にする場合はfalseを渡す.
+  void enable_send(bool a_enable) { this->_flag_send = a_enable; }
+  /// @brief 受信フラグを有効にする.
+  /// @param a_enable 有効にする場合はtrueを, 無効にする場合はfalseを渡す.
+  void enable_receive(bool a_enable) { this->_flag_receive = a_enable; }
+
   /// @brief wifiを初期化する.
   /// @param a_ssid WifiアクセスポイントのSSID.
   /// @param a_pass Wifiアクセスポイントのパスワード.
@@ -54,10 +61,13 @@ public:
   /// @param a_udp 使用するWiFiUDPのインスタンス
   /// @return 受信した場合はtrueを, 受信しなかった場合はfalseを返す.
   bool udp_receive(byte *a_meridim_bval, int a_len) {
-    if (this->_udp.parsePacket() >= a_len) // データの受信バッファ確認
-    {
-      this->_udp.read(a_meridim_bval, a_len); // データの受信
-      return true;
+    bool result = this->_flag_receive;
+    if (result) {
+      if (this->_udp.parsePacket() >= a_len) // データの受信バッファ確認
+      {
+        this->_udp.read(a_meridim_bval, a_len); // データの受信
+        return true;
+      }
     }
     return false; // バッファにデータがない
   }
@@ -69,13 +79,18 @@ public:
   /// @return 送信完了時にtrueを返す.
   /// ※WIFI_SEND_IP, UDP_SEND_PORTを関数内で使用.
   bool udp_send(byte *a_meridim_bval, int a_len) {
-    this->_udp.beginPacket(this->_send_ip, this->_send_port); // UDPパケットの開始
-    this->_udp.write(a_meridim_bval, a_len);                  // データの書き込み
-    this->_udp.endPacket();                                   // UDPパケットの終了
-    return true;
+    bool result = this->_flag_send;
+    if (result) {
+      this->_udp.beginPacket(this->_send_ip, this->_send_port); // UDPパケットの開始
+      this->_udp.write(a_meridim_bval, a_len);                  // データの書き込み
+      this->_udp.endPacket();                                   // UDPパケットの終了
+    }
+    return result;
   }
 
 private:
+  bool _flag_send = true;         /// 送信フラグ
+  bool _flag_receive = true;      /// 受信フラグ
   uint16_t _receive_port = 22224; /// 受信ポート番号
   IPAddress _send_ip;             /// 送信先IPアドレス
   uint16_t _send_port = 22222;    /// 送信先ポート番号

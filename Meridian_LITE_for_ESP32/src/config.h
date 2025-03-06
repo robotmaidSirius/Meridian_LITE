@@ -50,7 +50,7 @@ namespace config {
 
 // Meridimの基本設定
 #define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
-#define CHARGE_TIME    200 // 起動時のコンデンサチャージ待機時間（単位ms）
+#define CHARGE_TIME_MS 200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
 // 各種ハードウェアのマウント有無
 #define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS

@@ -177,7 +177,7 @@ void setup() {
   pinMode(PIN_ERR_LED, OUTPUT); // エラー通知用LED
 
   // ボード搭載のコンデンサの充電時間として待機
-  mrd_disp.charging(CHARGE_TIME);
+  mrd_disp.charging(CHARGE_TIME_MS);
 
   // 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
   mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
@@ -217,6 +217,8 @@ void setup() {
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(WIFI_AP_SSID);
   if (mrd_wifi.init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+    mrd_wifi.enable_send(MODE_UDP_SEND);
+    mrd_wifi.enable_receive(MODE_UDP_RECEIVE);
     // wifiIPの表示
     mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
