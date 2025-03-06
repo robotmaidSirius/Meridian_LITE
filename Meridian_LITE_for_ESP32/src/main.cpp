@@ -27,6 +27,7 @@
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
 #include <Meridim90.hpp>
+#include <meridian_core_for_arduino.hpp>
 
 // ライブラリ導入
 #include <Arduino.h>
@@ -68,7 +69,7 @@ struct MrdMonitor {
 // フラグ用変数
 struct MrdFlags {
   bool udp_board_passive = false; // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
-  bool count_frame_reset = false; // フレーム管理時計をリセットする
+
   bool stop_board_during = false; // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
   bool sdcard_write_mode = false; // SDCARDへの書き込みモード.
   bool sdcard_read_mode = false;  // SDCARDからの読み込みモード.
@@ -114,25 +115,6 @@ ServoParam sv;
 MrdMonitor monitor;
 
 meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
-
-//==================================================================================================
-//  タイマー管理
-//==================================================================================================
-
-// ハードウェアタイマーとカウンタ用変数の定義
-hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
-volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ
-portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタイマー用のミューテックス
-unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
-volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
-
-/// @brief count_timerを保護しつつ1ずつインクリメント
-void IRAM_ATTR frame_timer() {
-  portENTER_CRITICAL_ISR(&timer_mux);
-  count_timer++;
-  portEXIT_CRITICAL_ISR(&timer_mux);
-  xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
-}
 
 //==================================================================================================
 //  関数各種
@@ -239,21 +221,8 @@ void setup() {
   r_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(r_udp_meridim.sval, MRDM_LEN);
 
   // タイマーの設定
-  timer_semaphore = xSemaphoreCreateBinary(); // セマフォの作成
-  timer = timerBegin(0, 80, true);            // タイマーの設定（1つ目のタイマーを使用, 分周比80）
-
-  timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数をタイマーの割り込みに登録
-  timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10msごとにトリガー
-  timerAlarmEnable(timer);                             // タイマーを開始
-
-  // 開始メッセージ
-  mrd_disp.flow_start_lite_esp();
-
-  // タイマーの初期化
-  count_frame = 0;
-  portENTER_CRITICAL(&timer_mux);
-  count_timer = 0;
-  portEXIT_CRITICAL(&timer_mux);
+  mrd_timer_setup(FRAME_DURATION);
+  mrd_disp.flow_start_lite_esp(); // 開始メッセージ
 }
 
 //==================================================================================================
@@ -468,24 +437,7 @@ void loop() {
   mrd_disp.monitor_check_flow("[12]", monitor.flow); // 動作チェック用シリアル表示
 
   // @[12-1] count_timerがcount_frameに追いつくまで待機
-  count_frame++;
-  while (true) {
-    if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
-      portENTER_CRITICAL(&timer_mux);
-      unsigned long current_count_timer = count_timer; // ハードウェアタイマーの値を読む
-      portEXIT_CRITICAL(&timer_mux);
-      if (current_count_timer >= count_frame) {
-        break;
-      }
-    }
-  }
-
-  // @[12-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
-  if (flg.count_frame_reset) {
-    portENTER_CRITICAL(&timer_mux);
-    count_frame = count_timer;
-    portEXIT_CRITICAL(&timer_mux);
-  }
+  mrd_timer_delay();
 
   mrd_disp.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示
 }
@@ -517,14 +469,14 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
   // コマンド:MCMD_BOARD_TRANSMIT_ACTIVE (10005) UDP受信の通信周期制御をボード側主導に（デフォルト）
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_ACTIVE) {
     flg.udp_board_passive = false; // UDP送信をアクティブモードに
-    flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
+    mrd_timer_reset();             // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_EEPROM_ENTER_WRITE (10009) EEPROMの書き込みモードスタート
   if (a_meridim.sval[MRD_MASTER] == MCMD_EEPROM_ENTER_WRITE) {
     mrd_set_eeprom();
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    mrd_timer_reset(); // フレームの管理時計をリセットフラグをセット
     return true;
   }
   return false;
@@ -558,13 +510,13 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
   // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に（SSH的な動作）
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_PASSIVE) {
     flg.udp_board_passive = true; // UDP送信をパッシブモードに
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    mrd_timer_reset();            // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_FRAMETIMER_RESET) (10007) フレームカウンタを現在時刻にリセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_FRAMETIMER_RESET) {
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    mrd_timer_reset(); // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
@@ -579,7 +531,7 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
       delay(1);
     }
     flg.stop_board_during = false; // ボードの処理停止フラグをクリア
-    flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
+    mrd_timer_reset();             // フレームの管理時計をリセットフラグをセット
     return true;
   }
   return false;
