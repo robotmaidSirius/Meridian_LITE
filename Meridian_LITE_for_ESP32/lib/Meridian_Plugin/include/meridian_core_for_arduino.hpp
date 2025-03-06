@@ -23,7 +23,7 @@ void mrd_timer_setup(int a_duration_ms);
 /// @brief 所定の時間が経過するまで待機する.
 void mrd_timer_delay();
 /// @brief タイムアウト監視開始フラグをリセットする. mrd_timeout_checkとセットで使う.
-void mrd_timer_reset();
+void mrd_timer_clear();
 
 } // namespace execution
 } // namespace core

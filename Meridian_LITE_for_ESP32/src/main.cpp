@@ -469,14 +469,14 @@ bool execute_master_command_1(Meridim90Union a_meridim, bool a_flg_exe) {
   // コマンド:MCMD_BOARD_TRANSMIT_ACTIVE (10005) UDP受信の通信周期制御をボード側主導に（デフォルト）
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_ACTIVE) {
     flg.udp_board_passive = false; // UDP送信をアクティブモードに
-    mrd_timer_reset();             // フレームの管理時計をリセットフラグをセット
+    mrd_timer_clear();             // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_EEPROM_ENTER_WRITE (10009) EEPROMの書き込みモードスタート
   if (a_meridim.sval[MRD_MASTER] == MCMD_EEPROM_ENTER_WRITE) {
     mrd_set_eeprom();
-    mrd_timer_reset(); // フレームの管理時計をリセットフラグをセット
+    mrd_timer_clear(); // フレームの管理時計をリセットフラグをセット
     return true;
   }
   return false;
@@ -510,13 +510,13 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
   // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に（SSH的な動作）
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_PASSIVE) {
     flg.udp_board_passive = true; // UDP送信をパッシブモードに
-    mrd_timer_reset();            // フレームの管理時計をリセットフラグをセット
+    mrd_timer_clear();            // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_FRAMETIMER_RESET) (10007) フレームカウンタを現在時刻にリセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_FRAMETIMER_RESET) {
-    mrd_timer_reset(); // フレームの管理時計をリセットフラグをセット
+    mrd_timer_clear(); // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
@@ -531,7 +531,7 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
       delay(1);
     }
     flg.stop_board_during = false; // ボードの処理停止フラグをクリア
-    mrd_timer_reset();             // フレームの管理時計をリセットフラグをセット
+    mrd_timer_clear();             // フレームの管理時計をリセットフラグをセット
     return true;
   }
   return false;
