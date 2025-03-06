@@ -79,9 +79,9 @@ struct MrdFlags {
   bool udp_rcvd = false;          // UDPのデータ受信判定
   bool udp_busy = false;          // UDPスレッドでの受信中フラグ（送信抑制）
 
-  bool udp_receive_mode = MODE_UDP_RECEIVE; // PCからのデータ受信実施（0:OFF, 1:ON, 通常は1）
-  bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）
-  bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
+  bool udp_receive_mode = NETWORK_UDP_RECEIVE; // PCからのデータ受信実施（0:OFF, 1:ON, 通常は1）
+  bool udp_send_mode = NETWORK_UDP_SEND;       // PCへのデータ送信実施（0:OFF, 1:ON, 通常は1）
+  bool meridim_rcvd = false;                   // Meridimが正しく受信できたか.
 };
 // タイマー管理用の変数
 struct MrdTimer {
@@ -180,7 +180,7 @@ void setup() {
   mrd_disp.charging(CHARGE_TIME_MS);
 
   // 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
-  mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
+  mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, IMUAHRS_I2C0_SPEED);
 
   // サーボ値の初期設定
   app_servo_setup(sv);
@@ -192,8 +192,8 @@ void setup() {
   mrd_servo_begin(ics_L); // サーボモータの通信初期設定. Serial2
   mrd_servo_begin(ics_R); // サーボモータの通信初期設定. Serial3
 
-  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, MOUNT_SERVO_TYPE_R); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, MOUNT_SERVO_TYPE_R);
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
+  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -205,10 +205,10 @@ void setup() {
   app_sd_setup();
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  mrd_wire0_setup(IMUAHRS_MOUNT, IMUAHRS_I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
   // I2Cスレッドの開始
-  if (MOUNT_IMUAHRS == BNO055_AHRS) {
+  if (IMUAHRS_MOUNT == BNO055_AHRS) {
     xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
@@ -217,18 +217,18 @@ void setup() {
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(WIFI_AP_SSID);
   if (mrd_wifi.init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
-    mrd_wifi.enable_send(MODE_UDP_SEND);
-    mrd_wifi.enable_receive(MODE_UDP_RECEIVE);
+    mrd_wifi.enable_send(NETWORK_UDP_SEND);
+    mrd_wifi.enable_receive(NETWORK_UDP_RECEIVE);
     // wifiIPの表示
-    mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
+    mrd_disp.esp_ip(NETWORK_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
   }
 
   // コントロールパッドの種類を表示
-  mrd_disp.mounted_pad(MOUNT_PAD);
+  mrd_disp.mounted_pad(PAD_MOUNT);
 
   // Bluetoothの開始と表示(WIIMOTE)
-  if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
+  if (PAD_MOUNT == WIIMOTE) { // Bluetooth用スレッドの開始
+    mrd_bt_settings(PAD_MOUNT, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
     xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
   }
 
@@ -295,7 +295,7 @@ void loop() {
 
       // タイムアウト抜け処理
       unsigned long current_tmp = millis();
-      if (current_tmp - start_tmp >= UDP_TIMEOUT) {
+      if (current_tmp - start_tmp >= NETWORK_UDP_TIMEOUT) {
         if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
           Serial.printf("UDP timeout[%d]\n", mrdsq.s_increment);
         }
@@ -363,7 +363,7 @@ void loop() {
   mrd_disp.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+  meriput90_ahrs(s_udp_meridim, ahrs.read, IMUAHRS_MOUNT); // BNO055_AHRS
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
@@ -371,10 +371,10 @@ void loop() {
   mrd_disp.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
   // @[5-1] リモコンデータの書き込み
-  if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
+  if (PAD_MOUNT > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
+    pad_array.ui64val = mrd_pad_read(PAD_MOUNT, pad_array.ui64val, ics_R);
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
@@ -418,7 +418,7 @@ void loop() {
 
   // @[8-1] サーボ受信値の処理
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
-    mrd_servos_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R,
+    mrd_servos_drive_lite(s_udp_meridim, SERVO_MOUNT_TYPE_L, SERVO_MOUNT_TYPE_R,
                           sv, ics_L, ics_R); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す

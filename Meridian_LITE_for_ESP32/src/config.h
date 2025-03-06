@@ -45,30 +45,47 @@ namespace config {
 //   15          -  SPI_CS SD
 
 //-------------------------------------------------------------------------
+// ピンアサイン
+//-------------------------------------------------------------------------
+#define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
+#define PIN_EN_L          33 // サーボL系統のENピン
+#define PIN_EN_R          4  // サーボR系統のENピン
+#define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
+#define PIN_I2C0_SDA      22 // I2CのSDAピン
+#define PIN_I2C0_SCL      21 // I2CのSCLピン
+#define PIN_LED_BT        26 // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
+
+//-------------------------------------------------------------------------
 //  各種設定
 //-------------------------------------------------------------------------
-
 // Meridimの基本設定
 #define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
 #define CHARGE_TIME_MS 200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
-// 各種ハードウェアのマウント有無
-#define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
-#define MOUNT_PAD     KRR5FH      // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
-
 // 動作モード
 #define MODE_ESP32_STANDALONE 0 // ESP32をボードに挿さず動作確認（0:NO, 1:YES）
-#define MODE_UDP_RECEIVE      1 // PCからのデータ受信（0:OFF, 1:ON, 通常は1）
-#define MODE_UDP_SEND         1 // PCへのデータ送信（0:OFF, 1:ON, 通常は1）
+
+//-------------------------------------------------------------------------
+// Network
+//-------------------------------------------------------------------------
+// 動作モード
+#define NETWORK_UDP_RECEIVE 1 // PCからのデータ受信（0:OFF, 1:ON, 通常は1）
+#define NETWORK_UDP_SEND    1 // PCへのデータ送信（0:OFF, 1:ON, 通常は1）
 
 // Wifiの設定(SSID,パスワード等は別途keys.hで指定)
-#define MODE_FIXED_IP 0 // IPアドレスを固定するか（0:NO, 1:YES）
-#define UDP_TIMEOUT   4 // UDPの待受タイムアウト（単位ms,推奨値0）
+#define NETWORK_FIXED_IP    0 // IPアドレスを固定するか（0:NO, 1:YES）
+#define NETWORK_UDP_TIMEOUT 4 // UDPの待受タイムアウト（単位ms,推奨値0）
+
+//-------------------------------------------------------------------------
+// PC接続関連設定
+//-------------------------------------------------------------------------
+#define SERIAL_PC_BPS     115200 // PCとのシリアル速度（モニタリング表示用）
+#define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
 
 //-------------------------------------------------------------------------
 // EEPROMの設定
 //-------------------------------------------------------------------------
-// TODO: 使用を確認できなかったのでコメントアウト
+// 使用を確認できなかったのでコメントアウト
 // #define EEPROM_SET      0   // 起動時にEEPROMにconfig.hの内容をセット(mrd_set_eeprom)
 #define EEPROM_CHECK_RW 0   // 起動時のEEPROMの動作チェック
 #define EEPROM_SIZE     100 // EEPROMでデータサイズ(2byte/1データ)
@@ -81,11 +98,13 @@ namespace config {
 //-------------------------------------------------------------------------
 // SD Cardの設定
 //-------------------------------------------------------------------------
-#define SD_MOUNT    0 // SDカードリーダーの有無 (0:なし, 1:あり)
-#define SD_CHECK_RW 0 // 起動時のSDカードリーダーの読み書きチェック
+#define SD_MOUNT    0       // SDカードリーダーの有無 (0:なし, 1:あり)
+#define SD_CHECK_RW 0       // 起動時のSDカードリーダーの読み書きチェック
+#define SPI0_SPEED  6000000 // SPI通信の速度（6000000kHz推奨）
 
 //-------------------------------------------------------------------------
 // シリアルモニタリング
+// TODO: 動作確認をする
 //-------------------------------------------------------------------------
 #define MONITOR_FRAME_DELAY       1    // シリアルモニタでフレーム遅延時間を表示（0:OFF, 1:ON）
 #define MONITOR_FLOW              0    // シリアルモニタでフローを表示（0:OFF, 1:ON）
@@ -96,59 +115,39 @@ namespace config {
 #define MONITOR_SUPPRESS_DURATION 8000 // 起動直後のタイムアウトメッセージ抑制時間(単位ms)
 
 //-------------------------------------------------------------------------
-// I2C設定, I2Cセンサ関連設定
+// IMU/AHRSの設定
+// TODO: 動作確認をする
 //-------------------------------------------------------------------------
-#define I2C0_SPEED       400000 // I2Cの速度（400kHz推奨）
-#define IMUAHRS_INTERVAL 10     // IMU/AHRSのセンサの読み取り間隔(ms)
-#define IMUAHRS_STOCK    4      // MPUで移動平均を取る際の元にする時系列データの個数
+#define IMUAHRS_MOUNT      NO_IMU // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
+#define IMUAHRS_I2C0_SPEED 400000 // I2Cの速度（400kHz推奨）
+#define IMUAHRS_INTERVAL   10     // IMU/AHRSのセンサの読み取り間隔(ms)
+#define IMUAHRS_STOCK      4      // MPUで移動平均を取る際の元にする時系列データの個数
 // #define I2C1_SPEED 100000  // I2Cの速度（100kHz推奨?）
 // #define I2C1_MERIMOTE_ADDR 0x58 // MerimoteのI2Cアドレス
 
 //-------------------------------------------------------------------------
-// SPI設定
-//-------------------------------------------------------------------------
-#define SPI0_SPEED 6000000 // SPI通信の速度（6000000kHz推奨）
-
-//-------------------------------------------------------------------------
-// PC接続関連設定
-//-------------------------------------------------------------------------
-#define SERIAL_PC_BPS     115200 // PCとのシリアル速度（モニタリング表示用）
-#define SERIAL_PC_TIMEOUT 2000   // PCとのシリアル接続確立タイムアウト(ms)
-
-//-------------------------------------------------------------------------
 // JOYPAD関連設定
+// TODO: 動作確認をする
 //-------------------------------------------------------------------------
+#define PAD_MOUNT        PC    // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 #define PAD_INIT_TIMEOUT 10000 // 起動時のJOYPADの接続確立のタイムアウト(ms)
 #define PAD_INTERVAL     10    // JOYPADのデータを読みに行くフレーム間隔 (※KRC-5FHでは4推奨)
 #define PAD_BUTTON_MARGE 1     // 0:JOYPADのボタンデータをMeridim受信値に論理積, 1:Meridim受信値に論理和
 #define PAD_GENERALIZE   1     // ジョイパッドの入力値をPS系に一般化する
 
 //-------------------------------------------------------------------------
-// ピンアサイン
-//-------------------------------------------------------------------------
-#define PIN_ERR_LED       25 // LED用 処理が時間内に収まっていない場合に点灯
-#define PIN_EN_L          33 // サーボL系統のENピン
-#define PIN_EN_R          4  // サーボR系統のENピン
-#define PIN_CHIPSELECT_SD 15 // SDカード用のCSピン
-#define PIN_I2C0_SDA      22 // I2CのSDAピン
-#define PIN_I2C0_SCL      21 // I2CのSCLピン
-#define PIN_LED_BT        26 // Bluetooth接続確認用ピン(点滅はペアリング,点灯でリンク確立)
-
-//-------------------------------------------------------------------------
 // サーボ設定
+// TODO: 動作確認をする
 //-------------------------------------------------------------------------
-
-// コマンドサーボの種類
 // 00: NOSERVO (マウントなし),            01: PWM_S1 (Single PWM)[WIP]
 // 11: PCA9685 (I2C_PCA9685toPWM)[WIP], 21: FTBRSX (FUTABA_RSxTTL)[WIP]
 // 31: DXL1 (DYNAMIXEL 1.0)[WIP],       32: DXL2 (DYNAMIXEL 2.0)[WIP]
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-#define MOUNT_SERVO_TYPE_L 43 // L系統のコマンドサーボの種類
-#define MOUNT_SERVO_TYPE_R 43 // R系統のコマンドサーボの種類
+#define SERVO_MOUNT_TYPE_L NOSERVO // L系統のコマンドサーボの種類
+#define SERVO_MOUNT_TYPE_R NOSERVO // R系統のコマンドサーボの種類
 
-// サーボ関連設定
 #define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
 #define SERVO_BAUDRATE_R    1250000 // R系統のICSサーボの通信速度bps
 #define SERVO_TIMEOUT_L     2       // L系統のICS返信待ちのタイムアウト時間

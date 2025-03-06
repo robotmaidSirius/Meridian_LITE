@@ -51,6 +51,7 @@ public:
         return false;
       }
     }
+    a_serial.println(".");
     this->_udp.begin(this->_receive_port);
     return true;
   }

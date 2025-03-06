@@ -237,7 +237,7 @@ void mrd_wire0_Core0_bno055_r(void *args) {
 /// 各データは`ahrs.read`配列に格納され, 利用可能な場合は`ahrs.result`にコピーされる.
 bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引数のためvoid必須
 
-  if (MOUNT_IMUAHRS == MPU6050_IMU) {                                // MPU6050
+  if (IMUAHRS_MOUNT == MPU6050_IMU) {                                // MPU6050
     if (a_ahrs.mpu6050.dmpGetCurrentFIFOPacket(a_ahrs.fifoBuffer)) { // Get new data
       a_ahrs.mpu6050.dmpGetQuaternion(&a_ahrs.q, a_ahrs.fifoBuffer);
       a_ahrs.mpu6050.dmpGetGravity(&a_ahrs.gravity, &a_ahrs.q);
@@ -280,7 +280,7 @@ bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引�
     } else {
       return false;
     }
-  } else if (MOUNT_IMUAHRS == MPU9250_IMU) { // MPU9250
+  } else if (IMUAHRS_MOUNT == MPU9250_IMU) { // MPU9250
     return false;
   } else {
     return false;
