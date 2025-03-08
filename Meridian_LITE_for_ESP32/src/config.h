@@ -59,7 +59,9 @@ namespace config {
 //  各種設定
 //-------------------------------------------------------------------------
 // Meridimの基本設定
-#define FRAME_DURATION 10  // 1フレームあたりの単位時間（単位ms）
+#ifndef FRAME_DURATION
+#define FRAME_DURATION 10 // 1フレームあたりの単位時間（単位ms）
+#endif
 #define CHARGE_TIME_MS 200 // 起動時のコンデンサチャージ待機時間（単位ms）
 
 // 動作モード
