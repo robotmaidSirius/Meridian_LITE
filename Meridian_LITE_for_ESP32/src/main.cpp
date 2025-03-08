@@ -40,6 +40,13 @@ using namespace meridian::modules::plugin;
 using namespace meridian::app;
 
 MrdConversation mrd_wifi(WIFI_SEND_IP, UDP_SEND_PORT, UDP_RESV_PORT);
+#if defined(MODULE_IMU_BNO055)
+MrdImuBNO055 mrd_imu;
+#elif defined(MODULE_IMU_MPU6050)
+MrdImuMPU6050 mrd_imu;
+#else
+IMrdModuleImu mrd_imu;
+#endif
 
 Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
 Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
@@ -131,6 +138,21 @@ uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
   }
   return x_tmp;
 }
+
+/// @brief Wire0 I2C通信を初期化し, 指定されたクロック速度で設定する.
+/// @param a_i2c0_speed I2C通信のクロック速度です.
+/// @param a_pinSDA SDAのピン番号. 下記と合わせて省略可.
+/// @param a_pinSCL SCLのピン番号. 上記と合わせて省略可.
+bool mrd_wire0_init_i2c(TwoWire &a_wire, int a_i2c0_speed, int a_pinSDA = -1, int a_pinSCL = -1) {
+  Serial.print("Initializing wire0 I2C... ");
+  if (a_pinSDA == -1 && a_pinSCL == -1) {
+    a_wire.begin();
+  } else {
+    a_wire.begin(a_pinSDA, a_pinSCL);
+  }
+  a_wire.setClock(a_i2c0_speed);
+  return true;
+}
 //==================================================================================================
 //  プロテクト宣言
 //==================================================================================================
@@ -142,6 +164,8 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe);
 //  SETUP
 //==================================================================================================
 void setup() {
+  // I2Cの初期化
+  mrd_wire0_init_i2c(Wire, IMUAHRS_I2C0_SPEED, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
   // BT接続確認用LED設定
   pinMode(PIN_LED_BT, OUTPUT);
@@ -187,13 +211,8 @@ void setup() {
   app_sd_setup();
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(IMUAHRS_MOUNT, IMUAHRS_I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
-
-  // I2Cスレッドの開始
-  if (IMUAHRS_MOUNT == BNO055_AHRS) {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
-    Serial.println("Core0 thread for BNO055 start.");
-    delay(10);
+  if (false == mrd_imu.begin(ahrs)) {
+    Serial.println("No IMU/AHRS sensor mounted.");
   }
 
   // WiFiの初期化と開始
@@ -332,7 +351,7 @@ void loop() {
   mrd_disp.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, IMUAHRS_MOUNT); // BNO055_AHRS
+  mrd_imu.read(s_udp_meridim, ahrs.read);
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
