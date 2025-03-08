@@ -54,11 +54,11 @@ bool mrd_set_eeprom() {
   for (int i = 0; i < servo_num; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    data[i + (servo_num * 0)] = short(sv.ixl_mount[i] * sv.ixl_cw[i]);
-    data[i + (servo_num * 1)] = short(sv.ixr_mount[i] * sv.ixr_cw[i]);
+    data[i + (servo_num * 0)] = short(sv.ixl.mount[i] * sv.ixl.cw[i]);
+    data[i + (servo_num * 1)] = short(sv.ixr.mount[i] * sv.ixr.cw[i]);
     // 各サーボの直立デフォルト値 degree
-    data[i + (servo_num * 2)] = mrd.float2HfShort(sv.ixl_trim[i]);
-    data[i + (servo_num * 3)] = mrd.float2HfShort(sv.ixr_trim[i]);
+    data[i + (servo_num * 2)] = mrd.float2HfShort(sv.ixl.trim[i]);
+    data[i + (servo_num * 3)] = mrd.float2HfShort(sv.ixr.trim[i]);
   }
 
   mrd_eeprom.print_dump(data, EEPROM_STYLE); // ダンプ表示
@@ -76,28 +76,28 @@ void mrd_get_eeprom() {
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
     tmp_servo = data[i + (servo_num * 0)];
     if (tmp_servo == 0) {
-      sv.ixl_mount[i] = 0;
-      sv.ixl_cw[i] = 0;
+      sv.ixl.mount[i] = 0;
+      sv.ixl.cw[i] = 0;
     } else if (tmp_servo > 0) {
-      sv.ixl_mount[i] = tmp_servo;
-      sv.ixl_cw[i] = 1;
+      sv.ixl.mount[i] = tmp_servo;
+      sv.ixl.cw[i] = 1;
     } else {
-      sv.ixl_mount[i] = tmp_servo * -1;
-      sv.ixl_cw[i] = -1;
+      sv.ixl.mount[i] = tmp_servo * -1;
+      sv.ixl.cw[i] = -1;
     }
     tmp_servo = data[i + (servo_num * 1)];
     if (tmp_servo == 0) {
-      sv.ixr_mount[i] = 0;
-      sv.ixr_cw[i] = 0;
+      sv.ixr.mount[i] = 0;
+      sv.ixr.cw[i] = 0;
     } else if (tmp_servo > 0) {
-      sv.ixr_mount[i] = tmp_servo;
-      sv.ixr_cw[i] = 1;
+      sv.ixr.mount[i] = tmp_servo;
+      sv.ixr.cw[i] = 1;
     } else {
-      sv.ixr_mount[i] = tmp_servo * -1;
-      sv.ixr_cw[i] = -1;
+      sv.ixr.mount[i] = tmp_servo * -1;
+      sv.ixr.cw[i] = -1;
     }
     // 各サーボの直立デフォルト値 degree
-    sv.ixl_trim[i] = mrd.HfShort2float(data[i + (servo_num * 2)]);
-    sv.ixr_trim[i] = mrd.HfShort2float(data[i + (servo_num * 3)]);
+    sv.ixl.trim[i] = mrd.HfShort2float(data[i + (servo_num * 2)]);
+    sv.ixr.trim[i] = mrd.HfShort2float(data[i + (servo_num * 3)]);
   }
 }

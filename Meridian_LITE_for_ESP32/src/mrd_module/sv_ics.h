@@ -60,16 +60,16 @@ float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_
 void mrd_sv_drive_ics_double(Meridim90Union &a_meridim, ServoParam &a_sv, IcsHardSerialClass &a_ics_L, IcsHardSerialClass &a_ics_R) {
   for (int i = 0; i < a_sv.num_max; i++) {
     // L系統サーボの処理
-    if (a_sv.ixl_mount[i]) {
-      a_sv.ixl_tgt[i] = mrd_servo_process_ics(
-          a_sv.ixl_id[i], a_meridim.sval[(i * 2) + 20], a_sv.ixl_tgt[i], a_sv.ixl_tgt_past[i],
-          a_sv.ixl_trim[i], a_sv.ixl_cw[i], a_sv.ixl_err[i], a_sv.ixl_stat[i], a_ics_L);
+    if (a_sv.ixl.mount[i]) {
+      a_sv.ixl.tgt[i] = mrd_servo_process_ics(
+          a_sv.ixl.id[i], a_meridim.sval[(i * 2) + 20], a_sv.ixl.tgt[i], a_sv.ixl.tgt_past[i],
+          a_sv.ixl.trim[i], a_sv.ixl.cw[i], a_sv.ixl.err[i], a_sv.ixl.stat[i], a_ics_L);
     }
     // R系統サーボの処理
-    if (a_sv.ixr_mount[i]) {
-      a_sv.ixr_tgt[i] = mrd_servo_process_ics(
-          a_sv.ixr_id[i], a_meridim.sval[(i * 2) + 50], a_sv.ixr_tgt[i], a_sv.ixr_tgt_past[i],
-          a_sv.ixr_trim[i], a_sv.ixr_cw[i], a_sv.ixr_err[i], a_sv.ixr_stat[i], a_ics_R);
+    if (a_sv.ixr.mount[i]) {
+      a_sv.ixr.tgt[i] = mrd_servo_process_ics(
+          a_sv.ixr.id[i], a_meridim.sval[(i * 2) + 50], a_sv.ixr.tgt[i], a_sv.ixr.tgt_past[i],
+          a_sv.ixr.trim[i], a_sv.ixr.cw[i], a_sv.ixr.err[i], a_sv.ixr.stat[i], a_ics_R);
     }
     // delayMicroseconds(2); //Teensyの場合には必要かも
   }

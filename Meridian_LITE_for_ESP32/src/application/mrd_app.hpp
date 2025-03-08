@@ -38,5 +38,7 @@ void app_sd_setup();
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void app_servo_setup(ServoParam &sv);
 void app_servo_err_reset(ServoParam &sv);
+bool app_servo_all_off(Meridim90Union &a_meridim);
+uint8_t app_servo_make_errcode_lite(ServoParam a_sv);
 
 #endif // MRD_APP_HPP

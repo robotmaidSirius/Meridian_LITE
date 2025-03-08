@@ -115,8 +115,8 @@ public:
   /// @brief マウントされているサーボのIDを表示する.
   /// @param a_sv サーボパラメータの構造体.
   void servo_mounts_2lines(ServoParam a_sv) {
-    print_servo_ids("UART_L Servos mounted: ", a_sv.num_max, a_sv.ixl_mount, a_sv.ixl_id);
-    print_servo_ids("UART_R Servos mounted: ", a_sv.num_max, a_sv.ixr_mount, a_sv.ixr_id);
+    print_servo_ids("UART_L Servos mounted: ", a_sv.num_max, a_sv.ixl.mount, a_sv.ixl.id);
+    print_servo_ids("UART_R Servos mounted: ", a_sv.num_max, a_sv.ixr.mount, a_sv.ixr.id);
   }
 
   /// @brief wifiの接続開始メッセージを出力する.

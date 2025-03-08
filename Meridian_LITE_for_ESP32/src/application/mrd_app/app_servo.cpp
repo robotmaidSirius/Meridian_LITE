@@ -198,22 +198,50 @@ void app_servo_setup(ServoParam &sv) {
   sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
                    mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
   for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映させる
-    sv.ixl_mount[i] = IXL_MT[i];
-    sv.ixr_mount[i] = IXR_MT[i];
-    sv.ixl_id[i] = IXL_ID[i];
-    sv.ixr_id[i] = IXR_ID[i];
-    sv.ixl_cw[i] = IXL_CW[i];
-    sv.ixr_cw[i] = IXR_CW[i];
-    sv.ixl_trim[i] = IDL_TRIM[i];
-    sv.ixr_trim[i] = IDR_TRIM[i];
+    sv.ixl.mount[i] = IXL_MT[i];
+    sv.ixr.mount[i] = IXR_MT[i];
+    sv.ixl.id[i] = IXL_ID[i];
+    sv.ixr.id[i] = IXR_ID[i];
+    sv.ixl.cw[i] = IXL_CW[i];
+    sv.ixr.cw[i] = IXR_CW[i];
+    sv.ixl.trim[i] = IDL_TRIM[i];
+    sv.ixr.trim[i] = IDR_TRIM[i];
   }
 }
 
 void app_servo_err_reset(ServoParam &sv) {
   for (int i = 0; i < IXL_MAX; i++) {
-    sv.ixl_err[i] = 0;
+    sv.ixl.err[i] = 0;
   }
   for (int i = 0; i < IXR_MAX; i++) {
-    sv.ixr_err[i] = 0;
+    sv.ixr.err[i] = 0;
   }
+}
+/// @brief 第一引数のMeridim配列のすべてのサーボモーターをオフ（フリー状態）に設定する.
+/// @param a_meridim サーボの動作パラメータを含むMeridim配列.
+/// @return 設定完了時にtrueを返す.
+bool app_servo_all_off(Meridim90Union &a_meridim) {
+  for (int i = 0; i < 15; i++) {    // 15はサーボ数
+    a_meridim.sval[i * 2 + 20] = 0; // サーボのコマンドをオフに設定
+    a_meridim.sval[i * 2 + 50] = 0; //
+  }
+  Serial.println("All servos torque off.");
+  return true;
+}
+
+/// @brief サーボパラメータからエラーのあるサーボのインデックス番号を作る.
+/// @param a_sv サーボパラメータの構造体.
+/// @return uint8_tで番号を返す.
+///         100-149(L系統 0-49),200-249(R系統 0-49)
+uint8_t app_servo_make_errcode_lite(ServoParam a_sv) {
+  uint8_t servo_ix_tmp = 0;
+  for (int i = 0; i < 15; i++) {
+    if (a_sv.ixl.stat[i]) {
+      servo_ix_tmp = uint8_t(i + 100);
+    }
+    if (a_sv.ixr.stat[i]) {
+      servo_ix_tmp = uint8_t(i + 200);
+    }
+  }
+  return servo_ix_tmp;
 }

@@ -26,56 +26,8 @@ namespace plugin {
 
 class MrdServoNone {
 public:
+  bool begin() { return true; }
 };
-
-//==================================================================================================
-//  Servo 関連の処理
-//==================================================================================================
-
-//------------------------------------------------------------------------------------
-//  各UARTの開始
-//------------------------------------------------------------------------------------
-
-bool mrd_servo_begin(IcsHardSerialClass &a_ics) {
-  if (nullptr != &a_ics) {
-    a_ics.begin(); // サーボモータの通信初期設定.
-    return true;
-  }
-  return false;
-}
-
-//------------------------------------------------------------------------------------
-//  各種オペレーション
-//------------------------------------------------------------------------------------
-
-/// @brief 第一引数のMeridim配列のすべてのサーボモーターをオフ（フリー状態）に設定する.
-/// @param a_meridim サーボの動作パラメータを含むMeridim配列.
-/// @return 設定完了時にtrueを返す.
-bool mrd_servo_all_off(Meridim90Union &a_meridim) {
-  for (int i = 0; i < 15; i++) {    // 15はサーボ数
-    a_meridim.sval[i * 2 + 20] = 0; // サーボのコマンドをオフに設定
-    a_meridim.sval[i * 2 + 50] = 0; //
-  }
-  Serial.println("All servos torque off.");
-  return true;
-}
-
-/// @brief サーボパラメータからエラーのあるサーボのインデックス番号を作る.
-/// @param a_sv サーボパラメータの構造体.
-/// @return uint8_tで番号を返す.
-///         100-149(L系統 0-49),200-249(R系統 0-49)
-uint8_t mrd_servos_make_errcode_lite(ServoParam a_sv) {
-  uint8_t servo_ix_tmp = 0;
-  for (int i = 0; i < 15; i++) {
-    if (a_sv.ixl_stat[i]) {
-      servo_ix_tmp = uint8_t(i + 100);
-    }
-    if (a_sv.ixr_stat[i]) {
-      servo_ix_tmp = uint8_t(i + 200);
-    }
-  }
-  return servo_ix_tmp;
-}
 
 } // namespace plugin
 } // namespace modules

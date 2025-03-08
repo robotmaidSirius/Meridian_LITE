@@ -364,18 +364,18 @@ void loop() {
 
   // @[7-1] 前回のラストに読み込んだサーボ位置をサーボ配列に書き込む
   for (int i = 0; i <= sv.num_max; i++) {
-    sv.ixl_tgt_past[i] = sv.ixl_tgt[i];                    // 前回のdegreeをキープ
-    sv.ixr_tgt_past[i] = sv.ixr_tgt[i];                    // 前回のdegreeをキープ
-    sv.ixl_tgt[i] = s_udp_meridim.sval[i * 2 + 21] * 0.01; // 受信したdegreeを格納
-    sv.ixr_tgt[i] = s_udp_meridim.sval[i * 2 + 51] * 0.01; // 受信したdegreeを格納
+    sv.ixl.tgt_past[i] = sv.ixl.tgt[i];                    // 前回のdegreeをキープ
+    sv.ixr.tgt_past[i] = sv.ixr.tgt[i];                    // 前回のdegreeをキープ
+    sv.ixl.tgt[i] = s_udp_meridim.sval[i * 2 + 21] * 0.01; // 受信したdegreeを格納
+    sv.ixr.tgt[i] = s_udp_meridim.sval[i * 2 + 51] * 0.01; // 受信したdegreeを格納
   }
 
   // @[7-2] ESP32による次回動作の計算
   // 以下はリモコンの左十字キー左右でL系統0番サーボ（首部）を30度左右にふるサンプル
   if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_RIGHT) {
-    sv.ixl_tgt[0] = -30.00; // -30度
+    sv.ixl.tgt[0] = -30.00; // -30度
   } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_LEFT) {
-    sv.ixl_tgt[0] = 30.00; // +30度
+    sv.ixl.tgt[0] = 30.00; // +30度
   }
 
   // @[7-3] 各種処理
@@ -391,7 +391,7 @@ void loop() {
                           sv, ics_L, ics_R); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
-    sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
+    sv.ixl.tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
   }
 
   //------------------------------------------------------------------------------------
@@ -402,8 +402,8 @@ void loop() {
   // @[9-1] サーボIDごとにの現在位置もしくは計算結果を配列に格納
   for (int i = 0; i <= sv.num_max; i++) {
     // 最新のサーボ角度をdegreeで格納
-    s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl_tgt[i]);
-    s_udp_meridim.sval[i * 2 + 51] = mrd.float2HfShort(sv.ixr_tgt[i]);
+    s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl.tgt[i]);
+    s_udp_meridim.sval[i * 2 + 51] = mrd.float2HfShort(sv.ixr.tgt[i]);
   }
 
   //------------------------------------------------------------------------------------
@@ -425,7 +425,7 @@ void loop() {
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
   // @[11-2] エラーが出たサーボのインデックス番号を格納
-  s_udp_meridim.ubval[MRD_ERR_l] = mrd_servos_make_errcode_lite(sv);
+  s_udp_meridim.ubval[MRD_ERR_l] = app_servo_make_errcode_lite(sv);
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
@@ -494,7 +494,7 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe) {
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    mrd_servo_all_off(s_udp_meridim);
+    app_servo_all_off(s_udp_meridim);
     return true;
   }
 
