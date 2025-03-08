@@ -46,8 +46,8 @@ Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
 Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 MERIDIANFLOW::Meridian mrd;
-IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
-IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
+MrdServoKondoICS mrd_servo_l(20, &Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
+MrdServoKondoICS mrd_servo_r(50, &Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
@@ -171,8 +171,8 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_begin(ics_L); // サーボモータの通信初期設定. Serial2
-  mrd_servo_begin(ics_R); // サーボモータの通信初期設定. Serial3
+  mrd_servo_l.begin(); // サーボモータの通信初期設定. Serial2
+  mrd_servo_r.begin(); // サーボモータの通信初期設定. Serial3
 
   mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
   mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
@@ -343,7 +343,7 @@ void loop() {
   if (PAD_MOUNT > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(PAD_MOUNT, pad_array.ui64val, ics_R);
+    pad_array.ui64val = mrd_pad_read(PAD_MOUNT, pad_array.ui64val, mrd_servo_r);
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
@@ -363,10 +363,12 @@ void loop() {
   mrd_disp.monitor_check_flow("[7]", monitor.flow); // デバグ用フロー表示
 
   // @[7-1] 前回のラストに読み込んだサーボ位置をサーボ配列に書き込む
-  for (int i = 0; i <= sv.num_max; i++) {
+  for (int i = 0; i <= sv.ixl.num_max; i++) {
     sv.ixl.tgt_past[i] = sv.ixl.tgt[i];                    // 前回のdegreeをキープ
-    sv.ixr.tgt_past[i] = sv.ixr.tgt[i];                    // 前回のdegreeをキープ
     sv.ixl.tgt[i] = s_udp_meridim.sval[i * 2 + 21] * 0.01; // 受信したdegreeを格納
+  }
+  for (int i = 0; i <= sv.ixr.num_max; i++) {
+    sv.ixr.tgt_past[i] = sv.ixr.tgt[i];                    // 前回のdegreeをキープ
     sv.ixr.tgt[i] = s_udp_meridim.sval[i * 2 + 51] * 0.01; // 受信したdegreeを格納
   }
 
@@ -386,9 +388,9 @@ void loop() {
   mrd_disp.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
-    mrd_servos_drive_lite(s_udp_meridim, SERVO_MOUNT_TYPE_L, SERVO_MOUNT_TYPE_R,
-                          sv, ics_L, ics_R); // サーボ動作を実行する
+  if (!MODE_ESP32_STANDALONE) {                    // サーボ処理を行うかどうか
+    mrd_servo_l.drive_lite(s_udp_meridim, sv.ixl); // サーボ動作を実行する
+    mrd_servo_r.drive_lite(s_udp_meridim, sv.ixr); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl.tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -400,9 +402,12 @@ void loop() {
   mrd_disp.monitor_check_flow("[9]", monitor.flow); // デバグ用フロー表示
 
   // @[9-1] サーボIDごとにの現在位置もしくは計算結果を配列に格納
-  for (int i = 0; i <= sv.num_max; i++) {
+  for (int i = 0; i <= sv.ixl.num_max; i++) {
     // 最新のサーボ角度をdegreeで格納
     s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl.tgt[i]);
+  }
+  for (int i = 0; i <= sv.ixr.num_max; i++) {
+    // 最新のサーボ角度をdegreeで格納
     s_udp_meridim.sval[i * 2 + 51] = mrd.float2HfShort(sv.ixr.tgt[i]);
   }
 

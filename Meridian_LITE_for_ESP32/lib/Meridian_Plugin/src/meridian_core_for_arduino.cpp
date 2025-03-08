@@ -104,7 +104,9 @@ void mrd_timer_delay() {
         delay_time = (int)CALC_COUNTER_TO_MS(timer_delay_limit - current_count_timer);
         delay_time += (0 != (timer_delay_limit % current_count_timer) ? 1 : 0);
         delay(delay_time);
+#if DEBUG_MERIDIAN_CORE
         sleep_counting_delay += delay_time;
+#endif
       } else {
         // hot sleep
 #if DEBUG_MERIDIAN_CORE

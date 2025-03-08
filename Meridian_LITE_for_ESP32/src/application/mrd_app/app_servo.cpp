@@ -195,16 +195,20 @@ int mrd_max_used_index(const int a_arr[], int a_size) {
 }
 
 void app_servo_setup(ServoParam &sv) {
-  sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
-                   mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映させる
+  sv.ixl.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
+                       mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
+  sv.ixr.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
+                       mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
+  for (int i = 0; i <= sv.ixl.num_max; i++) {                // configで設定した値を反映させる
     sv.ixl.mount[i] = IXL_MT[i];
-    sv.ixr.mount[i] = IXR_MT[i];
     sv.ixl.id[i] = IXL_ID[i];
-    sv.ixr.id[i] = IXR_ID[i];
     sv.ixl.cw[i] = IXL_CW[i];
-    sv.ixr.cw[i] = IXR_CW[i];
     sv.ixl.trim[i] = IDL_TRIM[i];
+  }
+  for (int i = 0; i <= sv.ixr.num_max; i++) { // configで設定した値を反映させる
+    sv.ixr.mount[i] = IXR_MT[i];
+    sv.ixr.id[i] = IXR_ID[i];
+    sv.ixr.cw[i] = IXR_CW[i];
     sv.ixr.trim[i] = IDR_TRIM[i];
   }
 }

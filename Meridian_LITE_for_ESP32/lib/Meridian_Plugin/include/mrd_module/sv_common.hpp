@@ -16,9 +16,8 @@
 
 // サーボ用変数
 struct ServoParam {
-  // サーボの最大接続 (サーボ送受信のループ処理数）
-  int num_max;
   struct ServoData {
+    int num_max;                   // サーボの最大接続 (サーボ送受信のループ処理数）
     int mount[IXL_MAX];            // 各サーボのマウントありなし(config.hで設定)
     int id[IXL_MAX];               // 各サーボのコード上のインデックスに対し, 実際に呼び出すハードウェアのID番号(config.hで設定)
     int cw[IXL_MAX];               // 各サーボの正逆方向補正用配列(config.hで設定)
