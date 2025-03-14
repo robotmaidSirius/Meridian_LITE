@@ -132,8 +132,7 @@ meridian::core::communication::MrdMsgHandler mrd_disp(Serial);
 ///@return Expected sequence number. (0 to 59,999)
 uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
   uint16_t x_tmp = a_previous_num + 1;
-  if (x_tmp > 59999) // Reset counter
-  {
+  if (x_tmp > 59999) { // Reset counter
     x_tmp = 0;
   }
   return x_tmp;
@@ -195,8 +194,12 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_l.begin(); // サーボモータの通信初期設定. Serial2
-  mrd_servo_r.begin(); // サーボモータの通信初期設定. Serial3
+  if (mrd_servo_l.begin()) { // サーボモータの通信初期設定. Serial2
+    Serial.println("======================= Servo L is ready.");
+  }
+  if (mrd_servo_r.begin()) { // サーボモータの通信初期設定. Serial3
+    Serial.println("======================= Servo R is ready.");
+  }
 
   mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
   mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
@@ -255,9 +258,8 @@ void loop() {
   mrd_disp.monitor_check_flow("[1]", monitor.flow); // デバグ用フロー表示
 
   // @[1-1] UDP送信の実行
-  if (flg.udp_send_mode) // UDPの送信実施フラグの確認（モード確認）
-  {
-    flg.udp_busy = true; // UDP使用中フラグをアゲる
+  if (flg.udp_send_mode) { // UDPの送信実施フラグの確認（モード確認）
+    flg.udp_busy = true;   // UDP使用中フラグをアゲる
     mrd_wifi.udp_send(s_udp_meridim.bval, MRDM_BYTE);
     flg.udp_busy = false; // UDP使用中フラグをサゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
@@ -269,16 +271,14 @@ void loop() {
   mrd_disp.monitor_check_flow("[2]", monitor.flow); // デバグ用フロー表示
 
   // @[2-1] UDPの受信待ち受けループ
-  if (flg.udp_receive_mode) // UDPの受信実施フラグの確認（モード確認）
-  {
+  if (flg.udp_receive_mode) { // UDPの受信実施フラグの確認（モード確認）
     unsigned long start_tmp = millis();
     flg.udp_busy = true;  // UDP使用中フラグをアゲる
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (mrd_wifi.udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
-      {
-        flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
+      if (mrd_wifi.udp_receive(r_udp_meridim.bval, MRDM_BYTE)) { // 受信確認
+        flg.udp_rcvd = true;                                     // UDP受信完了フラグをアゲる
       }
 
       // タイムアウト抜け処理
@@ -296,8 +296,7 @@ void loop() {
   flg.udp_busy = false; // UDP使用中フラグをサゲる
 
   // @[2-2] チェックサムを確認
-  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) // Check sum OK!
-  {
+  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) {   // Check sum OK!
     mrd_disp.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
@@ -306,9 +305,7 @@ void loop() {
     // @[2-4a] エラービット14番(ESP32のPCからのUDP受信エラー検出)をサゲる
     mrd_clearBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
 
-  } else // チェックサムがNGならバッファから転記せず前回のデータを使用する
-  {
-
+  } else { // チェックサムがNGならバッファから転記せず前回のデータを使用する
     // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
     mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
     err.pc_esp++;

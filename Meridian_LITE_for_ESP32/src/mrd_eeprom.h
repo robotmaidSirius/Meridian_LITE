@@ -180,8 +180,7 @@ public:
   /// @param index_x 配列の二次元目(0~179).
   /// @param low_high 下位ビットか上位ビットか. (0:low_bit, 1:high_bit)
   /// @return byte型データを返す.
-  int8_t read_byte(int index_y, int index_x, int low_high) //
-  {
+  int8_t read_byte(int index_y, int index_x, int low_high) {
     return int8_t(EEPROM.read(index_y * 180 + index_x * 2 + low_high));
   }
 #endif

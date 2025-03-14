@@ -72,8 +72,7 @@ public:
     if (this->_initialized) {
       bool result = this->_flag_receive;
       if (result) {
-        if (this->_udp.parsePacket() >= a_len) // データの受信バッファ確認
-        {
+        if (this->_udp.parsePacket() >= a_len) {  // データの受信バッファ確認
           this->_udp.read(a_meridim_bval, a_len); // データの受信
           return true;
         }

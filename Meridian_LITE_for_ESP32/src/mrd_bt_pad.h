@@ -119,8 +119,7 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
     rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
     delayMicroseconds(2);
 
-    if (rcvd_tmp) // リモコンデータが受信できていたら
-    {
+    if (rcvd_tmp) { // リモコンデータが受信できていたら
       // ボタンデータの処理
       int button_tmp = krr_button_tmp; // 受信ボタンデータの読み込み用
 

@@ -30,11 +30,9 @@ public:
    */
   int Deg2Krs(float degree, float trim, int cw) {
     float _x = 7500 + (trim * 29.6296) + (degree * 29.6296 * cw);
-    if (_x > 11500) // max limit
-    {
+    if (_x > 11500) { // max limit
       _x = 11500;
-    } else if (_x < 3500) // min limit
-    {
+    } else if (_x < 3500) { // min limit
       _x = 3500;
     }
     return static_cast<int>(_x);
