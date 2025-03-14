@@ -20,6 +20,7 @@ public:
     this->_send_ip.fromString(a_send_ip);
     this->_send_port = a_send_port;
     this->_receive_port = a_receive_port;
+    this->_initialized = false;
   }
 
 public:
@@ -52,8 +53,14 @@ public:
       }
     }
     a_serial.println(".");
-    this->_udp.begin(this->_receive_port);
-    return true;
+    if (1 == this->_udp.begin(this->_receive_port)) {
+      // Successful
+      this->_initialized = true;
+    } else {
+      // Failed
+      this->_initialized = false;
+    }
+    return this->_initialized;
   }
 
   /// @brief 第一引数のMeridim配列にUDP経由でデータを受信, 格納する.
@@ -62,12 +69,14 @@ public:
   /// @param a_udp 使用するWiFiUDPのインスタンス
   /// @return 受信した場合はtrueを, 受信しなかった場合はfalseを返す.
   bool udp_receive(byte *a_meridim_bval, int a_len) {
-    bool result = this->_flag_receive;
-    if (result) {
-      if (this->_udp.parsePacket() >= a_len) // データの受信バッファ確認
-      {
-        this->_udp.read(a_meridim_bval, a_len); // データの受信
-        return true;
+    if (this->_initialized) {
+      bool result = this->_flag_receive;
+      if (result) {
+        if (this->_udp.parsePacket() >= a_len) // データの受信バッファ確認
+        {
+          this->_udp.read(a_meridim_bval, a_len); // データの受信
+          return true;
+        }
       }
     }
     return false; // バッファにデータがない
@@ -80,16 +89,20 @@ public:
   /// @return 送信完了時にtrueを返す.
   /// ※WIFI_SEND_IP, UDP_SEND_PORTを関数内で使用.
   bool udp_send(byte *a_meridim_bval, int a_len) {
-    bool result = this->_flag_send;
-    if (result) {
-      this->_udp.beginPacket(this->_send_ip, this->_send_port); // UDPパケットの開始
-      this->_udp.write(a_meridim_bval, a_len);                  // データの書き込み
-      this->_udp.endPacket();                                   // UDPパケットの終了
+    if (this->_initialized) {
+      bool result = this->_flag_send;
+      if (result) {
+        this->_udp.beginPacket(this->_send_ip, this->_send_port); // UDPパケットの開始
+        this->_udp.write(a_meridim_bval, a_len);                  // データの書き込み
+        this->_udp.endPacket();                                   // UDPパケットの終了
+      }
+      return result;
     }
-    return result;
+    return false;
   }
 
 private:
+  bool _initialized = false;      /// 初期化フラグ
   bool _flag_send = true;         /// 送信フラグ
   bool _flag_receive = true;      /// 受信フラグ
   uint16_t _receive_port = 22224; /// 受信ポート番号
