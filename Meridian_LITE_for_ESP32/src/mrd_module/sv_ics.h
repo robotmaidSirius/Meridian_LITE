@@ -13,12 +13,20 @@ namespace plugin {
 class MrdServoKondoICS : public IcsHardSerialClass {
 private:
   int _index; // サーボのインデックス番号
+  String _distinguished_name = "";
 
 public:
-  MrdServoKondoICS(int a_index, HardwareSerial *icsSerial, byte en_pin, long baudrate, int timeout)
+  MrdServoKondoICS(int a_index, HardwareSerial *icsSerial, byte en_pin,
+                   long baudrate, int timeout, String a_name = "")
       : IcsHardSerialClass(icsSerial, en_pin, baudrate, timeout) {
     this->_index = a_index;
+    this->_distinguished_name = a_name;
   }
+  /**
+   * @brief Get the Name
+   * @return String
+   */
+  String GetName() { return this->_distinguished_name; }
 
   /**
    * @brief Degree value to Kondo's KRS Servo value.

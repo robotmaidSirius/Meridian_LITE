@@ -123,7 +123,8 @@ namespace config {
 // IMU/AHRSの設定
 // TODO: 動作確認をする
 //-------------------------------------------------------------------------
-#define IMUAHRS_MOUNT      NO_IMU // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
+// Defineで、MODULE_IMU_BNO055,MODULE_IMU_MPU6050を指定することで定義できるように変更
+// #define IMUAHRS_MOUNT      meridian::modules::plugin::ImuAhrsType::NO_IMU // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
 #define IMUAHRS_I2C0_SPEED 400000 // I2Cの速度（400kHz推奨）
 #define IMUAHRS_INTERVAL   10     // IMU/AHRSのセンサの読み取り間隔(ms)
 #define IMUAHRS_STOCK      4      // MPUで移動平均を取る際の元にする時系列データの個数

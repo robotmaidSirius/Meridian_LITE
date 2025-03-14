@@ -53,8 +53,8 @@ Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
 Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
 MERIDIANFLOW::Meridian mrd;
-MrdServoKondoICS mrd_servo_l(20, &Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
-MrdServoKondoICS mrd_servo_r(50, &Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
+MrdServoKondoICS mrd_servo_l(20, &Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L, "L");
+MrdServoKondoICS mrd_servo_r(50, &Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R, "R");
 
 //------------------------------------------------------------------------------------
 //  クラス・構造体・共用体
