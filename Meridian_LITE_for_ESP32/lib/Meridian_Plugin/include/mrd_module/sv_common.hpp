@@ -10,9 +10,25 @@
 #ifndef SV_COMMON_HPP
 #define SV_COMMON_HPP
 
+#include <stdint.h>
+
 // 各サーボ系統の最大サーボマウント数
 #define IXL_MAX 15 // L系統の最大サーボ数. 標準は15.
 #define IXR_MAX 15 // R系統の最大サーボ数. 標準は15.
+
+enum ServoType { // サーボプロトコルのタイプ
+  NOSERVO = 0,   // サーボなし
+  PWM_S = 1,     // Single PWM (WIP)
+  PCA9685 = 11,  // I2C_PCA9685 to PWM (WIP)
+  FTBRSX = 21,   // FUTABA_RSxTTL (WIP)
+  DXL1 = 31,     // DYNAMIXEL 1.0 (WIP)
+  DXL2 = 32,     // DYNAMIXEL 2.0 (WIP)
+  KOICS3 = 43,   // KONDO_ICS 3.5 / 3.6
+  KOPMX = 44,    // KONDO_PMX (WIP)
+  JRXBUS = 51,   // JRPROPO_XBUS (WIP)
+  FTCSTS = 61,   // FEETECH_STS (WIP)
+  FTCSCS = 62    // FEETECH_SCS (WIP)
+};
 
 // サーボ用変数
 struct ServoParam {

@@ -2,6 +2,7 @@
 #define __MERIDIAN_CONFIG__
 
 #include <mrd_module/imu/mrd_module_imu.hpp>
+#include <mrd_module/sv_common.hpp>
 
 namespace meridian {
 namespace core {
@@ -149,8 +150,8 @@ namespace config {
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-#define SERVO_MOUNT_TYPE_L NOSERVO // L系統のコマンドサーボの種類
-#define SERVO_MOUNT_TYPE_R NOSERVO // R系統のコマンドサーボの種類
+#define SERVO_MOUNT_TYPE_L KOICS3 // L系統のコマンドサーボの種類
+#define SERVO_MOUNT_TYPE_R KOICS3 // R系統のコマンドサーボの種類
 
 #define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
 #define SERVO_BAUDRATE_R    1250000 // R系統のICSサーボの通信速度bps
