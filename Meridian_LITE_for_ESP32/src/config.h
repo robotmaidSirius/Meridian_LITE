@@ -154,10 +154,12 @@ namespace config {
 #define SERVO_MOUNT_TYPE_L KOICS3 // L系統のコマンドサーボの種類
 #define SERVO_MOUNT_TYPE_R KOICS3 // R系統のコマンドサーボの種類
 
-#define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
-#define SERVO_BAUDRATE_R    1250000 // R系統のICSサーボの通信速度bps
-#define SERVO_TIMEOUT_L     2       // L系統のICS返信待ちのタイムアウト時間
-#define SERVO_TIMEOUT_R     2       // R系統のICS返信待ちのタイムアウト時間
-#define SERVO_LOST_ERR_WAIT 6       // 連続何フレームサーボ信号をロストしたら異常とするか
+// 115200/625000/1250000 bps
+#define SERVO_BAUDRATE_L 1250000 // L系統のICSサーボの通信速度bps
+#define SERVO_BAUDRATE_R 1250000 // R系統のICSサーボの通信速度bps
+
+#define SERVO_TIMEOUT_L     2 // L系統のICS返信待ちのタイムアウト時間
+#define SERVO_TIMEOUT_R     2 // R系統のICS返信待ちのタイムアウト時間
+#define SERVO_LOST_ERR_WAIT 6 // 連続何フレームサーボ信号をロストしたら異常とするか
 
 #endif // __MERIDIAN_CONFIG__

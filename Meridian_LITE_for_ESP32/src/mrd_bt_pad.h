@@ -67,116 +67,16 @@ extern PadUnion pad_array;
 namespace meridian {
 namespace modules {
 namespace plugin {
-
-class MrdJoypadNone {
-public:
-};
-
-class MrdJoypadWiimote {
-public:
-};
-
-class MrdJoypadKRR5FH {
-public:
-};
-
-ESP32Wiimote wiimote;
+namespace joypad {
+uint64_t a_joypad_data = 0; // ジョイパッドのデータを格納する変数
 
 // リモコン受信ボタンデータの変換テーブル
-constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
+const unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
     0x1000, 0x0080, 0x0000, 0x0010, 0x0200, 0x0400, 0x0100, 0x0800,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0008, 0x0001, 0x0002, 0x0004};
-constexpr unsigned short PAD_TABLE_WIIMOTE_ORIG[16] = {
+const unsigned short PAD_TABLE_WIIMOTE_ORIG[16] = {
     0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x0000, 0x0000, 0x0000,
     0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0000, 0x0000, 0x0080};
-constexpr unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
-    0, 64, 32, 128, 1, 4, 2, 8, 1024, 4096, 512, 2048, 16, 64, 32, 256};
-
-//==================================================================================================
-//  タイプ別のJOYPAD読み込み処理
-//==================================================================================================
-
-//----------------------------------------------------------------------
-// KRC-5FHの読み込み
-//----------------------------------------------------------------------
-
-/// @brief KRC-5FHジョイパッドからデータを読み取り, 指定された間隔でデータを更新する.
-/// @param a_interval 読み取り間隔（ミリ秒）.
-/// @return 更新されたジョイパッドの状態を64ビット整数で返す.
-uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
-  static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
-  int8_t pad_analog_tmp[4] = {0};  // アナログ入力のデータ組み立て用
-  static int calib[4] = {0};       // アナログスティックのキャリブレーション値
-
-  static unsigned long last_time_tmp = 0; // 最後に関数が呼ばれた時間を記録
-  unsigned long current_time_tmp = millis();
-
-  if (current_time_tmp - last_time_tmp >= a_interval) {
-    unsigned short krr_button_tmp;     // krrからのボタン入力データ
-    int krr_analog_tmp[4];             // krrからのアナログ入力データ
-    unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
-    bool rcvd_tmp;                     // 受信機がデータを受信成功したか
-    rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
-    delayMicroseconds(2);
-
-    if (rcvd_tmp) { // リモコンデータが受信できていたら
-      // ボタンデータの処理
-      int button_tmp = krr_button_tmp; // 受信ボタンデータの読み込み用
-
-      if (PAD_GENERALIZE) {            // ボタンデータの一般化処理
-        if ((button_tmp & 15) == 15) { // 左側十字ボタン全部押しなら select押下とみなす
-          pad_common_tmp += 1;
-          button_tmp &= 0b1111111111110000; // 左十字ボタンのクリア
-        }
-
-        if ((button_tmp & 368) == 368) {
-          pad_common_tmp += 8;              // 右側十字ボタン全部押しなら start押下とみなす
-          button_tmp &= 0b1111111010001111; // 右十字ボタンのクリア
-        }
-
-        // ボタン値の変換(一般化)
-        for (int i = 0; i < 16; i++) {
-          uint16_t mask_tmp = 1 << i;
-          if (PAD_TABLE_KRC5FH_TO_COMMON[i] & button_tmp) {
-            pad_common_tmp |= mask_tmp;
-          }
-        }
-        pad_common_tmp &= 0b11111111111111001; // 2と4のビットのクリア(謎のデータ調整)
-
-        // アナログ入力データの処理
-        if (krr_analog_tmp[0] + krr_analog_tmp[1] + krr_analog_tmp[2] + krr_analog_tmp[3]) {
-          for (int i = 0; i < 4; i++) {
-            pad_analog_tmp[i] = (krr_analog_tmp[i] - 62) << 2;
-            pad_analog_tmp[i] = (pad_analog_tmp[i] < -127) ? -127 : pad_analog_tmp[i];
-            pad_analog_tmp[i] = (pad_analog_tmp[i] > 127) ? 127 : pad_analog_tmp[i];
-          }
-        } else
-          for (int i = 0; i < 4; i++) {
-            pad_analog_tmp[i] = 0;
-          }
-      } else {
-        pad_common_tmp = button_tmp; // ボタンの変換なし生値を使用
-      }
-    }
-
-    // アナログスティックのキャリブレーション
-    // [WIP]
-
-    // データの組み立て
-    uint64_t updated_val_tmp = 0;
-    updated_val_tmp = static_cast<uint64_t>(pad_common_tmp);
-    updated_val_tmp |= ((uint64_t)pad_analog_tmp[0] & 0xFF) << 16;
-    updated_val_tmp |= ((uint64_t)pad_analog_tmp[1] & 0xFF) << 24;
-    //   updated_val_tmp |= ((uint64_t)pad_analog_tmp[2] & 0xFF) << 32;
-    //   updated_val_tmp |= ((uint64_t)pad_analog_tmp[3] & 0xFF) << 40;
-
-    last_time_tmp = current_time_tmp; // 最後の実行時間を更新
-    pre_val_tmp = updated_val_tmp;
-    return updated_val_tmp;
-  }
-  return pre_val_tmp;
-}
-
 //----------------------------------------------------------------------
 // WIIMOTEの読み込み
 //----------------------------------------------------------------------
@@ -184,22 +84,22 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
 /// @brief Wiiリモコンからの入力データを受信し, 処理する.
 /// @return 更新されたジョイパッドの状態を64ビット整数で返す.
 /// @note ESP32Wiimoteインスタンス wiimote, 定数PAD_GENERALIZE を関数内で使用.
-uint64_t mrd_bt_read_wiimote() {
+uint64_t mrd_bt_read_wiimote(ESP32Wiimote &a_wiimote) {
   static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
   static int calib_l1x = 0;
   static int calib_l1y = 0;
 
   // 受信データの問い合わせ
-  wiimote.task();
+  a_wiimote.task();
   ButtonState rcvd_button_tmp;
   NunchukState nunchuk_tmp;
   // AccelState accel_tmp;
 
-  if (wiimote.available() > 0) {
+  if (a_wiimote.available() > 0) {
 
     // リモコンデータの取得
-    rcvd_button_tmp = wiimote.getButtonState();
-    nunchuk_tmp = wiimote.getNunchukState();
+    rcvd_button_tmp = a_wiimote.getButtonState();
+    nunchuk_tmp = a_wiimote.getNunchukState();
 
     uint16_t new_pad_tmp[4] = {0}; // アナログ入力のデータ組み立て用
 
@@ -249,97 +149,205 @@ uint64_t mrd_bt_read_wiimote() {
   }
   return pre_val_tmp;
 }
+//----------------------------------------------------------------------
+// WIIMOTE用スレッド
+//----------------------------------------------------------------------
+
+/// @brief Bluetoothの設定を行い, Wiiコントローラの接続を開始する.
+bool mrd_bt_settings(ESP32Wiimote &a_wiimote, int a_timeout, int a_led) {
+  // Wiiコントローラの接続開始
+  Serial.println("Try to connect Wiimote...");
+  a_wiimote.init();
+  a_wiimote.addFilter(ACTION_IGNORE, FILTER_ACCEL);
+
+  uint16_t count_tmp = 0;
+  unsigned long start_time = millis();
+  while (!a_wiimote.available()) {
+
+    // リモコンへの問い合わせ
+    a_wiimote.task();
+
+    // タイムアウトチェック
+    if (millis() - start_time >= a_timeout) {
+      digitalWrite(a_led, LOW);
+      Serial.println("Wiimote connection timed out.");
+      return false;
+    }
+
+    // LEDの点滅
+    count_tmp++;
+    if (count_tmp < 500) {
+      digitalWrite(a_led, HIGH);
+    } else {
+      digitalWrite(a_led, LOW);
+    }
+    if (count_tmp > 1000) {
+      Serial.print(".");
+      count_tmp = 0;
+    }
+
+    delay(1); // 1ms秒待機して再チェック
+  }
+  digitalWrite(a_led, HIGH);
+  Serial.println("Wiimote successfully connected. ");
+  return true;
+}
+
+/// @brief サブCPU (Core0) で実行されるBluetooth通信用のルーチン.
+/// @param args この関数に渡される引数. 現在は不使用.
+/// @note PadUnion型の pad_array.ui64val, 定数PAD_INTERVAL, WIIMOTE を関数内で使用.
+void task_core_wiimote(void *args) { // サブCPU(Core0)で実行するプログラム
+  ESP32Wiimote wiimote;
+  // Bluetoothの開始と表示(WIIMOTE)
+  while (false == mrd_bt_settings(wiimote, PAD_INIT_TIMEOUT, PIN_LED_BT)) {
+    /* code */
+    delay(1000);
+  }
+
+  while (true) { // Bluetooth待受用の無限ループ
+    a_joypad_data = mrd_bt_read_wiimote(wiimote);
+    vTaskDelay(PAD_INTERVAL); // 他のタスクにCPU時間を譲る
+  }
+}
+} // namespace joypad
+
+class MrdJoypadNone {
+public:
+public:
+  bool begin() {
+    return true;
+  }
+};
+
+class MrdJoypadWiimote {
+private:
+  //----------------------------------------------------------------------
+  // Bluetooth, WIIMOTEの初期化
+  //----------------------------------------------------------------------
+
+  // システム用の変数
+  TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
+public:
+  bool begin() {
+    xTaskCreatePinnedToCore(joypad::task_core_wiimote, "Core0_BT_r", 8 * (1024), NULL, 5, &thp, 0);
+    return true;
+  }
+
+  /// @brief 指定されたジョイパッドタイプに応じて最新データを読み取り, 64ビット整数で返す.
+  /// @param a_pad_type ジョイパッドのタイプを示す列挙型（MERIMOTE, BLUERETRO, SBDBT, KRR5FH）.
+  /// @param a_pad_data 64ビットのボタンデータ
+  /// @return 64ビット整数に変換された受信データ
+  /// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
+  uint64_t read(uint64_t a_pad_data) {
+    // @[2-3] UDP受信配列から UDP送信配列にデータを転写
+    pad_array.ui64val = joypad::a_joypad_data;
+    return a_pad_data;
+  }
+};
+
+class MrdJoypadKRR5FH {
+private:
+  // リモコン受信ボタンデータの変換テーブル
+  const unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
+      0, 64, 32, 128, 1, 4, 2, 8, 1024, 4096, 512, 2048, 16, 64, 32, 256};
+
+public:
+  bool begin() {
+    return true;
+  }
+  //----------------------------------------------------------------------
+  // KRC-5FHの読み込み
+  //----------------------------------------------------------------------
+
+  /// @brief KRC-5FHジョイパッドからデータを読み取り, 指定された間隔でデータを更新する.
+  /// @param a_interval 読み取り間隔（ミリ秒）.
+  /// @return 更新されたジョイパッドの状態を64ビット整数で返す.
+  uint64_t read(uint a_interval, IcsHardSerialClass &a_ics) {
+    static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
+    int8_t pad_analog_tmp[4] = {0};  // アナログ入力のデータ組み立て用
+    static int calib[4] = {0};       // アナログスティックのキャリブレーション値
+
+    static unsigned long last_time_tmp = 0; // 最後に関数が呼ばれた時間を記録
+    unsigned long current_time_tmp = millis();
+
+    if (current_time_tmp - last_time_tmp >= a_interval) {
+      unsigned short krr_button_tmp;     // krrからのボタン入力データ
+      int krr_analog_tmp[4];             // krrからのアナログ入力データ
+      unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
+      bool rcvd_tmp;                     // 受信機がデータを受信成功したか
+      rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
+      delayMicroseconds(2);
+
+      if (rcvd_tmp) { // リモコンデータが受信できていたら
+        // ボタンデータの処理
+        int button_tmp = krr_button_tmp; // 受信ボタンデータの読み込み用
+
+        if (PAD_GENERALIZE) {            // ボタンデータの一般化処理
+          if ((button_tmp & 15) == 15) { // 左側十字ボタン全部押しなら select押下とみなす
+            pad_common_tmp += 1;
+            button_tmp &= 0b1111111111110000; // 左十字ボタンのクリア
+          }
+
+          if ((button_tmp & 368) == 368) {
+            pad_common_tmp += 8;              // 右側十字ボタン全部押しなら start押下とみなす
+            button_tmp &= 0b1111111010001111; // 右十字ボタンのクリア
+          }
+
+          // ボタン値の変換(一般化)
+          for (int i = 0; i < 16; i++) {
+            uint16_t mask_tmp = 1 << i;
+            if (PAD_TABLE_KRC5FH_TO_COMMON[i] & button_tmp) {
+              pad_common_tmp |= mask_tmp;
+            }
+          }
+          pad_common_tmp &= 0b11111111111111001; // 2と4のビットのクリア(謎のデータ調整)
+
+          // アナログ入力データの処理
+          if (krr_analog_tmp[0] + krr_analog_tmp[1] + krr_analog_tmp[2] + krr_analog_tmp[3]) {
+            for (int i = 0; i < 4; i++) {
+              pad_analog_tmp[i] = (krr_analog_tmp[i] - 62) << 2;
+              pad_analog_tmp[i] = (pad_analog_tmp[i] < -127) ? -127 : pad_analog_tmp[i];
+              pad_analog_tmp[i] = (pad_analog_tmp[i] > 127) ? 127 : pad_analog_tmp[i];
+            }
+          } else
+            for (int i = 0; i < 4; i++) {
+              pad_analog_tmp[i] = 0;
+            }
+        } else {
+          pad_common_tmp = button_tmp; // ボタンの変換なし生値を使用
+        }
+      }
+
+      // アナログスティックのキャリブレーション
+      // [WIP]
+
+      // データの組み立て
+      uint64_t updated_val_tmp = 0;
+      updated_val_tmp = static_cast<uint64_t>(pad_common_tmp);
+      updated_val_tmp |= ((uint64_t)pad_analog_tmp[0] & 0xFF) << 16;
+      updated_val_tmp |= ((uint64_t)pad_analog_tmp[1] & 0xFF) << 24;
+      //   updated_val_tmp |= ((uint64_t)pad_analog_tmp[2] & 0xFF) << 32;
+      //   updated_val_tmp |= ((uint64_t)pad_analog_tmp[3] & 0xFF) << 40;
+
+      last_time_tmp = current_time_tmp; // 最後の実行時間を更新
+      pre_val_tmp = updated_val_tmp;
+      return updated_val_tmp;
+    }
+    return pre_val_tmp;
+  }
+};
+
+//==================================================================================================
+//  タイプ別のJOYPAD読み込み処理
+//==================================================================================================
 
 //==================================================================================================
 //  各種パッドへの分岐
 //==================================================================================================
 
-/// @brief 指定されたジョイパッドタイプに応じて最新データを読み取り, 64ビット整数で返す.
-/// @param a_pad_type ジョイパッドのタイプを示す列挙型（MERIMOTE, BLUERETRO, SBDBT, KRR5FH）.
-/// @param a_pad_data 64ビットのボタンデータ
-/// @return 64ビット整数に変換された受信データ
-/// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
-uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data, IcsHardSerialClass &a_ics) {
-
-  if (a_pad_type == KRR5FH) { // KRR5FH
-    return mrd_pad_read_krc(PAD_INTERVAL, a_ics);
-  }
-
-  if (a_pad_type == WIIMOTE) { // Wiimote
-    return a_pad_data;
-  }
-  return 0;
-}
-
 //==================================================================================================
 //  初期化と準備
 //==================================================================================================
-
-//----------------------------------------------------------------------
-// Bluetooth, WIIMOTEの初期化
-//----------------------------------------------------------------------
-
-/// @brief Bluetoothの設定を行い, Wiiコントローラの接続を開始する.
-bool mrd_bt_settings(int a_mount_pad,
-                     int a_timeout,
-                     ESP32Wiimote &a_wiimote,
-                     int a_led,
-                     HardwareSerial &a_serial) {
-  // Wiiコントローラの接続開始
-  if (a_mount_pad == 5) {
-    a_serial.println("Try to connect Wiimote...");
-    a_wiimote.init();
-    a_wiimote.addFilter(ACTION_IGNORE, FILTER_ACCEL);
-
-    uint16_t count_tmp = 0;
-    unsigned long start_time = millis();
-    while (!a_wiimote.available()) {
-
-      // リモコンへの問い合わせ
-      a_wiimote.task();
-
-      // タイムアウトチェック
-      if (millis() - start_time >= a_timeout) {
-        digitalWrite(a_led, LOW);
-        a_serial.println("Wiimote connection timed out.");
-        return false;
-      }
-
-      // LEDの点滅
-      count_tmp++;
-      if (count_tmp < 500) {
-        digitalWrite(a_led, HIGH);
-      } else {
-        digitalWrite(a_led, LOW);
-      }
-      if (count_tmp > 1000) {
-        a_serial.print(".");
-        count_tmp = 0;
-      }
-
-      delay(1); // 1ms秒待機して再チェック
-    }
-    digitalWrite(a_led, HIGH);
-    a_serial.println("Wiimote successfully connected. ");
-    return true;
-  }
-  digitalWrite(a_led, LOW);
-  return false;
-}
-
-//----------------------------------------------------------------------
-// WIIMOTE用スレッド
-//----------------------------------------------------------------------
-
-/// @brief サブCPU (Core0) で実行されるBluetooth通信用のルーチン.
-/// @param args この関数に渡される引数. 現在は不使用.
-/// @note PadUnion型の pad_array.ui64val, 定数PAD_INTERVAL, WIIMOTE を関数内で使用.
-void Core0_BT_r(void *args) { // サブCPU(Core0)で実行するプログラム
-  while (true) {              // Bluetooth待受用の無限ループ
-    pad_array.ui64val = mrd_bt_read_wiimote();
-    vTaskDelay(PAD_INTERVAL); // 他のタスクにCPU時間を譲る
-  }
-}
 
 //------------------------------------------------------------------------------------
 //  meridimへのデータ書き込み

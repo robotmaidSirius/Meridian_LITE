@@ -47,6 +47,13 @@ MrdImuMPU6050 mrd_imu;
 #else
 IMrdModuleImu mrd_imu;
 #endif
+#if defined(MODULE_JOYPAD_KRR5FH)
+MrdJoypadKRR5FH mrd_input;
+#elif defined(MODULE_JOYPAD_WIIMOTE)
+MrdJoypadWiimote mrd_input;
+#else
+MrdJoypadNone mrd_input;
+#endif
 
 Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
 Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
@@ -163,15 +170,16 @@ bool execute_master_command_2(Meridim90Union a_meridim, bool a_flg_exe);
 //  SETUP
 //==================================================================================================
 void setup() {
-  // I2Cの初期化
-  mrd_wire0_init_i2c(Wire, IMUAHRS_I2C0_SPEED, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  // シリアルモニターの設定
+  Serial.begin(SERIAL_PC_BPS);
 
   // BT接続確認用LED設定
   pinMode(PIN_LED_BT, OUTPUT);
   digitalWrite(PIN_LED_BT, HIGH);
 
-  // シリアルモニターの設定
-  Serial.begin(SERIAL_PC_BPS);
+  // I2Cの初期化
+  mrd_wire0_init_i2c(Wire, IMUAHRS_I2C0_SPEED, PIN_I2C0_SDA, PIN_I2C0_SCL);
+
   // シリアルモニターの確立待ち
   unsigned long start_time = millis();
   while (!Serial && (millis() - start_time < SERIAL_PC_TIMEOUT)) { // タイムアウトもチェック
@@ -194,15 +202,12 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  if (mrd_servo_l.begin()) { // サーボモータの通信初期設定. Serial2
-    Serial.println("======================= Servo L is ready.");
+  if (mrd_servo_l.begin()) {                                                 // サーボモータの通信初期設定. Serial2
+    mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
   }
   if (mrd_servo_r.begin()) { // サーボモータの通信初期設定. Serial3
-    Serial.println("======================= Servo R is ready.");
+    mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
   }
-
-  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -229,11 +234,8 @@ void setup() {
 
   // コントロールパッドの種類を表示
   mrd_disp.mounted_pad(PAD_MOUNT);
-
-  // Bluetoothの開始と表示(WIIMOTE)
-  if (PAD_MOUNT == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(PAD_MOUNT, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
-    xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
+  if (mrd_input.begin()) {
+    Serial.println("Joypad is ready.");
   }
 
   // UDP開始用ダミーデータの生成
@@ -359,7 +361,11 @@ void loop() {
   if (PAD_MOUNT > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(PAD_MOUNT, pad_array.ui64val, mrd_servo_r);
+#if defined(MODULE_JOYPAD_KRR5FH)
+    pad_array.ui64val = mrd_input.read(pad_array.ui64val, mrd_servo_r);
+#elif defined(MODULE_JOYPAD_WIIMOTE)
+    pad_array.ui64val = mrd_input.read(pad_array.ui64val);
+#endif
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
