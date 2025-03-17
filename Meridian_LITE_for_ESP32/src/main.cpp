@@ -152,9 +152,9 @@ uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
 bool mrd_wire0_init_i2c(TwoWire &a_wire, int a_i2c0_speed, int a_pinSDA = -1, int a_pinSCL = -1) {
   Serial.print("Initializing wire0 I2C... ");
   if (a_pinSDA == -1 && a_pinSCL == -1) {
-    a_wire.begin();
+    // do nothing
   } else {
-    a_wire.begin(a_pinSDA, a_pinSCL);
+    a_wire.setPins(a_pinSDA, a_pinSCL);
   }
   a_wire.setClock(a_i2c0_speed);
   return true;

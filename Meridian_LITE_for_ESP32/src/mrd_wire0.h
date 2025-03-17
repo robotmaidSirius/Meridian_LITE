@@ -198,6 +198,12 @@ private:
 
 public:
   bool begin(AhrsValue &a_ahrs) {
+    Wire.begin();
+    Wire.setClock(IMUAHRS_I2C0_SPEED);
+    while (!this->_mpu6050.testConnection()) {
+      Serial.println("MPU6050 connection failed");
+      delay(1000);
+    }
     return this->init_mpu6050_dmp(a_ahrs);
   }
   /// @brief MPU6050センサーからデータを読み取ります.
@@ -276,8 +282,8 @@ private:
   bool init_bno055(AhrsValue &a_ahrs) {
     // データの取得はセンサー用スレッドで実行
     // I2Cスレッドの開始
-    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 8 * 1024, NULL, 2, &thp, 0);
     Serial.println("Core0 thread for BNO055 start.");
+    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 8 * 1024, NULL, 2, &thp, 0);
     delay(10);
     return true;
   }
