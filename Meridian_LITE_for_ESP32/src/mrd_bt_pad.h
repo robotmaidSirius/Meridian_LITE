@@ -68,18 +68,15 @@ namespace meridian {
 namespace modules {
 namespace plugin {
 namespace joypad {
-uint64_t a_joypad_data = 0; // ジョイパッドのデータを格納する変数
+uint64_t joypad_data = 0; // ジョイパッドのデータを格納する変数
 
 // リモコン受信ボタンデータの変換テーブル
-const unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
+constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
     0x1000, 0x0080, 0x0000, 0x0010, 0x0200, 0x0400, 0x0100, 0x0800,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0008, 0x0001, 0x0002, 0x0004};
-const unsigned short PAD_TABLE_WIIMOTE_ORIG[16] = {
+constexpr unsigned short PAD_TABLE_WIIMOTE_ORIG[16] = {
     0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x0000, 0x0000, 0x0000,
     0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0000, 0x0000, 0x0080};
-//----------------------------------------------------------------------
-// WIIMOTEの読み込み
-//----------------------------------------------------------------------
 
 /// @brief Wiiリモコンからの入力データを受信し, 処理する.
 /// @return 更新されたジョイパッドの状態を64ビット整数で返す.
@@ -149,9 +146,6 @@ uint64_t mrd_bt_read_wiimote(ESP32Wiimote &a_wiimote) {
   }
   return pre_val_tmp;
 }
-//----------------------------------------------------------------------
-// WIIMOTE用スレッド
-//----------------------------------------------------------------------
 
 /// @brief Bluetoothの設定を行い, Wiiコントローラの接続を開始する.
 bool mrd_bt_settings(ESP32Wiimote &a_wiimote, int a_timeout, int a_led) {
@@ -205,7 +199,7 @@ void task_core_wiimote(void *args) { // サブCPU(Core0)で実行するプログ
   }
 
   while (true) { // Bluetooth待受用の無限ループ
-    a_joypad_data = mrd_bt_read_wiimote(wiimote);
+    joypad_data = mrd_bt_read_wiimote(wiimote);
     vTaskDelay(PAD_INTERVAL); // 他のタスクにCPU時間を譲る
   }
 }
@@ -229,19 +223,19 @@ private:
   TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
 public:
   bool begin() {
-    xTaskCreatePinnedToCore(joypad::task_core_wiimote, "Core0_BT_r", 8 * (1024), NULL, 5, &thp, 0);
+    //----------------------------------------------------------------------
+    // WIIMOTE用スレッド
+    //----------------------------------------------------------------------
+    xTaskCreatePinnedToCore(joypad::task_core_wiimote, "Core0_WIIMOTE_r", 8 * (1024), NULL, 5, &thp, 0);
     return true;
   }
 
   /// @brief 指定されたジョイパッドタイプに応じて最新データを読み取り, 64ビット整数で返す.
-  /// @param a_pad_type ジョイパッドのタイプを示す列挙型（MERIMOTE, BLUERETRO, SBDBT, KRR5FH）.
-  /// @param a_pad_data 64ビットのボタンデータ
   /// @return 64ビット整数に変換された受信データ
   /// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
-  uint64_t read(uint64_t a_pad_data) {
+  uint64_t read() {
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
-    pad_array.ui64val = joypad::a_joypad_data;
-    return a_pad_data;
+    return joypad::joypad_data;
   }
 };
 
