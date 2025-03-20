@@ -140,9 +140,9 @@ void mrd_timer_delay() {
   }
 }
 
-#undef CALC_MS_TO_COUNTER
-#undef CALC_COUNTER_TO_MS
-
 } // namespace execution
 } // namespace core
 } // namespace meridian
+
+#undef CALC_MS_TO_COUNTER
+#undef CALC_COUNTER_TO_MS

@@ -10,6 +10,10 @@
 #include <Meridim90.hpp>                // Meridim90のライブラリ導入
 #include <Wire.h>
 
+#ifndef DEBUG_PRINT_IMU
+#define DEBUG_PRINT_IMU 0
+#endif
+
 // 6軸or9軸センサーの値
 struct AhrsValue {
 
@@ -113,6 +117,7 @@ bool mpu6050_init(MPU6050 &a_mpu6050, AhrsValue &a_ahrs) {
   return result;
 }
 void mrd_wire0_Core0_mpu6050_r(void *args) {
+#if 0
   MPU6050 mpu6050;      // MPU6050のインスタンス
   mpu6050.initialize(); // MPU6050の初期化
   do {
@@ -137,6 +142,28 @@ void mrd_wire0_Core0_mpu6050_r(void *args) {
     mpu6050_read(mpu6050, ahrs);
     delay(IMUAHRS_INTERVAL);
   }
+#else
+  int MPU_addr = 0x68; // I2C address of the MPU-6050
+  Wire.begin();
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x6B); // PWR_MGMT_1 register
+  Wire.write(0);    // set to zero (wakes up the MPU-6050)
+  Wire.endTransmission(true);
+  while (1) {
+    Wire.beginTransmission(MPU_addr);
+    Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H)
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU_addr, 14, true);
+    ahrs.read[0] = Wire.read() << 8 | Wire.read();
+    ahrs.read[1] = Wire.read() << 8 | Wire.read();
+    ahrs.read[2] = Wire.read() << 8 | Wire.read();
+    ahrs.read[15] = (Wire.read() << 8 | Wire.read()) / 340.00 + 36.53;
+    ahrs.read[3] = Wire.read() << 8 | Wire.read();
+    ahrs.read[4] = Wire.read() << 8 | Wire.read();
+    ahrs.read[5] = Wire.read() << 8 | Wire.read();
+    delay(IMUAHRS_INTERVAL);
+  }
+#endif
 }
 } // namespace module_MPU6050
 
@@ -232,11 +259,22 @@ public:
 
 protected:
   void print_data(Meridim90Union &a_meridim) {
+#if DEBUG_PRINT_IMU
+    bool skip = true;
     for (int i = 2; i < 15; i++) {
-      Serial.print(a_meridim.sval[i]);
-      Serial.print(",");
+      if (0 != a_meridim.sval[i]) {
+        skip = false;
+        break;
+      }
     }
-    Serial.println("");
+    if (!skip) {
+      for (int i = 2; i < 15; i++) {
+        Serial.print(a_meridim.sval[i]);
+        Serial.print(",");
+      }
+      Serial.println("");
+    }
+#endif
   }
 };
 
@@ -266,10 +304,11 @@ private:
 public:
   bool begin() {
     Wire.begin();
-    Wire.setClock(IMUAHRS_I2C0_SPEED);
+    // Wire.setClock(IMUAHRS_I2C0_SPEED);
     // データの取得はセンサー用スレッドで実行
     Serial.println("Core0 thread for MPU6050 start.");
-    xTaskCreatePinnedToCore(module_MPU6050::mrd_wire0_Core0_mpu6050_r, "Core0_mpu6050_r", 8 * 1024, NULL, 2, &thp, 0);
+    xTaskCreatePinnedToCore(module_MPU6050::mrd_wire0_Core0_mpu6050_r,
+                            "Core0_mpu6050_r", 8 * 1024, NULL, 2, &this->thp, 0);
     return true;
   }
   bool read(Meridim90Union &a_meridim) {
@@ -288,7 +327,7 @@ public:
     a_meridim.sval[13] = this->float2HfShort(ahrs.read[13]); // DMP_PITCH推定値
     a_meridim.sval[14] = this->float2HfShort(ahrs.read[14]); // DMP_YAW推定値
     imuahrs_available = true;
-    // this->print_data(a_meridim);
+    this->print_data(a_meridim);
     return true;
   }
 };
@@ -319,7 +358,8 @@ public:
     // データの取得はセンサー用スレッドで実行
     // I2Cスレッドの開始
     Serial.println("Core0 thread for BNO055 start.");
-    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 8 * 1024, NULL, 2, &thp, 0);
+    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r,
+                            "Core0_bno055_r", 8 * 1024, NULL, 2, &this->thp, 0);
     return true;
   }
   bool read(Meridim90Union &a_meridim) {
@@ -338,7 +378,7 @@ public:
     a_meridim.sval[13] = this->float2HfShort(ahrs.read[13]); // DMP_PITCH推定値
     a_meridim.sval[14] = this->float2HfShort(ahrs.read[14]); // DMP_YAW推定値
     imuahrs_available = true;
-    // this->print_data(a_meridim);
+    this->print_data(a_meridim);
     return true;
   }
 };

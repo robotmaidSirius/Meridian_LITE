@@ -226,7 +226,8 @@ public:
     //----------------------------------------------------------------------
     // WIIMOTE用スレッド
     //----------------------------------------------------------------------
-    xTaskCreatePinnedToCore(joypad::task_core_wiimote, "Core0_WIIMOTE_r", 8 * (1024), NULL, 5, &thp, 0);
+    xTaskCreatePinnedToCore(joypad::task_core_wiimote,
+                            "Core0_WIIMOTE_r", 8 * (1024), NULL, 5, &this->thp, 0);
     return true;
   }
 
