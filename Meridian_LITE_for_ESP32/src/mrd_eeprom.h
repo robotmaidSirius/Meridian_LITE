@@ -72,7 +72,9 @@ public:
     Serial.print("Initializing EEPROM... ");
     if (0 < this->_size) {
       result = EEPROM.begin(this->_size);
-      this->read();
+      if (result) {
+        this->read();
+      }
     }
     if (result) {
       Serial.println("OK.");

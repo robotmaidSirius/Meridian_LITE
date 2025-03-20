@@ -21,6 +21,7 @@
 #include "application/mrd_app.hpp"
 #include "mrd_bt_pad.h"
 #include "mrd_disp.h"
+#include "mrd_module/sv_ics.h"
 #include "mrd_move.h"
 #include "mrd_servo.h"
 #include "mrd_util.h"
@@ -218,8 +219,8 @@ void setup() {
   // SDカードの初期設定とチェック
   app_sd_setup();
 
-  // I2Cの初期化と開始
-  if (false == mrd_imu.begin(ahrs)) {
+  // IMUの初期化と開始
+  if (false == mrd_imu.begin()) {
     Serial.println("No IMU/AHRS sensor mounted.");
   }
 
@@ -350,7 +351,7 @@ void loop() {
   mrd_disp.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
-  mrd_imu.read(s_udp_meridim, ahrs.read);
+  mrd_imu.read(s_udp_meridim);
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
