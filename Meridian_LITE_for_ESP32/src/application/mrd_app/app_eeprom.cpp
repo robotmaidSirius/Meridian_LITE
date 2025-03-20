@@ -50,15 +50,19 @@ bool mrd_set_eeprom() {
   std::vector<short> data;
   data.resize(EEPROM_SIZE);
 
-  int servo_num = 15;
-  for (int i = 0; i < servo_num; i++) {
+  for (int i = 0; i < sv.ixl.num_max; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    data[i + (servo_num * 0)] = short(sv.ixl.mount[i] * sv.ixl.cw[i]);
-    data[i + (servo_num * 1)] = short(sv.ixr.mount[i] * sv.ixr.cw[i]);
+    data[i + (sv.ixl.num_max * 0)] = short(sv.ixl.mount[i] * sv.ixl.cw[i]);
     // 各サーボの直立デフォルト値 degree
-    data[i + (servo_num * 2)] = mrd.float2HfShort(sv.ixl.trim[i]);
-    data[i + (servo_num * 3)] = mrd.float2HfShort(sv.ixr.trim[i]);
+    data[i + (sv.ixl.num_max * 2)] = mrd.float2HfShort(sv.ixl.trim[i]);
+  }
+  for (int i = 0; i < sv.ixr.num_max; i++) {
+    // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
+    // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
+    data[i + (sv.ixr.num_max * 1)] = short(sv.ixr.mount[i] * sv.ixr.cw[i]);
+    // 各サーボの直立デフォルト値 degree
+    data[i + (sv.ixr.num_max * 3)] = mrd.float2HfShort(sv.ixr.trim[i]);
   }
 
   mrd_eeprom.print_dump(data, EEPROM_STYLE); // ダンプ表示
@@ -69,12 +73,11 @@ bool mrd_set_eeprom() {
 void mrd_get_eeprom() {
   std::vector<short> data = mrd_eeprom.read(); // EEPROMの読み込み
 
-  int servo_num = 15;
   short tmp_servo = 0;
-  for (int i = 0; i < servo_num; i++) {
+  for (int i = 0; i < sv.ixl.num_max; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    tmp_servo = data[i + (servo_num * 0)];
+    tmp_servo = data[i + (sv.ixl.num_max * 0)];
     if (tmp_servo == 0) {
       sv.ixl.mount[i] = 0;
       sv.ixl.cw[i] = 0;
@@ -85,7 +88,14 @@ void mrd_get_eeprom() {
       sv.ixl.mount[i] = tmp_servo * -1;
       sv.ixl.cw[i] = -1;
     }
-    tmp_servo = data[i + (servo_num * 1)];
+    // 各サーボの直立デフォルト値 degree
+    sv.ixl.trim[i] = mrd.HfShort2float(data[i + (sv.ixl.num_max * 2)]);
+  }
+
+  for (int i = 0; i < sv.ixr.num_max; i++) {
+    // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
+    // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
+    tmp_servo = data[i + (sv.ixr.num_max * 1)];
     if (tmp_servo == 0) {
       sv.ixr.mount[i] = 0;
       sv.ixr.cw[i] = 0;
@@ -97,7 +107,6 @@ void mrd_get_eeprom() {
       sv.ixr.cw[i] = -1;
     }
     // 各サーボの直立デフォルト値 degree
-    sv.ixl.trim[i] = mrd.HfShort2float(data[i + (servo_num * 2)]);
-    sv.ixr.trim[i] = mrd.HfShort2float(data[i + (servo_num * 3)]);
+    sv.ixr.trim[i] = mrd.HfShort2float(data[i + (sv.ixr.num_max * 3)]);
   }
 }

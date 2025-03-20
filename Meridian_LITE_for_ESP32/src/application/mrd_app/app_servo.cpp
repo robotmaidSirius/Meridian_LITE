@@ -195,11 +195,10 @@ int mrd_max_used_index(const int a_arr[], int a_size) {
 }
 
 void app_servo_setup(ServoParam &sv) {
-  sv.ixl.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
-                       mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  sv.ixr.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
-                       mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  for (int i = 0; i <= sv.ixl.num_max; i++) {                // configで設定した値を反映させる
+  sv.ixl.num_max = mrd_max_used_index(IXL_MT, IXL_MAX); // サーボ処理回数
+  sv.ixr.num_max = mrd_max_used_index(IXR_MT, IXR_MAX); // サーボ処理回数
+
+  for (int i = 0; i <= sv.ixl.num_max; i++) { // configで設定した値を反映させる
     sv.ixl.mount[i] = IXL_MT[i];
     sv.ixl.id[i] = IXL_ID[i];
     sv.ixl.cw[i] = IXL_CW[i];
@@ -214,10 +213,10 @@ void app_servo_setup(ServoParam &sv) {
 }
 
 void app_servo_err_reset(ServoParam &sv) {
-  for (int i = 0; i < IXL_MAX; i++) {
+  for (int i = 0; i < sv.ixl.num_max; i++) {
     sv.ixl.err[i] = 0;
   }
-  for (int i = 0; i < IXR_MAX; i++) {
+  for (int i = 0; i < sv.ixr.num_max; i++) {
     sv.ixr.err[i] = 0;
   }
 }
@@ -239,10 +238,13 @@ bool app_servo_all_off(Meridim90Union &a_meridim) {
 ///         100-149(L系統 0-49),200-249(R系統 0-49)
 uint8_t app_servo_make_errcode_lite(ServoParam a_sv) {
   uint8_t servo_ix_tmp = 0;
-  for (int i = 0; i < 15; i++) {
+  // TODO: エラーの出力仕方を見直す
+  for (int i = 0; i < sv.ixl.num_max; i++) {
     if (a_sv.ixl.stat[i]) {
       servo_ix_tmp = uint8_t(i + 100);
     }
+  }
+  for (int i = 0; i < sv.ixr.num_max; i++) {
     if (a_sv.ixr.stat[i]) {
       servo_ix_tmp = uint8_t(i + 200);
     }
