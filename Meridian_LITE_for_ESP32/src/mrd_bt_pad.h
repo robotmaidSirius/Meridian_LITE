@@ -309,10 +309,11 @@ public:
               pad_analog_tmp[i] = (pad_analog_tmp[i] < -127) ? -127 : pad_analog_tmp[i];
               pad_analog_tmp[i] = (pad_analog_tmp[i] > 127) ? 127 : pad_analog_tmp[i];
             }
-          } else
+          } else {
             for (int i = 0; i < 4; i++) {
               pad_analog_tmp[i] = 0;
             }
+          }
         } else {
           pad_common_tmp = button_tmp; // ボタンの変換なし生値を使用
         }
