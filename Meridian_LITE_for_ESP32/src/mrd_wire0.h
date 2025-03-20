@@ -40,9 +40,103 @@ extern AhrsValue ahrs;
 namespace meridian {
 namespace modules {
 namespace plugin {
+volatile bool imuahrs_available = true; // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
 
 namespace module_MPU6050 {
+/// @brief MPU6050センサーからデータを読み取ります.
+bool mpu6050_read(MPU6050 &a_mpu6050, AhrsValue &a_ahrs) {
+  if (a_mpu6050.dmpGetCurrentFIFOPacket(a_ahrs.fifoBuffer)) { // Get new data
+    a_mpu6050.dmpGetQuaternion(&a_ahrs.q, a_ahrs.fifoBuffer);
+    a_mpu6050.dmpGetGravity(&a_ahrs.gravity, &a_ahrs.q);
+    a_mpu6050.dmpGetYawPitchRoll(a_ahrs.ypr, &a_ahrs.q, &a_ahrs.gravity);
+
+    // acceleration values
+    a_mpu6050.dmpGetAccel(&a_ahrs.aa, a_ahrs.fifoBuffer);
+    a_ahrs.read[0] = (float)a_ahrs.aa.x;
+    a_ahrs.read[1] = (float)a_ahrs.aa.y;
+    a_ahrs.read[2] = (float)a_ahrs.aa.z;
+
+    // gyro values
+    a_mpu6050.dmpGetGyro(&a_ahrs.gyro, a_ahrs.fifoBuffer);
+    a_ahrs.read[3] = (float)a_ahrs.gyro.x;
+    a_ahrs.read[4] = (float)a_ahrs.gyro.y;
+    a_ahrs.read[5] = (float)a_ahrs.gyro.z;
+
+    // magnetic field values
+    a_ahrs.read[6] = (float)a_ahrs.mag.x;
+    a_ahrs.read[7] = (float)a_ahrs.mag.y;
+    a_ahrs.read[8] = (float)a_ahrs.mag.z;
+
+    // Estimated gravity DMP value.
+    a_ahrs.read[9] = a_ahrs.gravity.x;
+    a_ahrs.read[10] = a_ahrs.gravity.y;
+    a_ahrs.read[11] = a_ahrs.gravity.z;
+
+    // Estimated heading value using DMP.
+    a_ahrs.read[12] = a_ahrs.ypr[2] * 180 / M_PI;                       // Estimated DMP_ROLL
+    a_ahrs.read[13] = a_ahrs.ypr[1] * 180 / M_PI;                       // Estimated DMP_PITCH
+    a_ahrs.read[14] = (a_ahrs.ypr[0] * 180 / M_PI) - a_ahrs.yaw_origin; // Estimated DMP_YAW
+
+    // Temperature
+    a_ahrs.read[15] = 0; // Not implemented.
+
+    if (imuahrs_available) {
+      memcpy(a_ahrs.result, a_ahrs.read, sizeof(float) * 16);
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+/// @brief MPU6050センサーのDMP（デジタルモーションプロセッサ）を初期化し,ジャイロスコープと加速度センサーのオフセットを設定する.
+/// @param a_ahrs AHRSの値を保持する構造体.
+/// @return DMPの初期化が成功した場合はtrue, 失敗した場合はfalseを返す.
+bool mpu6050_init(MPU6050 &a_mpu6050, AhrsValue &a_ahrs) {
+  bool result = false;
+
+  // supply your own gyro offsets here, scaled for min sensitivity
+  a_mpu6050.setXAccelOffset(-1745);
+  a_mpu6050.setYAccelOffset(-1034);
+  a_mpu6050.setZAccelOffset(966);
+  a_mpu6050.setXGyroOffset(176);
+  a_mpu6050.setYGyroOffset(-6);
+  a_mpu6050.setZGyroOffset(-25);
+
+  // make sure it worked (returns 0 if so)
+  if (a_ahrs.devStatus == 0) {
+    a_mpu6050.CalibrateAccel(6);
+    a_mpu6050.CalibrateGyro(6);
+    a_mpu6050.setDMPEnabled(true);
+    a_ahrs.packetSize = a_mpu6050.dmpGetFIFOPacketSize();
+    result = true;
+  }
+  return result;
+}
 void mrd_wire0_Core0_mpu6050_r(void *args) {
+  MPU6050 mpu6050;      // MPU6050のインスタンス
+  mpu6050.initialize(); // MPU6050の初期化
+  do {
+    ahrs.devStatus = mpu6050.dmpInitialize();
+    if (0 == ahrs.devStatus) {
+      Serial.println("MPU6050 OK.");
+    } else {
+      Serial.println("IMU/AHRS DMP Initialization FAILED!");
+      delay(1000);
+    }
+  } while (!ahrs.devStatus);
+
+  while (!mpu6050.testConnection()) {
+    Serial.println("MPU6050 connection failed");
+    delay(1000);
+  }
+  while (mpu6050_init(mpu6050, ahrs)) {
+    Serial.println("MPU6050 init failed");
+    delay(1000);
+  }
+  while (1) {
+    mpu6050_read(mpu6050, ahrs);
+    delay(IMUAHRS_INTERVAL);
+  }
 }
 } // namespace module_MPU6050
 
@@ -131,13 +225,10 @@ void mrd_wire0_Core0_bno055_r(void *args) {
 }
 } // namespace module_BNO055
 
-volatile bool imuahrs_available = true; // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
-
 class IMrdModuleImu {
 public:
-  virtual bool begin(AhrsValue &a_ahrs) { return false; }
-  virtual bool read(AhrsValue &a_ahrs) { return true; }
-  virtual bool read(Meridim90Union &a_meridim, float a_ahrs_result[]) { return true; }
+  virtual bool begin() { return false; }
+  virtual bool read(Meridim90Union &a_meridim) { return true; }
 
 protected:
   void print_data(Meridim90Union &a_meridim) {
@@ -148,37 +239,12 @@ protected:
     Serial.println("");
   }
 };
+
 class MrdImuMPU6050 : public IMrdModuleImu {
 private:
-  MPU6050 _mpu6050; // MPU6050のインスタンス
-  /// @brief MPU6050センサーのDMP（デジタルモーションプロセッサ）を初期化し,ャイロスコープと加速度センサーのオフセットを設定する.
-  /// @param a_ahrs AHRSの値を保持する構造体.
-  /// @return DMPの初期化が成功した場合はtrue, 失敗した場合はfalseを返す.
-  bool init_mpu6050_dmp(AhrsValue &a_ahrs) {
-    this->_mpu6050.initialize();
-    a_ahrs.devStatus = this->_mpu6050.dmpInitialize();
+  // システム用の変数
+  TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
 
-    // supply your own gyro offsets here, scaled for min sensitivity
-    this->_mpu6050.setXAccelOffset(-1745);
-    this->_mpu6050.setYAccelOffset(-1034);
-    this->_mpu6050.setZAccelOffset(966);
-    this->_mpu6050.setXGyroOffset(176);
-    this->_mpu6050.setYGyroOffset(-6);
-    this->_mpu6050.setZGyroOffset(-25);
-
-    // make sure it worked (returns 0 if so)
-    if (a_ahrs.devStatus == 0) {
-      this->_mpu6050.CalibrateAccel(6);
-      this->_mpu6050.CalibrateGyro(6);
-      this->_mpu6050.setDMPEnabled(true);
-      a_ahrs.packetSize = this->_mpu6050.dmpGetFIFOPacketSize();
-      Serial.println("MPU6050 OK.");
-      return true;
-    } else {
-      Serial.println("IMU/AHRS DMP Initialization FAILED!");
-      return false;
-    }
-  }
   /**
    * @brief Evaluate checksum of Meridim.
    *
@@ -198,75 +264,29 @@ private:
   }
 
 public:
-  bool begin(AhrsValue &a_ahrs) {
+  bool begin() {
     Wire.begin();
     Wire.setClock(IMUAHRS_I2C0_SPEED);
-    while (!this->_mpu6050.testConnection()) {
-      Serial.println("MPU6050 connection failed");
-      delay(1000);
-    }
-    return this->init_mpu6050_dmp(a_ahrs);
+    // データの取得はセンサー用スレッドで実行
+    Serial.println("Core0 thread for MPU6050 start.");
+    xTaskCreatePinnedToCore(module_MPU6050::mrd_wire0_Core0_mpu6050_r, "Core0_mpu6050_r", 8 * 1024, NULL, 2, &thp, 0);
+    return true;
   }
-  /// @brief MPU6050センサーからデータを読み取ります.
-  bool read(AhrsValue &a_ahrs) {
-    if (this->_mpu6050.dmpGetCurrentFIFOPacket(a_ahrs.fifoBuffer)) { // Get new data
-      this->_mpu6050.dmpGetQuaternion(&a_ahrs.q, a_ahrs.fifoBuffer);
-      this->_mpu6050.dmpGetGravity(&a_ahrs.gravity, &a_ahrs.q);
-      this->_mpu6050.dmpGetYawPitchRoll(a_ahrs.ypr, &a_ahrs.q, &a_ahrs.gravity);
-
-      // acceleration values
-      this->_mpu6050.dmpGetAccel(&a_ahrs.aa, a_ahrs.fifoBuffer);
-      a_ahrs.read[0] = (float)a_ahrs.aa.x;
-      a_ahrs.read[1] = (float)a_ahrs.aa.y;
-      a_ahrs.read[2] = (float)a_ahrs.aa.z;
-
-      // gyro values
-      this->_mpu6050.dmpGetGyro(&a_ahrs.gyro, a_ahrs.fifoBuffer);
-      a_ahrs.read[3] = (float)a_ahrs.gyro.x;
-      a_ahrs.read[4] = (float)a_ahrs.gyro.y;
-      a_ahrs.read[5] = (float)a_ahrs.gyro.z;
-
-      // magnetic field values
-      a_ahrs.read[6] = (float)a_ahrs.mag.x;
-      a_ahrs.read[7] = (float)a_ahrs.mag.y;
-      a_ahrs.read[8] = (float)a_ahrs.mag.z;
-
-      // Estimated gravity DMP value.
-      a_ahrs.read[9] = a_ahrs.gravity.x;
-      a_ahrs.read[10] = a_ahrs.gravity.y;
-      a_ahrs.read[11] = a_ahrs.gravity.z;
-
-      // Estimated heading value using DMP.
-      a_ahrs.read[12] = a_ahrs.ypr[2] * 180 / M_PI;                       // Estimated DMP_ROLL
-      a_ahrs.read[13] = a_ahrs.ypr[1] * 180 / M_PI;                       // Estimated DMP_PITCH
-      a_ahrs.read[14] = (a_ahrs.ypr[0] * 180 / M_PI) - a_ahrs.yaw_origin; // Estimated DMP_YAW
-
-      // Temperature
-      a_ahrs.read[15] = 0; // Not implemented.
-
-      if (imuahrs_available) {
-        memcpy(a_ahrs.result, a_ahrs.read, sizeof(float) * 16);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-  bool read(Meridim90Union &a_meridim, float a_ahrs_result[]) {
+  bool read(Meridim90Union &a_meridim) {
     imuahrs_available = false;
-    a_meridim.sval[2] = this->float2HfShort(a_ahrs_result[0]);   // IMU/AHRS_acc_x
-    a_meridim.sval[3] = this->float2HfShort(a_ahrs_result[1]);   // IMU/AHRS_acc_y
-    a_meridim.sval[4] = this->float2HfShort(a_ahrs_result[2]);   // IMU/AHRS_acc_z
-    a_meridim.sval[5] = this->float2HfShort(a_ahrs_result[3]);   // IMU/AHRS_gyro_x
-    a_meridim.sval[6] = this->float2HfShort(a_ahrs_result[4]);   // IMU/AHRS_gyro_y
-    a_meridim.sval[7] = this->float2HfShort(a_ahrs_result[5]);   // IMU/AHRS_gyro_z
-    a_meridim.sval[8] = this->float2HfShort(a_ahrs_result[6]);   // IMU/AHRS_mag_x
-    a_meridim.sval[9] = this->float2HfShort(a_ahrs_result[7]);   // IMU/AHRS_mag_y
-    a_meridim.sval[10] = this->float2HfShort(a_ahrs_result[8]);  // IMU/AHRS_mag_z
-    a_meridim.sval[11] = this->float2HfShort(a_ahrs_result[15]); // temperature
-    a_meridim.sval[12] = this->float2HfShort(a_ahrs_result[12]); // DMP_ROLL推定値
-    a_meridim.sval[13] = this->float2HfShort(a_ahrs_result[13]); // DMP_PITCH推定値
-    a_meridim.sval[14] = this->float2HfShort(a_ahrs_result[14]); // DMP_YAW推定値
+    a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
+    a_meridim.sval[3] = this->float2HfShort(ahrs.read[1]);   // IMU/AHRS_acc_y
+    a_meridim.sval[4] = this->float2HfShort(ahrs.read[2]);   // IMU/AHRS_acc_z
+    a_meridim.sval[5] = this->float2HfShort(ahrs.read[3]);   // IMU/AHRS_gyro_x
+    a_meridim.sval[6] = this->float2HfShort(ahrs.read[4]);   // IMU/AHRS_gyro_y
+    a_meridim.sval[7] = this->float2HfShort(ahrs.read[5]);   // IMU/AHRS_gyro_z
+    a_meridim.sval[8] = this->float2HfShort(ahrs.read[6]);   // IMU/AHRS_mag_x
+    a_meridim.sval[9] = this->float2HfShort(ahrs.read[7]);   // IMU/AHRS_mag_y
+    a_meridim.sval[10] = this->float2HfShort(ahrs.read[8]);  // IMU/AHRS_mag_z
+    a_meridim.sval[11] = this->float2HfShort(ahrs.read[15]); // temperature
+    a_meridim.sval[12] = this->float2HfShort(ahrs.read[12]); // DMP_ROLL推定値
+    a_meridim.sval[13] = this->float2HfShort(ahrs.read[13]); // DMP_PITCH推定値
+    a_meridim.sval[14] = this->float2HfShort(ahrs.read[14]); // DMP_YAW推定値
     imuahrs_available = true;
     // this->print_data(a_meridim);
     return true;
@@ -276,18 +296,6 @@ class MrdImuBNO055 : public IMrdModuleImu {
 private:
   // システム用の変数
   TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
-  /// @brief BNO055センサーの初期化を試みます.
-  /// @param a_ahrs AHRSの値を保持する構造体.
-  /// @return BNO055センサーの初期化が成功した場合はtrue, それ以外の場合はfalseを返す.
-  ///         現在, この関数は常にfalseを返すように設定されています.
-  bool init_bno055(AhrsValue &a_ahrs) {
-    // データの取得はセンサー用スレッドで実行
-    // I2Cスレッドの開始
-    Serial.println("Core0 thread for BNO055 start.");
-    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 8 * 1024, NULL, 2, &thp, 0);
-    delay(10);
-    return true;
-  }
   /**
    * @brief Evaluate checksum of Meridim.
    *
@@ -307,28 +315,28 @@ private:
   }
 
 public:
-  bool begin(AhrsValue &a_ahrs) {
-    return this->init_bno055(a_ahrs);
-  }
-  /// @brief BNO055センサーからデータを読み取ります.
-  bool read(AhrsValue &a_ahrs) {
+  bool begin() {
+    // データの取得はセンサー用スレッドで実行
+    // I2Cスレッドの開始
+    Serial.println("Core0 thread for BNO055 start.");
+    xTaskCreatePinnedToCore(module_BNO055::mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 8 * 1024, NULL, 2, &thp, 0);
     return true;
   }
-  bool read(Meridim90Union &a_meridim, float a_ahrs_result[]) {
+  bool read(Meridim90Union &a_meridim) {
     imuahrs_available = false;
-    a_meridim.sval[2] = this->float2HfShort(a_ahrs_result[0]);   // IMU/AHRS_acc_x
-    a_meridim.sval[3] = this->float2HfShort(a_ahrs_result[1]);   // IMU/AHRS_acc_y
-    a_meridim.sval[4] = this->float2HfShort(a_ahrs_result[2]);   // IMU/AHRS_acc_z
-    a_meridim.sval[5] = this->float2HfShort(a_ahrs_result[3]);   // IMU/AHRS_gyro_x
-    a_meridim.sval[6] = this->float2HfShort(a_ahrs_result[4]);   // IMU/AHRS_gyro_y
-    a_meridim.sval[7] = this->float2HfShort(a_ahrs_result[5]);   // IMU/AHRS_gyro_z
-    a_meridim.sval[8] = this->float2HfShort(a_ahrs_result[6]);   // IMU/AHRS_mag_x
-    a_meridim.sval[9] = this->float2HfShort(a_ahrs_result[7]);   // IMU/AHRS_mag_y
-    a_meridim.sval[10] = this->float2HfShort(a_ahrs_result[8]);  // IMU/AHRS_mag_z
-    a_meridim.sval[11] = this->float2HfShort(a_ahrs_result[15]); // temperature
-    a_meridim.sval[12] = this->float2HfShort(a_ahrs_result[12]); // DMP_ROLL推定値
-    a_meridim.sval[13] = this->float2HfShort(a_ahrs_result[13]); // DMP_PITCH推定値
-    a_meridim.sval[14] = this->float2HfShort(a_ahrs_result[14]); // DMP_YAW推定値
+    a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
+    a_meridim.sval[3] = this->float2HfShort(ahrs.read[1]);   // IMU/AHRS_acc_y
+    a_meridim.sval[4] = this->float2HfShort(ahrs.read[2]);   // IMU/AHRS_acc_z
+    a_meridim.sval[5] = this->float2HfShort(ahrs.read[3]);   // IMU/AHRS_gyro_x
+    a_meridim.sval[6] = this->float2HfShort(ahrs.read[4]);   // IMU/AHRS_gyro_y
+    a_meridim.sval[7] = this->float2HfShort(ahrs.read[5]);   // IMU/AHRS_gyro_z
+    a_meridim.sval[8] = this->float2HfShort(ahrs.read[6]);   // IMU/AHRS_mag_x
+    a_meridim.sval[9] = this->float2HfShort(ahrs.read[7]);   // IMU/AHRS_mag_y
+    a_meridim.sval[10] = this->float2HfShort(ahrs.read[8]);  // IMU/AHRS_mag_z
+    a_meridim.sval[11] = this->float2HfShort(ahrs.read[15]); // temperature
+    a_meridim.sval[12] = this->float2HfShort(ahrs.read[12]); // DMP_ROLL推定値
+    a_meridim.sval[13] = this->float2HfShort(ahrs.read[13]); // DMP_PITCH推定値
+    a_meridim.sval[14] = this->float2HfShort(ahrs.read[14]); // DMP_YAW推定値
     imuahrs_available = true;
     // this->print_data(a_meridim);
     return true;
