@@ -101,9 +101,7 @@ public:
 
   /// @brief 指定されたサーボにコマンドを分配する.
   /// @param a_meridim サーボの動作パラメータを含むMeridim配列.
-  /// @param a_L_type L系統のサーボタイプ.
-  /// @param a_R_type R系統のサーボタイプ.
-  /// @param a_sv サーボパラメータの構造体.
+  /// @param a_sv_data サーボパラメータの構造体.
   /// @return サーボの駆動が成功した場合はtrueを, 失敗した場合はfalseを返す.
   bool drive_lite(Meridim90Union &a_meridim, ServoParam::ServoData &a_sv_data) {
     for (int i = 0; i < a_sv_data.num_max; i++) {

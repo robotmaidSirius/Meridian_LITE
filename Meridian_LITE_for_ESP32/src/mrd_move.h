@@ -18,7 +18,7 @@ namespace app {
 /// @brief モーション初期化のためのスタブ関数. 現在は何も行わず, 常にfalseを返す.
 /// @param a_meridim モーションデータを保持するMeridim配列.
 /// @return 常にfalseを返す.
-static bool mrd_move_init(Meridim90Union a_meridim) { return false; }
+bool mrd_move_init(Meridim90Union a_meridim) { return false; }
 
 //------------------------------------------------------------------------------------
 //  各種オペレーション

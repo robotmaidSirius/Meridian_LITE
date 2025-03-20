@@ -30,4 +30,4 @@ void mrd_timer_clear();
 } // namespace meridian
 using namespace meridian::core::execution;
 
-#endif
+#endif // __MERIDIAN_CORE_FOR_ARDUINO_HPP__

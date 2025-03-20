@@ -26,6 +26,4 @@ enum ImuAhrsType {
 } // namespace modules
 } // namespace meridian
 
-using namespace meridian::modules::plugin;
-
-#endif
+#endif // __MERIDIAN_MODULE_IMU_H__

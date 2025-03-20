@@ -202,11 +202,11 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  if (mrd_servo_l.begin()) {                                                 // サーボモータの通信初期設定. Serial2
+  if (mrd_servo_l.begin()) {
     mrd_disp.servo_protocol(MrdMsgHandler::UartLine::L, SERVO_MOUNT_TYPE_L); // サーボプロトコルの表示
   }
-  if (mrd_servo_r.begin()) { // サーボモータの通信初期設定. Serial3
-    mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R);
+  if (mrd_servo_r.begin()) {
+    mrd_disp.servo_protocol(MrdMsgHandler::UartLine::R, SERVO_MOUNT_TYPE_R); // サーボプロトコルの表示
   }
 
   // マウントされたサーボIDの表示

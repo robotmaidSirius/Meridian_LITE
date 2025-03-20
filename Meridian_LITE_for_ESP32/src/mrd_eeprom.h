@@ -162,7 +162,6 @@ public:
     return true;
   }
 
-#if 0
   //------------------------------------------------------------------------------------
   //  各種オペレーション
   //------------------------------------------------------------------------------------
@@ -183,7 +182,6 @@ public:
   int8_t read_byte(int index_y, int index_x, int low_high) {
     return int8_t(EEPROM.read(index_y * 180 + index_x * 2 + low_high));
   }
-#endif
 };
 
 } // namespace plugin

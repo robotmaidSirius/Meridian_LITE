@@ -1,6 +1,7 @@
 #ifndef __MERIDIAN_WIRE0_H__
 #define __MERIDIAN_WIRE0_H__
 
+// ヘッダファイルの読み込み
 #include "config.h"
 
 // ライブラリ導入

@@ -10,7 +10,7 @@ namespace app {
 
 /// @brief スタブ関数.
 /// @return 常にfalseを返す.
-static bool mrd_ik_x() {
+bool mrd_ik_x() {
   return false;
 }
 
