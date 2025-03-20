@@ -80,6 +80,7 @@ struct MrdMonitor {
   bool servo_err = MONITOR_ERR_SERVO; // サーボエラーを表示
   bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
   bool pad = MONITOR_PAD;             // リモコンのデータを表示
+  bool network = MONITOR_NETWORK;     // ネットワークの状態を表示
 };
 // フラグ用変数
 struct MrdFlags {
@@ -288,7 +289,9 @@ void loop() {
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= NETWORK_UDP_TIMEOUT) {
         if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
-          Serial.printf("UDP timeout[%d]\n", mrdsq.s_increment);
+          if (monitor.network) {
+            Serial.printf("UDP timeout[%d]\n", mrdsq.s_increment);
+          }
         }
         flg.udp_rcvd = false;
         break;
