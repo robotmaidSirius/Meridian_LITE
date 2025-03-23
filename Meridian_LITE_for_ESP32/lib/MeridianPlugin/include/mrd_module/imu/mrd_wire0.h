@@ -153,7 +153,7 @@ void mrd_wire0_Core0_mpu6050_r(void *args) {
     Wire.beginTransmission(MPU_addr);
     Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H)
     Wire.endTransmission(false);
-    Wire.requestFrom(MPU_addr, 14, true);
+    Wire.requestFrom(MPU_addr, 14, 1);
     ahrs.read[0] = Wire.read() << 8 | Wire.read();
     ahrs.read[1] = Wire.read() << 8 | Wire.read();
     ahrs.read[2] = Wire.read() << 8 | Wire.read();
@@ -311,6 +311,10 @@ public:
                             "Core0_mpu6050_r", 8 * 1024, NULL, 2, &this->thp, 0);
     return true;
   }
+
+  /// @brief 指定されたIMU/AHRSタイプに基づいて, 計測したAHRSデータを読み込む.
+  /// @param a_meridim Meridim配列の共用体. 参照渡し.
+  /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
   bool read(Meridim90Union &a_meridim) {
     imuahrs_available = false;
     a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
@@ -362,6 +366,9 @@ public:
                             "Core0_bno055_r", 8 * 1024, NULL, 2, &this->thp, 0);
     return true;
   }
+  /// @brief 指定されたIMU/AHRSタイプに基づいて, 計測したAHRSデータを読み込む.
+  /// @param a_meridim Meridim配列の共用体. 参照渡し.
+  /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
   bool read(Meridim90Union &a_meridim) {
     imuahrs_available = false;
     a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x

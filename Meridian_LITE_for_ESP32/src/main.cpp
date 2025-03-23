@@ -10,23 +10,17 @@
 /// This code is licensed under the MIT License.
 /// Copyright (c) 2022 Izumi Ninagawa & Project Meridian
 
-//==================================================================================================
-//  初期設定
-//==================================================================================================
-
 // ヘッダファイルの読み込み
 #include "config.h"
 #include "keys.h"
 
 #include "application/mrd_app.hpp"
-#include "mrd_execution/conversation/mrd_wifi.h"
-#include "mrd_execution/diagnostic/mrd_disp.h"
+#include "mrd_communication/conversation/mrd_wifi.h"
+#include "mrd_communication/diagnostic/mrd_disp.h"
 #include "mrd_execution/mrd_util.h"
 #include "mrd_module/imu/mrd_wire0.h"
 #include "mrd_module/joypad/mrd_bt_pad.h"
-#include "mrd_module/servo/mrd_servo.h"
 #include "mrd_module/servo/sv_ics.h"
-#include <Meridim90.hpp>
 #include <meridian_core_for_arduino.hpp>
 
 // ライブラリ導入
@@ -120,7 +114,6 @@ TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 MrdFlags flg;
 MrdSq mrdsq;
 MrdTimer tmr;
-MrdErr err;
 PadUnion pad_array = {0}; // pad値の格納用配列
 PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
 PadValue pad_analog;
@@ -312,7 +305,7 @@ void loop() {
   } else { // チェックサムがNGならバッファから転記せず前回のデータを使用する
     // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
     mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
-    err.pc_esp++;
+    mrd_disp.Err.esp_pc++;
     mrd_disp.monitor_check_flow("CsErr*", monitor.flow); // デバグ用フロー表示
   }
 
@@ -334,7 +327,7 @@ void loop() {
     // エラービット10番[ESP受信のスキップ検出]をアゲる
     mrd_setBit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_10_UDP_ESP_SKIP);
 
-    err.esp_skip++;
+    mrd_disp.Err.esp_skip++;
     flg.meridim_rcvd = false; // Meridim受信成功フラグをサゲる.
   }
 
@@ -442,7 +435,7 @@ void loop() {
 
   // @[10-1] エラーリポートの表示
   // mrd_msg_all_err(err, monitor.all_err);
-  mrd_disp.all_err(MONITOR_ERR_ALL, err);
+  mrd_disp.all_err(MONITOR_ERR_ALL);
 
   //------------------------------------------------------------------------------------
   //  [ 11 ] UDP送信信号作成

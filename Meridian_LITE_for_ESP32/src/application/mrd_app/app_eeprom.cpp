@@ -13,8 +13,8 @@
 meridian::modules::plugin::MrdFsEEPROM mrd_eeprom(EEPROM_SIZE);
 
 void app_eeprom_setup() {
-  if (mrd_eeprom.init()) {              // EEPROMの初期化
-    mrd_eeprom.protect(EEPROM_PROTECT); // EEPROMの書き込み保護の設定を行う
+  if (mrd_eeprom.init(EEPROM_PROTECT)) { // EEPROMの初期化
+    // mrd_eeprom.protect(EEPROM_PROTECT); // EEPROMの書き込み保護の設定を行う
     ///////////////////////////////////////////////
     // Boot時のEEPROMダンプ表示
     ///////////////////////////////////////////////

@@ -1,8 +1,8 @@
 /**
  * @file Meridim90.hpp
- * @brief Meridim90の定義を記述する.
+ * @brief Meridianで定義されているMeridim90型
  * @version 1.2.0
- * @date 2025-03-03
+ * @date 2025-01-17
  *
  * @copyright Copyright (c) 2025
  *
@@ -89,6 +89,16 @@ typedef union {
 #define MCMD_EEPROM_LOAD_TRIM       10102  // EEPROMのトリム値をサーボに反映する
 #define MCMD_NAK                    32766  // コマンド実行の失敗を応答
 #define MCMD_ACK                    32767  // コマンド実行の成功を応答
+
+// エラービット MRD_ERR_CODEの上位8bit分
+#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
+#define ERRBIT_14_PC_ESP       14 // PC → ESP32 のUDP受信エラー
+#define ERRBIT_13_ESP_TSY      13 // ESP32 → TeensyのSPI受信エラー
+#define ERRBIT_12_TSY_ESP      12 // Teensy → ESP32 のSPI受信エラー
+#define ERRBIT_11_BOARD_DELAY  11 // Teensy or ESP32の処理ディレイ (末端で捕捉)
+#define ERRBIT_10_UDP_ESP_SKIP 10 // PC → ESP32 のUDPフレームスキップエラー
+#define ERRBIT_9_BOARD_SKIP    9  // PC → ESP32 → Teensy のフレームスキップエラー(末端で捕捉)
+#define ERRBIT_8_PC_SKIP       8  // Teensy → ESP32 → PC のフレームスキップエラー(末端で捕捉)
 
 //-------------------------------------------------------------------------
 //  Meridim90 配列アクセス対応キー
@@ -187,15 +197,5 @@ typedef union {
 #define MRD_USERDATA_87 87 // ユーザー定義用
 // #define MRD_ERR         88 // エラーコード (MRDM_LEN - 2)
 // #define MRD_CKSM        89 // チェックサム (MRDM_LEN - 1)
-
-// エラービット MRD_ERR_CODEの上位8bit分
-#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
-#define ERRBIT_14_PC_ESP       14 // PC → ESP32 のUDP受信エラー
-#define ERRBIT_13_ESP_TSY      13 // ESP32 → TeensyのSPI受信エラー
-#define ERRBIT_12_TSY_ESP      12 // Teensy → ESP32 のSPI受信エラー
-#define ERRBIT_11_BOARD_DELAY  11 // Teensy or ESP32の処理ディレイ (末端で捕捉)
-#define ERRBIT_10_UDP_ESP_SKIP 10 // PC → ESP32 のUDPフレームスキップエラー
-#define ERRBIT_9_BOARD_SKIP    9  // PC → ESP32 → Teensy のフレームスキップエラー(末端で捕捉)
-#define ERRBIT_8_PC_SKIP       8  // Teensy → ESP32 → PC のフレームスキップエラー(末端で捕捉)
 
 #endif // __MERIDIM90_HPP__

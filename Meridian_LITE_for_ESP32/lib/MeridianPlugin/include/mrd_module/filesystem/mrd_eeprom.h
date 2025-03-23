@@ -50,7 +50,7 @@ public:
     this->_initialed = false;
     if (0 < a_size) {
       this->_size = a_size * 2;
-      data.resize(this->_size);
+      this->data.resize(this->_size);
       this->_read_data.resize(this->_size);
     }
   }
@@ -61,13 +61,16 @@ public:
   }
 
 public:
+  /// @brief EEPROMのプロテクト状態を設定する.
+  /// @param a_protect EEPROMの書き込み許可があるかどうか
   void protect(bool a_protect) {
     this->_protected = a_protect;
   }
 
   /// @brief EEPROMの初期化
+  /// @param a_protect EEPROMの書き込み許可があるかどうか
   /// @return 初期化が成功すればtrue, 失敗ならfalseを返す.
-  bool init() {
+  bool init(bool a_protect = true) {
     bool result = false;
     Serial.print("Initializing EEPROM... ");
     if (0 < this->_size) {
@@ -82,7 +85,7 @@ public:
       Serial.println("Failed.");
     }
     this->_initialed = result;
-    this->_protected = true;
+    this->_protected = a_protect;
     return result;
   }
 
@@ -99,7 +102,7 @@ public:
   /// @return EEPROMの書き込みと読み込みが成功した場合はtrueを, 書き込まなかった場合はfalseを返す.
   bool write(std::vector<short> a_write_data) {
     bool result = false;
-    if (!this->_initialed) { // EEPROM書き込み実施フラグをチェック
+    if (!this->_initialed) { // EEPROMの初期化フラグをチェック
       Serial.println("EEPROM is NOT initialized.");
       return false;
     } else if (this->_protected) { // EEPROM書き込み実施フラグをチェック

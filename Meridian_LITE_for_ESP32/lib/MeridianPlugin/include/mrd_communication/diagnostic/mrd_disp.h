@@ -7,18 +7,6 @@
 // ライブラリ導入
 #include <WiFi.h>
 
-// エラーカウント用
-struct MrdErr {
-  int esp_pc = 0;   // PCの受信エラー（ESP32からのUDP）
-  int pc_esp = 0;   // ESP32の受信エラー（PCからのUDP）
-  int esp_tsy = 0;  // Teensyの受信エラー（ESP32からのSPI）
-  int tsy_esp = 0;  // ESP32の受信エラー（TeensyからのSPI）
-  int esp_skip = 0; // UDP→ESP受信のカウントの連番スキップ回数
-  int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
-  int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
-};
-extern MrdErr err;
-
 namespace meridian {
 namespace core {
 namespace communication {
@@ -29,21 +17,22 @@ namespace communication {
 
 class MrdMsgHandler {
 public:
+  // エラーカウント用
+  struct ErrorCount {
+    int esp_pc = 0;   // PCの受信エラー（ESP32からのUDP）
+    int pc_esp = 0;   // ESP32の受信エラー（PCからのUDP）
+    int esp_tsy = 0;  // Teensyの受信エラー（ESP32からのSPI）
+    int tsy_esp = 0;  // ESP32の受信エラー（TeensyからのSPI）
+    int esp_skip = 0; // UDP→ESP受信のカウントの連番スキップ回数
+    int tsy_skip = 0; // ESP→Teensy受信のカウントの連番スキップ回数
+    int pc_skip = 0;  // PC受信のカウントの連番スキップ回数
+  };
   enum UartLine { // サーボ系統の列挙型(L,R,C)
     L,            // Left
     R,            // Right
     C             // Center
   };
-  enum PadType {   // リモコン種の列挙型(NONE, PC, MERIMOTE, BLUERETRO, SBDBT, KRR5FH)
-    NONE = 0,      // リモコンなし
-    PC = 0,        // PCからのPD入力情報を使用
-    MERIMOTE = 1,  // MERIMOTE(未導入)
-    BLUERETRO = 2, // BLUERETRO(未導入)
-    SBDBT = 3,     // SBDBT(未導入)
-    KRR5FH = 4,    // KRR5FH
-    WIIMOTE = 5,   // WIIMOTE / WIIMOTE + Nunchuk
-    WIIMOTE_C = 6, // WIIMOTE+Classic
-  };
+  ErrorCount Err;
 
 private:
   Stream &m_serial; // シリアルオブジェクトの参照を保持
@@ -268,22 +257,22 @@ public:
   /// @param mrd_disp_all_err モニタリング表示のオンオフ.
   /// @param a_err エラーデータの入った構造体.
   /// @return エラーメッセージを表示した場合はtrueを, 表示しなかった場合はfalseを返す.
-  bool all_err(bool mrd_disp_all_err, MrdErr a_err) {
+  bool all_err(bool mrd_disp_all_err) {
     if (mrd_disp_all_err) {
       m_serial.print("[ERR] es>pc:");
-      m_serial.print(a_err.esp_pc);
+      m_serial.print(this->Err.esp_pc);
       m_serial.print(" pc>es:");
-      m_serial.print(a_err.pc_esp);
+      m_serial.print(this->Err.pc_esp);
       m_serial.print(" es>ts:");
-      m_serial.print(a_err.esp_tsy);
+      m_serial.print(this->Err.esp_tsy);
       m_serial.print(" ts>es:");
-      m_serial.print(a_err.esp_tsy);
+      m_serial.print(this->Err.esp_tsy);
       m_serial.print(" tsSkp:");
-      m_serial.print(a_err.tsy_skip);
+      m_serial.print(this->Err.tsy_skip);
       m_serial.print(" esSkp:");
-      m_serial.print(a_err.esp_skip);
+      m_serial.print(this->Err.esp_skip);
       m_serial.print(" pcSkp:");
-      m_serial.print(a_err.pc_skip);
+      m_serial.print(this->Err.pc_skip);
       m_serial.println();
       return true;
     }

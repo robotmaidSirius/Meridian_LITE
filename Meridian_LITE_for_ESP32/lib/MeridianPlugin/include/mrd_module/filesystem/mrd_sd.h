@@ -10,8 +10,8 @@ namespace plugin {
 
 class MrdFsSdCard {
 private:
-  int _chipselect_pin;     // SDカードのチップ選択ピン番号
-  bool _initialed = false; // 初期化済みフラグ
+  int _chipselect_pin = -1; // SDカードのチップ選択ピン番号
+  bool _initialed = false;  // 初期化済みフラグ
 
 public:
   MrdFsSdCard(int a_chipselect_pin) {
@@ -30,8 +30,10 @@ public:
   ///         失敗またはSDカードがマウントされていない場合はfalseを返す.
   bool init() {
     this->_initialed = false;
-    if (SD.begin(this->_chipselect_pin)) {
-      this->_initialed = true;
+    if (0 <= this->_chipselect_pin) {
+      if (SD.begin(this->_chipselect_pin)) {
+        this->_initialed = true;
+      }
     }
     return this->_initialed;
   }
