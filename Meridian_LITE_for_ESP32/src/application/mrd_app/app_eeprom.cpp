@@ -8,7 +8,7 @@
  *
  */
 #include "application/mrd_app.hpp"
-#include "mrd_eeprom.h"
+#include "mrd_module/filesystem/mrd_eeprom.h"
 
 meridian::modules::plugin::MrdFsEEPROM mrd_eeprom(EEPROM_SIZE);
 

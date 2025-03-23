@@ -19,14 +19,13 @@
 #include "keys.h"
 
 #include "application/mrd_app.hpp"
-#include "mrd_bt_pad.h"
-#include "mrd_disp.h"
-#include "mrd_module/sv_ics.h"
-#include "mrd_move.h"
-#include "mrd_servo.h"
-#include "mrd_util.h"
-#include "mrd_wifi.h"
-#include "mrd_wire0.h"
+#include "mrd_execution/conversation/mrd_wifi.h"
+#include "mrd_execution/diagnostic/mrd_disp.h"
+#include "mrd_execution/mrd_util.h"
+#include "mrd_module/imu/mrd_wire0.h"
+#include "mrd_module/joypad/mrd_bt_pad.h"
+#include "mrd_module/servo/mrd_servo.h"
+#include "mrd_module/servo/sv_ics.h"
 #include <Meridim90.hpp>
 #include <meridian_core_for_arduino.hpp>
 
@@ -38,7 +37,6 @@ using namespace meridian::core::execution;
 using namespace meridian::core::communication;
 using namespace meridian::modules::config;
 using namespace meridian::modules::plugin;
-using namespace meridian::app;
 
 MrdConversation mrd_wifi(WIFI_SEND_IP, UDP_SEND_PORT, UDP_RESV_PORT);
 #if defined(MODULE_IMU_BNO055)

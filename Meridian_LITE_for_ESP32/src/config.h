@@ -1,8 +1,9 @@
 #ifndef __MERIDIAN_CONFIG__
 #define __MERIDIAN_CONFIG__
 
+#include "mrd_module/joypad/joypad_common.hpp"
 #include <mrd_module/imu/mrd_module_imu.hpp>
-#include <mrd_module/sv_common.hpp>
+#include <mrd_module/servo/sv_common.hpp>
 
 namespace meridian {
 namespace core {

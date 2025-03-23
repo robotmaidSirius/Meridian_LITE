@@ -1,10 +1,12 @@
 #ifndef __MERIDIAN_SERVO_KONDO_ICS_H__
 #define __MERIDIAN_SERVO_KONDO_ICS_H__
 
+// ヘッダファイルの読み込み
+#include "sv_common.hpp" // サーボ用定義
+
 // ライブラリ導入
 #include "gs2d_krs.h"
-#include <IcsHardSerialClass.h>     // ICSサーボのインスタンス設定
-#include <mrd_module/sv_common.hpp> // サーボ用定義
+#include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 
 namespace meridian {
 namespace modules {

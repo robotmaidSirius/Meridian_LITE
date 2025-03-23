@@ -8,7 +8,7 @@
  *
  */
 #include "application/mrd_app.hpp"
-#include "mrd_sd.h"
+#include "mrd_module/filesystem/mrd_sd.h"
 
 meridian::modules::plugin::MrdFsSdCard mrd_sd(PIN_CHIPSELECT_SD);
 

@@ -1,25 +1,27 @@
-#ifndef __MERIDIAN_SERVO_FEETECH_H__
-#define __MERIDIAN_SERVO_FEETECH_H__
+#ifndef __MERIDIAN_SERVO_DYNAMIXEL_H__
+#define __MERIDIAN_SERVO_DYNAMIXEL_H__
+
+// ヘッダファイルの読み込み
+#include "sv_common.hpp" // サーボ用定義
 
 // ライブラリ導入
-#include <Meridim90.hpp>            // Meridim90のライブラリ導入
-#include <mrd_module/sv_common.hpp> // サーボ用定義
+#include <Meridim90.hpp> // Meridim90のライブラリ導入
 
 namespace meridian {
 namespace modules {
 namespace plugin {
 
-class MrdServoFeeTechTTL {
+class MrdServoDynamixel20 {
 public:
 };
 
 //==================================================================================================
-//  FEETECH TTLサーボ関連の処理  --------------------------------------------------------------------
+//  DYNAMIXELサーボ関連の処理  ----------------------------------------------------------------------
 //==================================================================================================
 
 /// @brief スタブ関数.
 /// @return 常にfalseを返す.
-bool mrd_servo_ftc_x() {
+bool mrd_servo_dxl20_x() {
   return false;
 }
 
@@ -27,4 +29,4 @@ bool mrd_servo_ftc_x() {
 } // namespace modules
 } // namespace meridian
 
-#endif // __MERIDIAN_SERVO_FUTABA_RSxTTL_H__
+#endif // __MERIDIAN_SERVO_DYNAMIXEL_H__

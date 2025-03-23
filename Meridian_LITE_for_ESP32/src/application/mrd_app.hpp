@@ -14,9 +14,9 @@
 #include "config.h"
 
 // ライブラリ導入
-#include <Meridian.h>               // Meridianのライブラリ導入
-#include <Meridim90.hpp>            // Meridim90のライブラリ導入
-#include <mrd_module/sv_common.hpp> // サーボ用定義
+#include <Meridian.h>                     // Meridianのライブラリ導入
+#include <Meridim90.hpp>                  // Meridim90のライブラリ導入
+#include <mrd_module/servo/sv_common.hpp> // サーボ用定義
 
 extern MERIDIANFLOW::Meridian mrd;
 extern ServoParam sv;
