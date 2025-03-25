@@ -32,7 +32,7 @@ using namespace meridian::core::communication;
 using namespace meridian::modules::config;
 using namespace meridian::modules::plugin;
 
-MrdConversation mrd_wifi(WIFI_SEND_IP, UDP_SEND_PORT, UDP_RESV_PORT);
+MrdConversation mrd_wifi(NETWORK_WIFI_SEND_IP, NETWORK_UDP_SEND_PORT, NETWORK_UDP_RESV_PORT);
 #if defined(MODULE_IMU_BNO055)
 MrdImuBNO055 mrd_imu;
 #elif defined(MODULE_IMU_MPU6050)
@@ -217,12 +217,12 @@ void setup() {
   }
 
   // WiFiの初期化と開始
-  mrd_disp.esp_wifi(WIFI_AP_SSID);
-  if (mrd_wifi.init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
+  mrd_disp.esp_wifi(NETWORK_WIFI_AP_SSID);
+  if (mrd_wifi.init(NETWORK_WIFI_AP_SSID, NETWORK_WIFI_AP_PASS, Serial)) {
     mrd_wifi.enable_send(NETWORK_UDP_SEND);
     mrd_wifi.enable_receive(NETWORK_UDP_RECEIVE);
     // wifiIPの表示
-    mrd_disp.esp_ip(NETWORK_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
+    mrd_disp.esp_ip(NETWORK_FIXED_IP, NETWORK_WIFI_SEND_IP, NETWORK_FIXED_IP_ADDR);
   }
 
   // コントロールパッドの種類を表示

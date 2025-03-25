@@ -206,10 +206,10 @@ public:
   void esp_ip(bool a_flg_fixed_ip, const char *a_ssid, const char *a_fixedip) {
     m_serial.println("WiFi successfully connected."); // WiFi接続完了通知
     m_serial.println("PC's IP address target => " +
-                     String(WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
+                     String(NETWORK_WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
 
     if (a_flg_fixed_ip) {
-      m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) +
+      m_serial.println("ESP32's IP address => " + String(NETWORK_FIXED_IP_ADDR) +
                        " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
       m_serial.print("ESP32's IP address => "); // ESP32自身のIPアドレスの表示
