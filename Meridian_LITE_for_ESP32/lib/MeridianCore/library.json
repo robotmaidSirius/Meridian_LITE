@@ -4,6 +4,9 @@
     "description": "Meridian Core",
     "keywords": "Meridian",
     "license": "MIT",
+    "authors": {
+        "url": "https://ninagawa123.github.io/Meridian_info"
+    },
     "dependencies": {
         "ninagawa123/Meridian": "^0.1.0"
     },

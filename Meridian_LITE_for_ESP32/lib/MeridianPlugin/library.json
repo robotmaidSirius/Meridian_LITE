@@ -4,6 +4,9 @@
     "description": "Meridian Plugin",
     "keywords": "Meridian",
     "license": "MIT",
+    "authors": {
+        "url": "https://ninagawa123.github.io/Meridian_info"
+    },
     "dependencies": {
         "Meridian_Core": "*",
         "ESP32Wiimote": "*",
