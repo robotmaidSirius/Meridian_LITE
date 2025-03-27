@@ -46,7 +46,7 @@ private:
   std::vector<short> _read_data; // EEPROM書き込み用
 
 public:
-  MrdFsEEPROM(size_t a_size) {
+  explicit MrdFsEEPROM(size_t a_size) {
     this->_initialed = false;
     if (0 < a_size) {
       this->_size = a_size * 2;
@@ -74,7 +74,16 @@ public:
     bool result = false;
     Serial.print("Initializing EEPROM... ");
     if (0 < this->_size) {
+
+#if defined(ARDUINO_TEENSY40)
+      EEPROM.begin();
+      result = true;
+#elif defined(ARDUINO_RASPBERRY_PI_PICO)
+      EEPROM.begin(this->_size);
+      result = true;
+#else
       result = EEPROM.begin(this->_size);
+#endif
       if (result) {
         this->read();
       }
@@ -92,8 +101,9 @@ public:
   /// @brief EEPROMの内容を読み込んで返す.
   /// @return UnionEEPROM のフォーマットで配列を返す.
   std::vector<short> read() {
-    for (int i = 0; i < this->_read_data.size(); i++) {
-      this->_read_data[i] = EEPROM.readShort(i * 2);
+    int data_size = this->_read_data.size();
+    for (int i = 0; i < data_size; i++) {
+      this->_read_data[i] = this->readShort(i * 2);
     }
     return this->_read_data;
   }
@@ -114,24 +124,28 @@ public:
       short old_value_tmp; // EEPROMにすでに書き込んであるデータ
       int update_cnt = 0;
       uint16_t eeprom_length = EEPROM.length();
-      for (int i = 0; i < a_write_data.size() && i < eeprom_length; i++) { // データを書き込む時はbyte型
-        if (i >= eeprom_length) {                                          // EEPROMのサイズを超えないようチェック
-          Serial.println("Error: EEPROM address out of range.");
-          return false;
-        }
+      int data_size = a_write_data.size();
+      for (int i = 0; i < data_size && i < eeprom_length; i++) { // データを書き込む時はbyte型
         // 書き込みデータがEEPROM内のデータと違う場合のみ書き込みをセット
-        old_value_tmp = EEPROM.readShort(i * 2);
+        old_value_tmp = this->readShort(i * 2);
         if (old_value_tmp != a_write_data.at(i)) {
-          EEPROM.writeShort(i * 2, a_write_data.at(i));
+          this->writeShort(i * 2, a_write_data.at(i));
           update_cnt++;
           Serial.printf("  EEPROM[%04X] != WRITE[%04X]\n", old_value_tmp, a_write_data.at(i));
         }
       }
-      if (0 < update_cnt) {    // 変更箇所があれば書き込みを実施
-        if (EEPROM.commit()) { // 書き込みを確定する
+      if (0 < update_cnt) { // 変更箇所があれば書き込みを実施
+#if defined(ARDUINO_TEENSY40)
+        result = true;
+#elif defined(ARDUINO_RASPBERRY_PI_PICO)
+        EEPROM.commit();
+        result = true;
+#else
+        result = EEPROM.commit();
+#endif
+        if (result) { // 書き込みを確定する
           this->read();
           Serial.printf("Value updated : Number of overwrites[%d]\n", update_cnt);
-          result = true;
         } else {
           Serial.println("Error: EEPROM commit failed.");
         }
@@ -148,7 +162,8 @@ public:
   bool print_dump(std::vector<short> a_data, Hexadecimal a_bhd = Hexadecimal::Hex) {
     int len_tmp = EEPROM.length(); // EEPROMの長さ
     Serial.printf("# EEPROM Length %d byte, %d bit Dump;\n", len_tmp, a_bhd);
-    for (int i = 0; i < a_data.size(); i++) { // 読み込むデータはshort型で作成
+    int data_size = a_data.size();
+    for (int i = 0; i < data_size; i++) { // 読み込むデータはshort型で作成
       if (a_bhd == Hexadecimal::Hex) {
         Serial.printf("0x%04X", a_data.at(i) & 0xFFFF);
       } else {
@@ -172,11 +187,22 @@ public:
   //------------------------------------------------------------------------------------
 
   /// @brief EEPROMから任意のshort型データを読み込む.
-  /// @param index_y 配列の一次元目(0~2).
-  /// @param index_x 配列の二次元目(0~89).
+  /// @param index 配列の一次元目(0~2).
   /// @return short型データを返す.
-  short read_short(int index_y, int index_x) {
-    return short(EEPROM.read(index_y * 90 + index_x));
+  short readShort(int index) {
+#if defined(ARDUINO_ESP32_DEV)
+    return EEPROM.readShort(index);
+#else
+    return short((EEPROM.read(index) & 0xFF) | (EEPROM.read(index + 1) & 0xFF) << 8);
+#endif
+  }
+  void writeShort(int index, short value) {
+#if defined(ARDUINO_ESP32_DEV)
+    EEPROM.writeShort(index, value);
+#else
+    EEPROM.write(index, byte(value & 0xFF));
+    EEPROM.write(index + 1, byte((value >> 8) & 0xFF));
+#endif
   }
 
   /// @brief EEPROMから任意のbyte型データを読み込む.

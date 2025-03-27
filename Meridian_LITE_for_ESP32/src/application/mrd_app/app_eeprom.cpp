@@ -73,11 +73,10 @@ bool mrd_set_eeprom() {
 void mrd_get_eeprom() {
   std::vector<short> data = mrd_eeprom.read(); // EEPROMの読み込み
 
-  short tmp_servo = 0;
   for (int i = 0; i < sv.ixl.num_max; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    tmp_servo = data[i + (sv.ixl.num_max * 0)];
+    short tmp_servo = data[i + (sv.ixl.num_max * 0)];
     if (tmp_servo == 0) {
       sv.ixl.mount[i] = 0;
       sv.ixl.cw[i] = 0;
@@ -95,7 +94,7 @@ void mrd_get_eeprom() {
   for (int i = 0; i < sv.ixr.num_max; i++) {
     // 各サーボのマウントありなし（0:サーボなし, +:サーボあり順転, -:サーボあり逆転）
     // 例: IXL_MT[20] = -21; → FUTABA_RSxTTLサーボを逆転設定でマウント
-    tmp_servo = data[i + (sv.ixr.num_max * 1)];
+    short tmp_servo = data[i + (sv.ixr.num_max * 1)];
     if (tmp_servo == 0) {
       sv.ixr.mount[i] = 0;
       sv.ixr.cw[i] = 0;

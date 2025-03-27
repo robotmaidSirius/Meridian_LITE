@@ -36,7 +36,7 @@ public:
   /// @param a_pass Wifiアクセスポイントのパスワード.
   /// @param a_serial 出力先シリアルの指定.
   /// @return 初期化に成功した場合はtrueを, 失敗した場合はfalseを返す.
-  bool init(const char *a_ssid, const char *a_pass, HardwareSerial &a_serial) {
+  bool init(const char *a_ssid, const char *a_pass) {
     WiFi.disconnect(true, true); // 新しい接続のためにWiFi接続をリセット
     delay(100);
     WiFi.begin(a_ssid, a_pass); // Wifiに接続
@@ -44,15 +44,15 @@ public:
     while (WiFi.status() != WL_CONNECTED) { // https://www.arduino.cc/en/Reference/WiFiStatus 戻り値一覧
       i++;
       if (i % 10 == 0) { // 0.5秒ごとに接続状況を出力
-        a_serial.print(".");
+        Serial.print(".");
       }
       delay(50);     // 接続が完了するまでループで待つ
       if (i > 200) { // 10秒でタイムアウト
-        a_serial.println("Wifi init TIMEOUT.");
+        Serial.println("Wifi init TIMEOUT.");
         return false;
       }
     }
-    a_serial.println(".");
+    Serial.println(".");
     if (1 == this->_udp.begin(this->_receive_port)) {
       // Successful
       this->_initialized = true;

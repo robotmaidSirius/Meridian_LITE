@@ -302,7 +302,8 @@ private:
   }
 
 public:
-  bool begin() {
+  MrdImuMPU6050() {}
+  bool begin() override {
     Wire.begin();
     // Wire.setClock(IMUAHRS_I2C0_SPEED);
     // データの取得はセンサー用スレッドで実行
@@ -315,7 +316,7 @@ public:
   /// @brief 指定されたIMU/AHRSタイプに基づいて, 計測したAHRSデータを読み込む.
   /// @param a_meridim Meridim配列の共用体. 参照渡し.
   /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
-  bool read(Meridim90Union &a_meridim) {
+  bool read(Meridim90Union &a_meridim) override {
     imuahrs_available = false;
     a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
     a_meridim.sval[3] = this->float2HfShort(ahrs.read[1]);   // IMU/AHRS_acc_y
@@ -339,6 +340,7 @@ class MrdImuBNO055 : public IMrdModuleImu {
 private:
   // システム用の変数
   TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
+
   /**
    * @brief Evaluate checksum of Meridim.
    *
@@ -358,7 +360,8 @@ private:
   }
 
 public:
-  bool begin() {
+  MrdImuBNO055() {}
+  bool begin() override {
     // データの取得はセンサー用スレッドで実行
     // I2Cスレッドの開始
     Serial.println("Core0 thread for BNO055 start.");
@@ -369,7 +372,7 @@ public:
   /// @brief 指定されたIMU/AHRSタイプに基づいて, 計測したAHRSデータを読み込む.
   /// @param a_meridim Meridim配列の共用体. 参照渡し.
   /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
-  bool read(Meridim90Union &a_meridim) {
+  bool read(Meridim90Union &a_meridim) override {
     imuahrs_available = false;
     a_meridim.sval[2] = this->float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
     a_meridim.sval[3] = this->float2HfShort(ahrs.read[1]);   // IMU/AHRS_acc_y

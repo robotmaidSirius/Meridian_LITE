@@ -72,8 +72,8 @@ constexpr unsigned short PAD_TABLE_WIIMOTE_ORIG[16] = {
 /// @note ESP32Wiimoteインスタンス wiimote, 定数PAD_GENERALIZE を関数内で使用.
 uint64_t mrd_bt_read_wiimote(ESP32Wiimote &a_wiimote) {
   static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
-  static int calib_l1x = 0;
-  static int calib_l1y = 0;
+  static int calibration_l1x = 0;
+  static int calibration_l1y = 0;
 
   // 受信データの問い合わせ
   a_wiimote.task();
@@ -115,13 +115,13 @@ uint64_t mrd_bt_read_wiimote(ESP32Wiimote &a_wiimote) {
     }
 
     if (rcvd_button_tmp & BUTTON_HOME) { // ホームボタンでスティックのキャリブレーション
-      calib_l1x = nunchuk_tmp.xStick - 127;
-      calib_l1y = nunchuk_tmp.yStick - 127;
+      calibration_l1x = nunchuk_tmp.xStick - 127;
+      calibration_l1y = nunchuk_tmp.yStick - 127;
     }
 
     // ヌンチャクの値を組み入れ
-    new_pad_tmp[1] = ((nunchuk_tmp.xStick - calib_l1x - 127) * 256 //
-                      + (nunchuk_tmp.yStick - calib_l1y - 127));
+    new_pad_tmp[1] = ((nunchuk_tmp.xStick - calibration_l1x - 127) * 256 //
+                      + (nunchuk_tmp.yStick - calibration_l1y - 127));
 
     // データの組み立て
     uint64_t new_val_tmp = 0; // 戻り値格納用
@@ -211,6 +211,7 @@ private:
   // システム用の変数
   TaskHandle_t thp; // マルチスレッドのタスクハンドル格納用
 public:
+  MrdJoypadWiimote() {}
   bool begin() {
     //----------------------------------------------------------------------
     // WIIMOTE用スレッド

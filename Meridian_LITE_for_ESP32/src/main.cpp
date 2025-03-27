@@ -147,7 +147,12 @@ bool mrd_wire0_init_i2c(TwoWire &a_wire, int a_i2c0_speed, int a_pinSDA = -1, in
   if (a_pinSDA == -1 && a_pinSCL == -1) {
     // do nothing
   } else {
+#if defined(ARDUINO_ESP32_DEV)
     a_wire.setPins(a_pinSDA, a_pinSCL);
+#else
+    a_wire.setSDA(a_pinSDA);
+    a_wire.setSCL(a_pinSCL);
+#endif
   }
   a_wire.setClock(a_i2c0_speed);
   return true;
@@ -218,7 +223,7 @@ void setup() {
 
   // WiFiの初期化と開始
   mrd_disp.esp_wifi(NETWORK_WIFI_AP_SSID);
-  if (mrd_wifi.init(NETWORK_WIFI_AP_SSID, NETWORK_WIFI_AP_PASS, Serial)) {
+  if (mrd_wifi.init(NETWORK_WIFI_AP_SSID, NETWORK_WIFI_AP_PASS)) {
     mrd_wifi.enable_send(NETWORK_UDP_SEND);
     mrd_wifi.enable_receive(NETWORK_UDP_RECEIVE);
     // wifiIPの表示

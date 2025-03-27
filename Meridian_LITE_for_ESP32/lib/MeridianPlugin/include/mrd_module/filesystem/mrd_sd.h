@@ -14,7 +14,7 @@ private:
   bool _initialed = false;  // 初期化済みフラグ
 
 public:
-  MrdFsSdCard(int a_chipselect_pin) {
+  explicit MrdFsSdCard(int a_chipselect_pin) {
     this->_chipselect_pin = a_chipselect_pin;
     this->_initialed = false;
   }

@@ -39,7 +39,7 @@ private:
 
 public:
   // コンストラクタでStreamオブジェクトを受け取り, メンバーに保存
-  MrdMsgHandler(Stream &a_serial) : m_serial(a_serial) {}
+  explicit MrdMsgHandler(Stream &a_serial) : m_serial(a_serial) {}
 
   //------------------------------------------------------------------------------------
   //  起動時メッセージ
@@ -95,7 +95,7 @@ public:
   /// @param a_max サーボの最大数.
   /// @param a_mount サーボのマウント状態を示す配列.
   /// @param a_id サーボIDの配列.
-  void print_servo_ids(const char *a_label, int a_max, int *a_mount, const int *a_id) {
+  void print_servo_ids(const char *a_label, int a_max, const int *a_mount, const int *a_id) {
     m_serial.print(a_label);
     for (int i = 0; i <= a_max; i++) {
       if (a_mount[i] != 0) {
