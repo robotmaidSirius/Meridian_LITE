@@ -1,0 +1,22 @@
+{
+    "name": "Meridian_Plugin",
+    "version": "1.2.0",
+    "description": "Meridian Plugin",
+    "keywords": "Meridian",
+    "license": "MIT",
+    "dependencies": {
+        "Meridian_Core": "*",
+        "ESP32Wiimote": "*",
+        "IcsClass_V210": "*",
+        "gs2d": "*",
+        "adafruit/Adafruit BNO055": "^1.5.3",
+        "electroniccats/MPU6050": "^0.5.0"
+    },
+    "examples": [],
+    "build": {
+        "flags": []
+    },
+    "export": {
+        "exclude": []
+    }
+}
