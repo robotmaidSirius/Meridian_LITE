@@ -1,6 +1,6 @@
 /**
  * @file Meridim90.hpp
- * @brief Meridianで定義されているMeridim90型
+ * @brief Meridianで定義されているMeridim90を定義する
  * @version 1.2.0
  * @date 2025-01-17
  *
@@ -11,6 +11,10 @@
 #define __MERIDIM90_HPP__
 
 #include <stdint.h>
+
+namespace meridian {
+namespace core {
+namespace meridim {
 
 //==================================================================================================
 //  Meridim90配列 一覧表
@@ -197,5 +201,11 @@ typedef union {
 #define MRD_USERDATA_87 87 // ユーザー定義用
 // #define MRD_ERR         88 // エラーコード (MRDM_LEN - 2)
 // #define MRD_CKSM        89 // チェックサム (MRDM_LEN - 1)
+
+} // namespace meridim
+} // namespace core
+} // namespace meridian
+
+using namespace meridian::core::meridim;
 
 #endif // __MERIDIM90_HPP__
