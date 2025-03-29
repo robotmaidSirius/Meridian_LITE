@@ -129,11 +129,11 @@ public:
   /// @return 列挙型の内容に応じて文字列"L","R","C"返す.
   const char *mrd_get_line_name(UartLine a_line) {
     switch (a_line) {
-    case L:
+    case UartLine::L:
       return "L";
-    case R:
+    case UartLine::R:
       return "R";
-    case C:
+    case UartLine::C:
       return "C";
     default:
       return "Unknown";
@@ -147,7 +147,7 @@ public:
   bool servo_protocol(UartLine a_line, int a_servo_type) {
     if (a_servo_type > 0) {
       m_serial.print("Set UART_");
-      m_serial.print(mrd_get_line_name(a_line));
+      m_serial.print(this->mrd_get_line_name(a_line));
       m_serial.print(" protocol : ");
 
       switch (a_servo_type) {
@@ -220,6 +220,7 @@ public:
   /// @brief マウント設定したジョイパッドのタイプをシリアルモニタに出力する.
   /// @param a_mount_pad パッドの定義(PC,MERIMOTE,BLUERETRO,SBDBT,KRR5FH,WIIMOTE)
   void mounted_pad(int a_mount_pad) {
+#if 1
     m_serial.print("Pad Receiver mounted : ");
     switch (a_mount_pad) {
     case WIIMOTE:
@@ -241,6 +242,13 @@ public:
       m_serial.println("None (PC).");
       break;
     }
+#else
+    if (NULL != plugin_joypad) {
+      m_serial.printf("Pad Receiver mounted : %d", plugin_joypad->get_name());
+    } else {
+      m_serial.println("Pad Receiver mounted : None");
+    }
+#endif
   }
 
   /// @brief システムの動作開始を示すメッセージを出力する.
@@ -287,15 +295,15 @@ public:
   bool servo_err(UartLine a_line, int a_num, bool a_flg_disp) {
     if (a_flg_disp) {
       m_serial.print("Found servo err ");
-      if (a_line == L) {
+      if (a_line == UartLine::L) {
         m_serial.print("L_");
         m_serial.println(a_num);
         return true;
-      } else if (a_line == R) {
+      } else if (a_line == UartLine::R) {
         m_serial.print("R_");
         m_serial.println(a_num);
         return true;
-      } else if (a_line == C) {
+      } else if (a_line == UartLine::C) {
         m_serial.print("C_");
         m_serial.println(a_num);
         return true;

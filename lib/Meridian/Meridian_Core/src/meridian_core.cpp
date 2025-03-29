@@ -9,6 +9,7 @@
  */
 #include "meridian_core.hpp"
 
+MERIDIANFLOW::Meridian mrd;
 Meridim90Union mrd_meridim;
 
 //------------------------------------------------------------------------------------
@@ -20,12 +21,10 @@ Meridim90Union mrd_meridim;
 /// @return 常にtrueを返す.
 bool mrd_checksum(Meridim90Union &a_meridim, int len) {
   int a_cksm = 0;
-#if 0
   for (int i = 0; i < len - 1; i++) {
     a_cksm += int(a_meridim.sval[i]);
   }
   a_meridim.sval[len - 1] = short(~a_cksm);
-#endif
   return true;
 }
 
@@ -78,7 +77,6 @@ static bool flg_timer_started = false; // タイマーが開始されたかど�
 /// @param a_limit タイムアウトまでの時間(ms)
 /// @return タイムアウトでtrueを返す.
 bool mrd_timeout_check(unsigned long a_limit) {
-#if 0
   // タイマーが開始されていない場合は現在の時間を記録してタイマーを開始
   if (!flg_timer_started) {
     timeout_start = millis();
@@ -91,7 +89,6 @@ bool mrd_timeout_check(unsigned long a_limit) {
     flg_timer_started = false;                   // タイムアウト監視開始フラグをサゲる
     return true;                                 // 指定された時間が経過していれば true を返す
   }
-#endif
   return false; // まだ時間が経過していなければ false を返す
 }
 

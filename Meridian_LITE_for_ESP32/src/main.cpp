@@ -456,7 +456,7 @@ void loop() {
 
   // @[11-3] チェックサムを計算して格納
   // s_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(s_udp_meridim.sval, MRDM_LEN);
-  mrd_meriput90_cksm(s_udp_meridim);
+  mrd_checksum(s_udp_meridim);
 
   //------------------------------------------------------------------------------------
   //   [ 12 ] フレーム終端処理

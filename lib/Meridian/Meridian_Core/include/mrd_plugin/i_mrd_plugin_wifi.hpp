@@ -20,6 +20,7 @@ public:
 
   virtual bool send(Meridim90Union &a_meridim) = 0;
   virtual bool received(Meridim90Union &a_meridim) = 0;
+  bool refresh(Meridim90Union &a_meridim) override { return false; };
 };
 
 #endif // I_MRD_PLUGIN_WIFI_HPP

@@ -20,11 +20,11 @@ public:
   IcsHardSerialClass *ics_R;
 
 public:
-  MrdServoKondoICS_3_5(HardwareSerial &serial_left, HardwareSerial &serial_right) {
+  MrdServoKondoIcs35(HardwareSerial &serial_left, HardwareSerial &serial_right) {
     this->ics_L = new IcsHardSerialClass(&serial_left, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
     this->ics_R = new IcsHardSerialClass(&serial_right, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
   }
-  ~MrdServoKondoICS_3_5() {}
+  ~MrdServoKondoIcs35() {}
 
 public:
   const char *get_name() { return "ICS3.5(KONDO)"; };

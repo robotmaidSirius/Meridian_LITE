@@ -29,6 +29,10 @@ public:
 
 public:
   bool setup() override { return true; }
+  bool refresh(Meridim90Union &a_meridim) override {
+    return false;
+  }
+
   /// @brief wifiを初期化する.
   /// @param a_ssid WifiアクセスポイントのSSID.
   /// @param a_pass Wifiアクセスポイントのパスワード.
@@ -43,8 +47,12 @@ public:
     int i = 0;
     while (false == this->isConnected()) {
       i++;
+      if (i % 10 == 0) { // 0.5秒ごとに接続状況を出力
+        Serial.print(".");
+      }
       delay(LOOP_WAIT_MS);   // 接続が完了するまでループで待つ
       if (i > LOOP_MAX_MS) { // タイムアウト
+        Serial.println("Wifi init TIMEOUT.");
         return false;
       }
     }
@@ -59,12 +67,22 @@ public:
     return WiFi.status() == WL_CONNECTED;
   }
 
+  /// @brief 第一引数のMeridim配列のデータをUDP経由でWIFI_SEND_IP, UDP_SEND_PORTに送信する.
+  /// @param a_meridim バイト型のMeridim配列
+  /// @return 送信完了時にtrueを返す.
+  /// ※WIFI_SEND_IP, UDP_SEND_PORTを関数内で使用.
   bool send(Meridim90Union &a_meridim) override {
     this->_udp.beginPacket(WIFI_SEND_IP, UDP_SEND_PORT); // UDPパケットの開始
     this->_udp.write(a_meridim.bval, MRDM_BYTE);         // データの書き込み
     this->_udp.endPacket();                              // UDPパケットの終了
     return true;
   }
+
+  /// @brief 第一引数のMeridim配列にUDP経由でデータを受信, 格納する.
+  /// @param a_meridim_bval バイト型のMeridim配列
+  /// @param a_len バイト型のMeridim配列の長さ
+  /// @param a_udp 使用するWiFiUDPのインスタンス
+  /// @return 受信した場合はtrueを, 受信しなかった場合はfalseを返す.
   bool received(Meridim90Union &a_meridim) override {
     if (this->_udp.parsePacket() >= MRDM_BYTE) // データの受信バッファ確認
     {

@@ -11,13 +11,15 @@
 #define MERIDIAN_CORE_HPP
 
 #include "Meridim90.hpp"
+#include <Meridian.h> // Meridianのライブラリ導入
 
+extern MERIDIANFLOW::Meridian mrd;
 extern Meridim90Union mrd_meridim;
 
 /// @brief meridim配列のチェックサムを算出して[len-1]に書き込む.
 /// @param a_meridim Meridim配列の共用体. 参照渡し.
 /// @return 常にtrueを返す.
-bool mrd_checksum(Meridim90Union &a_meridim, int len = MERIDIM90_LEN);
+bool mrd_checksum(Meridim90Union &a_meridim, int len = MRDM_LEN);
 
 /// @brief 配列の中で0以外が入っている最大のIndexを求める.
 /// @param a_arr 配列

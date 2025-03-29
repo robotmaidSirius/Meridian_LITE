@@ -18,6 +18,8 @@ public:
 
   virtual bool write(int a_id, int value) = 0;
   virtual int read(int a_id) = 0;
+
+  virtual bool is_enabled() { return false; }
 };
 
 #endif // I_MRD_PLUGIN_SERVO_HPP

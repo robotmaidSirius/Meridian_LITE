@@ -13,107 +13,127 @@
 // ライブラリ導入
 #include "mrd_plugin/i_mrd_plugin_ahrs.hpp"
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
+#include <meridian_core.hpp>
 
-class MrdImuMPU6050 : public I_Meridian_AHRS<float, float, float> {
+#define PIN_I2C0_SDA     22 // I2CのSDAピン
+#define PIN_I2C0_SCL     21 // I2CのSCLピン
+#define IMUAHRS_INTERVAL 10 // IMU/AHRSのセンサの読み取り間隔(ms)
+
+class MrdImuMPU6050 : public I_Meridian_AHRS {
 private:
-  MPU6050 mpu6050;   // MPU6050のインスタンス
-  uint8_t devStatus; // return status after each device operation (0 = success, !0 = error)
+  MPU6050 mpu6050; // MPU6050のインスタンス
   bool _available = false;
-  uint16_t _packetSize;   // expected DMP packet size (default is 42 bytes)
   uint8_t fifoBuffer[64]; // FIFO storage buffer
-  Quaternion q;           // [w, x, y, z]         quaternion container
-  VectorFloat gravity;    // [x, y, z]            gravity vector
-  float ypr[3];           // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
-  VectorInt16 aa;         // [x, y, z]            加速度センサの測定値
-  VectorInt16 gyro;       // [x, y, z]            角速度センサの測定値
-  VectorInt16 mag;        // [x, y, z]            磁力センサの測定値
 
-  VectorInt16 gyro_origin; // [x, y, z]            角速度センサの測定値
-  float yaw_origin;        // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
-public:
-  TaskHandle_t pvCreatedTask;
+  Quaternion quaternion_container; // [w, x, y, z]         quaternion container
+  VectorFloat gravity;             // [x, y, z]            gravity vector
+  VectorInt16 aa;                  // [x, y, z]            加速度センサの測定値
+  VectorInt16 gyro;                // [x, y, z]            角速度センサの測定値
+  VectorInt16 mag;                 // [x, y, z]            磁力センサの測定値
+  float mpu_result[16];            // 加工後の最新のmpuデータ（二次データ）
+  float ypr[3];                    // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
 
 public:
   MrdImuMPU6050() {
-    this->_available = false;
-    this->gyro_origin.x = 0;
-    this->gyro_origin.y = 0;
-    this->gyro_origin.z = 0;
-    this->yaw_origin = 0;
   }
   ~MrdImuMPU6050() {
   }
 
+  bool refresh(Meridim90Union &a_meridim) override {
+    mrd_wire0_read_ahrs_i2c(this->_available);
+    return true;
+  }
   bool setup() override {
     this->_available = false;
-    /// @brief MPU6050 センサーのDMP（デジタルモーションプロセッサ）を初期化し,
-    ///        ジャイロスコープと加速度センサーのオフセットを設定する.
-    /// @param a_ahrs AHRSの値を保持する構造体.
-    /// @return DMPの初期化が成功した場合はtrue, 失敗した場合はfalseを返す.
-    this->mpu6050.initialize();
-    this->devStatus = this->mpu6050.dmpInitialize();
-    // supply your own gyro offsets here, scaled for min sensitivity
-    this->mpu6050.setXAccelOffset(-1745);
-    this->mpu6050.setYAccelOffset(-1034);
-    this->mpu6050.setZAccelOffset(966);
-    this->mpu6050.setXGyroOffset(176);
-    this->mpu6050.setYGyroOffset(-6);
-    this->mpu6050.setZGyroOffset(-25);
-    // make sure it worked (returns 0 if so)
-    if (0 == this->devStatus) {
+    int a_i2c0_speed;
+    int a_pinSDA = PIN_I2C0_SDA;
+    int a_pinSCL = PIN_I2C0_SCL;
 
-      this->mpu6050.CalibrateAccel(6);
-      this->mpu6050.CalibrateGyro(6);
-      this->mpu6050.setDMPEnabled(true);
-      this->_packetSize = this->mpu6050.dmpGetFIFOPacketSize();
+    mpu6050.initialize();
+    ahrs.devStatus = mpu6050.dmpInitialize();
+
+    // supply your own gyro offsets here, scaled for min sensitivity
+    mpu6050.setXAccelOffset(-1745);
+    mpu6050.setYAccelOffset(-1034);
+    mpu6050.setZAccelOffset(966);
+    mpu6050.setXGyroOffset(176);
+    mpu6050.setYGyroOffset(-6);
+    mpu6050.setZGyroOffset(-25);
+
+    // make sure it worked (returns 0 if so)
+    if (ahrs.devStatus == 0) {
+      mpu6050.CalibrateAccel(6);
+      mpu6050.CalibrateGyro(6);
+      mpu6050.setDMPEnabled(true);
+      ahrs.packetSize = mpu6050.dmpGetFIFOPacketSize();
       this->_available = true;
     }
     return this->_available;
   }
-
-  bool reset() override {
-    this->gyro_origin.x = this->gyro.x;
-    this->gyro_origin.y = this->gyro.y;
-    this->gyro_origin.z = this->gyro.z;
+  bool begin() override {
     return true;
   }
 
-  bool refresh(Meridim90Union &a_meridim) override {
-    if (this->_available) {
-      if (this->mpu6050.dmpGetCurrentFIFOPacket(this->fifoBuffer)) { // Get new data
-        this->mpu6050.dmpGetQuaternion(&this->q, this->fifoBuffer);
-        this->mpu6050.dmpGetGravity(&this->gravity, &this->q);
-        this->mpu6050.dmpGetYawPitchRoll(this->ypr, &this->q, &this->gravity);
+  bool reset() { return true; };
 
-        // acceleration values
-        this->mpu6050.dmpGetAccel(&this->aa, this->fifoBuffer);
-        a_meridim.sval[2] = (float)this->aa.x; // IMU/AHRS_acc_x
-        a_meridim.sval[3] = (float)this->aa.y; // IMU/AHRS_acc_y
-        a_meridim.sval[4] = (float)this->aa.z; // IMU/AHRS_acc_z
+  //================================================================================================================
+  //  I2C wire0 関連の処理
+  //================================================================================================================
 
-        // gyro values
-        this->mpu6050.dmpGetGyro(&this->gyro, this->fifoBuffer);
-        a_meridim.sval[5] = (float)(this->gyro.x - this->gyro_origin.x); // IMU/AHRS_gyro_x
-        a_meridim.sval[6] = (float)(this->gyro.y - this->gyro_origin.y); // IMU/AHRS_gyro_y
-        a_meridim.sval[7] = (float)(this->gyro.z - this->gyro_origin.z); // IMU/AHRS_gyro_z
+  //------------------------------------------------------------------------------------
+  //  初期設定
+  //------------------------------------------------------------------------------------
 
-        // magnetic field values
-        a_meridim.sval[8] = 0;  // IMU/AHRS_mag_x
-        a_meridim.sval[9] = 0;  // IMU/AHRS_mag_y
-        a_meridim.sval[10] = 0; // IMU/AHRS_mag_z
+  //------------------------------------------------------------------------------------
+  //  センサデータの取得処理
+  //------------------------------------------------------------------------------------
 
-        // Estimated heading value using DMP.
+  /// @brief AHRSセンサーからI2C経由でデータを読み取る関数.
+  /// MPU6050, MPU9250を想定していますが, MPU9250は未実装.
+  /// 各データは`ahrs.read`配列に格納され, 利用可能な場合は`ahrs.result`にコピーされる.
+  bool mrd_wire0_read_ahrs_i2c(bool imuahrs_available) { // ※wireTimer0.beginの引数のためvoid必須
+    if (mpu6050.dmpGetCurrentFIFOPacket(fifoBuffer)) {   // Get new data
+      mpu6050.dmpGetQuaternion(&quaternion_container, fifoBuffer);
+      mpu6050.dmpGetGravity(&gravity, &quaternion_container);
+      mpu6050.dmpGetYawPitchRoll(ypr, &quaternion_container, &gravity);
 
-        a_meridim.sval[12] = ((this->ypr[2] * 180) / M_PI);                    // Estimated DMP_ROLL
-        a_meridim.sval[13] = ((this->ypr[1] * 180) / M_PI);                    // Estimated DMP_PITCH
-        a_meridim.sval[14] = ((this->ypr[0] * 180 / M_PI) - this->yaw_origin); // Estimated DMP_YAW
+      // acceleration values
+      mpu6050.dmpGetAccel(&aa, fifoBuffer);
+      ahrs.read[0] = (float)aa.x;
+      ahrs.read[1] = (float)aa.y;
+      ahrs.read[2] = (float)aa.z;
 
-        // Temperature
-        a_meridim.sval[11] = 0; // Not implemented.
-        return true;
+      // gyro values
+      mpu6050.dmpGetGyro(&gyro, fifoBuffer);
+      ahrs.read[3] = (float)gyro.x;
+      ahrs.read[4] = (float)gyro.y;
+      ahrs.read[5] = (float)gyro.z;
+
+      // magnetic field values
+      ahrs.read[6] = (float)mag.x;
+      ahrs.read[7] = (float)mag.y;
+      ahrs.read[8] = (float)mag.z;
+
+      // Estimated gravity DMP value.
+      ahrs.read[9] = gravity.x;
+      ahrs.read[10] = gravity.y;
+      ahrs.read[11] = gravity.z;
+
+      // Estimated heading value using DMP.
+      ahrs.read[12] = ypr[2] * 180 / M_PI;                     // Estimated DMP_ROLL
+      ahrs.read[13] = ypr[1] * 180 / M_PI;                     // Estimated DMP_PITCH
+      ahrs.read[14] = (ypr[0] * 180 / M_PI) - ahrs.yaw_origin; // Estimated DMP_YAW
+
+      // Temperature
+      ahrs.read[15] = 0; // Not implemented.
+
+      if (imuahrs_available) {
+        memcpy(mpu_result, ahrs.read, sizeof(float) * 16);
       }
+      return true;
+    } else {
+      return false;
     }
-    return false
   }
 };
 

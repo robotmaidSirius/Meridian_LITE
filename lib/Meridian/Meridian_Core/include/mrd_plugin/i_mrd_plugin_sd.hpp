@@ -16,6 +16,8 @@ class I_Meridian_SD : public I_Meridian_Plugin {
 public:
   virtual bool write(uint16_t address, uint8_t data) = 0;
   virtual uint8_t read(uint16_t address) = 0;
+
+  bool refresh(Meridim90Union &a_meridim) override { return false; };
 };
 
 #endif // I_MRD_PLUGIN_SD_HPP

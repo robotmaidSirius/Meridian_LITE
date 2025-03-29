@@ -20,7 +20,7 @@
 
 class MrdSD : public I_Meridian_SD {
 private:
-  bool mount_sd = false;
+  bool _mount_sd = false;
   int _chipselect_pin = -1;
   int _test_pin = A0;
   const char *_test_file = "/test.txt";
@@ -30,8 +30,13 @@ public:
   ~MrdSD() {}
 
 public:
+  bool mount(bool mount_sd) {
+    this->_mount_sd = mount_sd;
+    return this->_mount_sd;
+  }
+
   bool setup() override {
-    if (true == this->mount_sd) {
+    if (true == this->_mount_sd) {
       if (!SD.begin(this->_chipselect_pin)) {
         return false;
       } else {
