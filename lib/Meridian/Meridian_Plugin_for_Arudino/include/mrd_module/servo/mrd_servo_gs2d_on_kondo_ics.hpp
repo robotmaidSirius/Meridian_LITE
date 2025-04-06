@@ -16,7 +16,10 @@
 #include <IcsHardSerialClass.h> // ICSサーボのインスタンス設定
 #include <mrd_plugin/i_mrd_servo.hpp>
 
-class MrdServoGS2DonICS : public I_Meridian_Servo {
+namespace meridian {
+namespace modules {
+namespace plugin {
+class MrdServoGS2DonICS : public IMeridianServo {
 private:
   const int SERVO_LOST_ERR_WAIT = 6; // 連続何フレームサーボ信号をロストしたら異常とするか
   IcsHardSerialClass ics;
@@ -26,11 +29,11 @@ public:
   ~MrdServoGS2DonICS() {}
 
 public:
-  const char *get_name() { return "ICS(KONDO,gs2d)"; };
+  const char *get_name() { return "ICS(KONDO,gs2d)"; }
   bool setup() override { return true; }
 
-  bool write(int a_id, int value) override {};
-  int read(int a_id) override {};
+  bool write(int a_id, int value) override {}
+  int read(int a_id) override {}
 
   bool refresh(Meridim90Union &a_meridim) override { return true; }
 
@@ -89,5 +92,9 @@ private:
     return static_cast<int>(_x);
   }
 };
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // MRD_SERVO_GS2D_ON_KONDO_ICS_HPP

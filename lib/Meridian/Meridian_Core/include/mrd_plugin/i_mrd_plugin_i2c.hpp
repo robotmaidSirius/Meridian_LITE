@@ -7,18 +7,27 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_I2C_HPP
-#define I_MRD_PLUGIN_I2C_HPP
+#ifndef __I_MRD_PLUGIN_I2C_HPP__
+#define __I_MRD_PLUGIN_I2C_HPP__
 
 #include "i_mrd_plugin.hpp"
 
-class I_Meridian_I2C : public I_Meridian_Plugin {
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class IMeridianI2C : public IMeridianPlugin {
 public:
-  virtual void write(uint8_t address, uint8_t data) = 0;
-  virtual uint8_t read(uint8_t address) = 0;
+  IMeridianI2C(uint8_t address) {
+    this->m_address = address;
+  }
 
 protected:
-  uint8_t m_id;
+  uint8_t m_address;
 };
 
-#endif // I_MRD_PLUGIN_I2C_HPP
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#endif // __I_MRD_PLUGIN_I2C_HPP__

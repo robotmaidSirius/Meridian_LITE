@@ -227,7 +227,7 @@ void setup() {
     mrd_wifi.enable_send(NETWORK_UDP_SEND);
     mrd_wifi.enable_receive(NETWORK_UDP_RECEIVE);
     // wifiIPの表示
-    mrd_disp.esp_ip(NETWORK_FIXED_IP, NETWORK_WIFI_SEND_IP, NETWORK_FIXED_IP_ADDR);
+    mrd_disp.esp_ip(NETWORK_MODE_FIXED_IP, NETWORK_WIFI_SEND_IP, NETWORK_MODE_FIXED_IP_ADDR);
   }
 
   // コントロールパッドの種類を表示

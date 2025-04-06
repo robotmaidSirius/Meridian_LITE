@@ -209,7 +209,7 @@ public:
                      String(NETWORK_WIFI_SEND_IP)); // 送信先PCのIPアドレスの表示
 
     if (a_flg_fixed_ip) {
-      m_serial.println("ESP32's IP address => " + String(NETWORK_FIXED_IP_ADDR) +
+      m_serial.println("ESP32's IP address => " + String(NETWORK_MODE_FIXED_IP_ADDR) +
                        " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
       m_serial.print("ESP32's IP address => "); // ESP32自身のIPアドレスの表示

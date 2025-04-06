@@ -7,19 +7,37 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_SERVO_HPP
-#define I_MRD_PLUGIN_SERVO_HPP
+#ifndef __I_MRD_PLUGIN_SERVO_HPP__
+#define __I_MRD_PLUGIN_SERVO_HPP__
 
 #include "i_mrd_plugin.hpp"
 
-class I_Meridian_Servo : public I_Meridian_Plugin {
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class IMeridianServo : public IMeridianPlugin {
+protected:
+  static const int ERR_CODE = 0x80; ///! エラー発生
+  uint8_t COMMAND_READ_ONLY = 0x8;  ///! サーボのストレッチ設定
+  enum COMMAND {
+    COMMAND_FREE = 0,        ///! サーボのトルクOFF
+    COMMAND_SET_POS = 1,     ///! サーボのトルクON
+    COMMAND_STRETCH = 3,     ///! サーボのストレッチ設定
+    COMMAND_SPEED = 4,       ///! サーボのスピード設定
+    COMMAND_CURRENT = 5,     ///! サーボの電流制限設定
+    COMMAND_TEMPERATURE = 6, ///! サーボの温度設定
+    COMMAND_ID = 7,          ///! サーボのID設定
+  };
+
 public:
-  virtual const char *get_name() { return "Unknow"; };
-
-  virtual bool write(int a_id, int value) = 0;
-  virtual int read(int a_id) = 0;
-
-  virtual bool is_enabled() { return false; }
+  virtual bool setup() { return true; }
+  virtual bool input(Meridim90 &a_meridim) { return true; }
+  virtual bool output(Meridim90 &a_meridim) { return true; }
 };
 
-#endif // I_MRD_PLUGIN_SERVO_HPP
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#endif // __I_MRD_PLUGIN_SERVO_HPP__

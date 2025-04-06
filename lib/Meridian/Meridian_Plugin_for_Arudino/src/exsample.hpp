@@ -562,7 +562,7 @@ void setup() {
     mrd_disp.esp_wifi(WIFI_AP_SSID);
     if (mrd_wifi->mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {
       // wifiIPの表示
-      mrd_disp.esp_ip(NETWORK_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
+      mrd_disp.esp_ip(NETWORK_MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);
     }
   }
 

@@ -1,140 +1,363 @@
 /**
- * @file mrd_imu_MPU6050.hpp
+ * @file mrd_module_imu_MPU6050.hpp
  * @brief デバイス[MPU6050]制御クラス
  * @version 1.2.0
- * @date 2025-01-18
+ * @date 2025-01-23
  *
  * @copyright Copyright (c) 2025-.
  *
+ * @todo
+ *  - Meridim90 の詰めるデータに疑問あり
+ *
  */
-#ifndef MRD_IMU_MPU6050_HPP
-#define MRD_IMU_MPU6050_HPP
+#ifndef __MRD_MODULE_IMU_MPU6050_HPP__
+#define __MRD_MODULE_IMU_MPU6050_HPP__
+
+// ヘッダーファイルの読み込み
+#include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
 
 // ライブラリ導入
-#include "mrd_plugin/i_mrd_plugin_ahrs.hpp"
-#include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
-#include <meridian_core.hpp>
+#include <Arduino.h>
+#include <MPU6050_6Axis_MotionApps20.h> // MPU6050用ライブラリ
+#include <Wire.h>
+#define MPU6050_UPDATE_TYPE_TIME_SPAN 0
+#define MPU6050_UPDATE_TYPE_INIT_PIN  1
+#define MPU6050_UPDATE_TYPE_SEMAPHORE 2
 
-#define PIN_I2C0_SDA     22 // I2CのSDAピン
-#define PIN_I2C0_SCL     21 // I2CのSCLピン
-#define IMUAHRS_INTERVAL 10 // IMU/AHRSのセンサの読み取り間隔(ms)
+#define DEBUG_OUTPUT_MPU6050  0
+#define ENABLE_UPDATE_MPU6050 MPU6050_UPDATE_TYPE_SEMAPHORE
 
-class MrdImuMPU6050 : public I_Meridian_AHRS {
-private:
-  MPU6050 mpu6050; // MPU6050のインスタンス
-  bool _available = false;
-  uint8_t fifoBuffer[64]; // FIFO storage buffer
+namespace meridian {
+namespace modules {
+namespace plugin {
 
-  Quaternion quaternion_container; // [w, x, y, z]         quaternion container
-  VectorFloat gravity;             // [x, y, z]            gravity vector
-  VectorInt16 aa;                  // [x, y, z]            加速度センサの測定値
-  VectorInt16 gyro;                // [x, y, z]            角速度センサの測定値
-  VectorInt16 mag;                 // [x, y, z]            磁力センサの測定値
-  float mpu_result[16];            // 加工後の最新のmpuデータ（二次データ）
-  float ypr[3];                    // [roll, pitch, yaw]   roll/pitch/yaw container and gravity vector
+namespace ahrs_mpu6050 {
+struct st_data {
+  VectorInt16 accelerator; ///! 加速度センサの測定値
+  VectorInt16 gyroscope;   ///! 角速度センサの測定値
+  VectorFloat gravity;     ///! gravity vector
+  Quaternion quaternion;   ///! quaternion container
+  VectorFloat ypr_deg;     ///! roll/pitch/yaw container and gravity vector
+  bool initalized = false; ///< 初期化フラグ
+  unsigned long timestamp = 0;
+};
+struct thread_args {
+  int start_delay_ms;
+  int search_ms;
 
-public:
-  MrdImuMPU6050() {
-  }
-  ~MrdImuMPU6050() {
-  }
+  int32_t sensorID;
+  uint8_t address;
+  int16_t accel_offset_x;
+  int16_t accel_offset_y;
+  int16_t accel_offset_z;
+  int16_t gyro_offset_x;
+  int16_t gyro_offset_y;
+  int16_t gyro_offset_z;
 
-  bool refresh(Meridim90Union &a_meridim) override {
-    mrd_wire0_read_ahrs_i2c(this->_available);
-    return true;
-  }
-  bool setup() override {
-    this->_available = false;
-    int a_i2c0_speed;
-    int a_pinSDA = PIN_I2C0_SDA;
-    int a_pinSCL = PIN_I2C0_SCL;
-
-    mpu6050.initialize();
-    ahrs.devStatus = mpu6050.dmpInitialize();
-
-    // supply your own gyro offsets here, scaled for min sensitivity
-    mpu6050.setXAccelOffset(-1745);
-    mpu6050.setYAccelOffset(-1034);
-    mpu6050.setZAccelOffset(966);
-    mpu6050.setXGyroOffset(176);
-    mpu6050.setYGyroOffset(-6);
-    mpu6050.setZGyroOffset(-25);
-
-    // make sure it worked (returns 0 if so)
-    if (ahrs.devStatus == 0) {
-      mpu6050.CalibrateAccel(6);
-      mpu6050.CalibrateGyro(6);
-      mpu6050.setDMPEnabled(true);
-      ahrs.packetSize = mpu6050.dmpGetFIFOPacketSize();
-      this->_available = true;
-    }
-    return this->_available;
-  }
-  bool begin() override {
-    return true;
-  }
-
-  bool reset() { return true; };
-
-  //================================================================================================================
-  //  I2C wire0 関連の処理
-  //================================================================================================================
-
-  //------------------------------------------------------------------------------------
-  //  初期設定
-  //------------------------------------------------------------------------------------
-
-  //------------------------------------------------------------------------------------
-  //  センサデータの取得処理
-  //------------------------------------------------------------------------------------
-
-  /// @brief AHRSセンサーからI2C経由でデータを読み取る関数.
-  /// MPU6050, MPU9250を想定していますが, MPU9250は未実装.
-  /// 各データは`ahrs.read`配列に格納され, 利用可能な場合は`ahrs.result`にコピーされる.
-  bool mrd_wire0_read_ahrs_i2c(bool imuahrs_available) { // ※wireTimer0.beginの引数のためvoid必須
-    if (mpu6050.dmpGetCurrentFIFOPacket(fifoBuffer)) {   // Get new data
-      mpu6050.dmpGetQuaternion(&quaternion_container, fifoBuffer);
-      mpu6050.dmpGetGravity(&gravity, &quaternion_container);
-      mpu6050.dmpGetYawPitchRoll(ypr, &quaternion_container, &gravity);
-
-      // acceleration values
-      mpu6050.dmpGetAccel(&aa, fifoBuffer);
-      ahrs.read[0] = (float)aa.x;
-      ahrs.read[1] = (float)aa.y;
-      ahrs.read[2] = (float)aa.z;
-
-      // gyro values
-      mpu6050.dmpGetGyro(&gyro, fifoBuffer);
-      ahrs.read[3] = (float)gyro.x;
-      ahrs.read[4] = (float)gyro.y;
-      ahrs.read[5] = (float)gyro.z;
-
-      // magnetic field values
-      ahrs.read[6] = (float)mag.x;
-      ahrs.read[7] = (float)mag.y;
-      ahrs.read[8] = (float)mag.z;
-
-      // Estimated gravity DMP value.
-      ahrs.read[9] = gravity.x;
-      ahrs.read[10] = gravity.y;
-      ahrs.read[11] = gravity.z;
-
-      // Estimated heading value using DMP.
-      ahrs.read[12] = ypr[2] * 180 / M_PI;                     // Estimated DMP_ROLL
-      ahrs.read[13] = ypr[1] * 180 / M_PI;                     // Estimated DMP_PITCH
-      ahrs.read[14] = (ypr[0] * 180 / M_PI) - ahrs.yaw_origin; // Estimated DMP_YAW
-
-      // Temperature
-      ahrs.read[15] = 0; // Not implemented.
-
-      if (imuahrs_available) {
-        memcpy(mpu_result, ahrs.read, sizeof(float) * 16);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
+  uint8_t accel_calibrate;
+  uint8_t gyro_calibrate;
 };
 
-#endif // MRD_IMU_MPU6050_HPP
+pthread_mutex_t mutex_mpu6050 = PTHREAD_MUTEX_INITIALIZER;
+volatile bool flag_mrd_ahrs_mpu6050_loop = false;
+st_data a_data;
+inline float deg2rad(float deg) { return (deg * M_PI) / 180.0; }
+inline float rad2deg(float rad) { return (rad * 180.0) / M_PI; }
+
+#if ENABLE_UPDATE_MPU6050 != MPU6050_UPDATE_TYPE_TIME_SPAN
+volatile SemaphoreHandle_t semaphore_mpu6050; ///! ハードウェアタイマー用のセマフォ
+#endif
+#if ENABLE_UPDATE_MPU6050 == MPU6050_UPDATE_TYPE_INIT_PIN
+void interrupt_pin() {
+  xSemaphoreGiveFromISR(semaphore_mpu6050, NULL); // セマフォを与える
+}
+#endif
+void thread_mrd_ahrs_mpu6050(void *args) {
+  flag_mrd_ahrs_mpu6050_loop = true;
+  st_data local_data;
+  thread_args param = *(thread_args *)args;
+  int delay_ms = max(1, param.search_ms);
+  delay(param.start_delay_ms);
+  MPU6050 mpu6050(param.address);
+  // データの更新
+  local_data.initalized = false;
+  if (0 == pthread_mutex_lock(&mutex_mpu6050)) {
+    memcpy(&a_data, &local_data, sizeof(st_data));
+  }
+  pthread_mutex_unlock(&mutex_mpu6050);
+  while (flag_mrd_ahrs_mpu6050_loop && (false == local_data.initalized)) {
+    mpu6050.initialize();
+    if (mpu6050.testConnection()) {
+      uint8_t devStatus = mpu6050.dmpInitialize();
+
+      // Accelerometer のオフセット
+      mpu6050.setXAccelOffset(param.accel_offset_x);
+      mpu6050.setYAccelOffset(param.accel_offset_y);
+      mpu6050.setZAccelOffset(param.accel_offset_z);
+      // Gyroscope のオフセット
+      mpu6050.setXGyroOffset(param.gyro_offset_x);
+      mpu6050.setYGyroOffset(param.gyro_offset_y);
+      mpu6050.setZGyroOffset(param.gyro_offset_z);
+
+      // make sure it worked (returns 0 if so)
+      if (devStatus == 0) {
+        mpu6050.CalibrateAccel(param.accel_calibrate);
+        mpu6050.CalibrateGyro(param.gyro_calibrate);
+        mpu6050.setDMPEnabled(true);
+        local_data.initalized = true;
+        break;
+      }
+    }
+    delay(5000);
+  }
+
+  // uint8_t fifoBuffer[mpu6050.dmpGetFIFOPacketSize()]; ///! FIFO storage buffer
+  uint8_t fifoBuffer[64]; ///! FIFO storage buffer
+  float ypr[3];           ///! roll/pitch/yaw container and gravity vector
+
+  while (true == flag_mrd_ahrs_mpu6050_loop) {
+#if ENABLE_UPDATE_MPU6050 != MPU6050_UPDATE_TYPE_TIME_SPAN
+    if (xSemaphoreTake(semaphore_mpu6050, portMAX_DELAY) == pdTRUE)
+#else
+    delay(delay_ms);
+#endif
+    {
+      if (mpu6050.dmpGetCurrentFIFOPacket(fifoBuffer)) { // Get new data
+        mpu6050.dmpGetQuaternion(&local_data.quaternion, fifoBuffer);
+        mpu6050.dmpGetGravity(&local_data.gravity, &local_data.quaternion);
+        mpu6050.dmpGetYawPitchRoll(ypr, &local_data.quaternion, &local_data.gravity);
+        // acceleration values
+        mpu6050.dmpGetAccel(&local_data.accelerator, fifoBuffer);
+        // gyro values
+        mpu6050.dmpGetGyro(&local_data.gyroscope, fifoBuffer);
+        // Estimated heading value using DMP.
+        local_data.ypr_deg.x = rad2deg(ypr[2]); // Estimated DMP_ROLL
+        local_data.ypr_deg.y = rad2deg(ypr[1]); // Estimated DMP_PITCH
+        local_data.ypr_deg.z = rad2deg(ypr[0]); // Estimated DMP_YAW
+
+        // タイムスタンプの更新
+        local_data.timestamp = (local_data.timestamp + 1) % 0xFFFFu;
+
+        // データの更新
+        if (0 == pthread_mutex_lock(&mutex_mpu6050)) {
+          memcpy(&a_data, &local_data, sizeof(st_data));
+        }
+        pthread_mutex_unlock(&mutex_mpu6050);
+      }
+    }
+  }
+}
+
+} // namespace ahrs_mpu6050
+
+class MrdAhrsMPU6050 : public IMeridianI2C {
+public:
+  virtual const char *get_name() { return "MPU6050"; }
+  void set_pin(uint8_t int_pin) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+#if ENABLE_UPDATE_MPU6050 == MPU6050_UPDATE_TYPE_INIT_PIN
+    pinMode(int_pin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(int_pin), ahrs_mpu6050::interrupt_pin, RISING);
+#endif
+  }
+  void set_offset_accel(int16_t x, int16_t y, int16_t z) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+    this->param->accel_offset_x = x;
+    this->param->accel_offset_y = y;
+    this->param->accel_offset_z = z;
+  }
+  void set_offset_gyro(int16_t x, int16_t y, int16_t z) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+    this->param->gyro_offset_x = x;
+    this->param->gyro_offset_y = y;
+    this->param->gyro_offset_z = z;
+  }
+  void set_calibrate_accel(uint8_t loops) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+    this->param->accel_calibrate = loops;
+  }
+  void set_calibrate_gyro(uint8_t loops) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+    this->param->gyro_calibrate = loops;
+  }
+  MrdAhrsMPU6050(bool is_AD0_low = true) : IMeridianI2C(is_AD0_low ? MPU6050_ADDRESS_AD0_LOW : MPU6050_ADDRESS_AD0_HIGH) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_mpu6050::thread_args();
+    }
+    this->param->address = this->m_address;
+
+    // デフォルトの設定
+
+#if 0
+// TODO:移植元の設定-設定値の根拠を確認する
+    this->param->accel_offset_x = -1745;
+    this->param->accel_offset_y = -1034;
+    this->param->accel_offset_z = 966;
+    this->param->gyro_offset_x = 176;
+    this->param->gyro_offset_y = -6;
+    this->param->gyro_offset_z = -25;
+    this->param->accel_calibrate = 6;
+    this->param->gyro_calibrate = 6;
+#else
+    this->param->accel_offset_x = 0;
+    this->param->accel_offset_y = 0;
+    this->param->accel_offset_z = 0;
+    this->param->gyro_offset_x = 0;
+    this->param->gyro_offset_y = 0;
+    this->param->gyro_offset_z = 0;
+    this->param->accel_calibrate = 6;
+    this->param->gyro_calibrate = 6;
+#endif
+
+    this->param->search_ms = 10;
+    this->param->start_delay_ms = 100;
+#if ENABLE_UPDATE_MPU6050 != MPU6050_UPDATE_TYPE_TIME_SPAN
+    ahrs_mpu6050::semaphore_mpu6050 = xSemaphoreCreateBinary();
+#endif
+  }
+  ~MrdAhrsMPU6050() {
+    ahrs_mpu6050::flag_mrd_ahrs_mpu6050_loop = false;
+    vTaskDelete(this->task_handle);
+    pthread_mutex_destroy(&ahrs_mpu6050::mutex_mpu6050);
+  }
+
+public:
+  bool setup() override {
+    bool result = true;
+    if (true == ahrs_mpu6050::a_data.initalized) {
+      return result;
+    }
+    this->m_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
+    xTaskCreatePinnedToCore(ahrs_mpu6050::thread_mrd_ahrs_mpu6050,
+                            this->m_task_name,
+                            this->m_stack_depth,
+                            (void *)this->param,
+                            this->m_priority,
+                            &this->task_handle,
+                            this->core_id);
+    return result;
+  }
+  bool input(Meridim90 &a_meridim) override {
+    if (0 == pthread_mutex_lock(&ahrs_mpu6050::mutex_mpu6050)) {
+      memcpy(&this->a_ahrs, &ahrs_mpu6050::a_data, sizeof(ahrs_mpu6050::st_data));
+    }
+    if (0 == pthread_mutex_unlock(&ahrs_mpu6050::mutex_mpu6050)) {
+      // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
+      if (MCMD_SENSOR_YAW_CALIB == a_meridim.master_command) {
+        this->reset();
+      }
+
+      if (this->is_zero_range(this->a_ahrs.accelerator.x) || this->is_zero_range(this->a_ahrs.accelerator.y) || this->is_zero_range(this->a_ahrs.accelerator.z)) {
+        a_meridim.input_data.accelerator.x = this->float2HfShort(this->a_ahrs.accelerator.x); ///! 加速度センサX値
+        a_meridim.input_data.accelerator.y = this->float2HfShort(this->a_ahrs.accelerator.y); ///! 加速度センサY値
+        a_meridim.input_data.accelerator.z = this->float2HfShort(this->a_ahrs.accelerator.z); ///! 加速度センサZ値
+      }
+      if (this->is_zero_range(this->a_ahrs.gyroscope.x) || this->is_zero_range(this->a_ahrs.gyroscope.y) || this->is_zero_range(this->a_ahrs.gyroscope.z)) {
+        a_meridim.input_data.gyroscope.x = this->float2HfShort(this->a_ahrs.gyroscope.x); ///! ジャイロセンサX値
+        a_meridim.input_data.gyroscope.y = this->float2HfShort(this->a_ahrs.gyroscope.y); ///! ジャイロセンサY値
+        a_meridim.input_data.gyroscope.z = this->float2HfShort(this->a_ahrs.gyroscope.z); ///! ジャイロセンサZ値
+      }
+
+      // TODO: magnetometer に gravityをいれている？
+      if (this->is_zero_range(this->a_ahrs.gravity.x) || this->is_zero_range(this->a_ahrs.gravity.y) || this->is_zero_range(this->a_ahrs.gravity.z)) {
+        a_meridim.input_data.magnetometer.x = this->float2HfShort(this->a_ahrs.gravity.x); ///! 重力センサX値
+        a_meridim.input_data.magnetometer.y = this->float2HfShort(this->a_ahrs.gravity.y); ///! 重力センサY値
+        a_meridim.input_data.magnetometer.z = this->float2HfShort(this->a_ahrs.gravity.z); ///! 重力センサZ値
+      }
+
+      // a_meridim.temperature = this->float2HfShort(0); ///! 温度センサ値
+
+      // Estimated heading value using DMP.
+      if (this->is_zero_range(this->a_ahrs.ypr_deg.x) || this->is_zero_range(this->a_ahrs.ypr_deg.y) || this->is_zero_range(this->a_ahrs.ypr_deg.z)) {
+        if (this->m_rest_flag) {
+          this->yaw_origin = this->float2HfShort(this->a_ahrs.ypr_deg.z);
+          this->m_rest_flag = false;
+        }
+        a_meridim.input_data.dmp.roll = this->float2HfShort(this->a_ahrs.ypr_deg.x);                                         ///! DMP推定ロール方向値
+        a_meridim.input_data.dmp.pitch = this->float2HfShort(this->a_ahrs.ypr_deg.y);                                        ///! DMP推定ピッチ方向値
+        a_meridim.input_data.dmp.yaw = this->float2HfShort(this->deg_correction(this->a_ahrs.ypr_deg.z) - this->yaw_origin); ///! DMP推定ヨー方向値
+      }
+    }
+    return true;
+  }
+
+  bool output(Meridim90 &a_meridim) override {
+#if DEBUG_OUTPUT_MPU6050
+    if (true == ahrs_mpu6050::a_data.initalized) {
+      this->m_diag->log_trace("  MPU6050-ACC[%5d,%5d,%5d]GYR[%5d,%5d,%5d]G[%7.2f,%7.2f,%7.2f]YPR[%7.2f,%7.2f,%7.2f] %lu",
+                              this->a_ahrs.accelerator.x, this->a_ahrs.accelerator.y, this->a_ahrs.accelerator.z,
+                              this->a_ahrs.gyroscope.x, this->a_ahrs.gyroscope.y, this->a_ahrs.gyroscope.z,
+                              this->a_ahrs.gravity.x, this->a_ahrs.gravity.y, this->a_ahrs.gravity.z,
+                              this->a_ahrs.ypr_deg.x, this->a_ahrs.ypr_deg.y, this->a_ahrs.ypr_deg.z, this->a_ahrs.timestamp);
+    }
+#endif
+#if ENABLE_UPDATE_MPU6050 == MPU6050_UPDATE_TYPE_SEMAPHORE
+    xSemaphoreGiveFromISR(ahrs_mpu6050::semaphore_mpu6050, NULL); // セマフォを与える
+#endif
+    return true;
+  }
+  bool reset() {
+    this->m_rest_flag = true;
+    return this->m_rest_flag;
+  }
+
+private:
+  inline bool is_zero_range(float value) {
+    return !(value < 0.0001f && value > -0.0001f);
+  }
+  inline float deg_correction(float deg) {
+    if (deg >= 180.0f) {
+      return deg - 360.0f;
+    } else if (deg < -180.0f) {
+      return deg + 360.0f;
+    } else {
+      return deg;
+    }
+  }
+  short float2HfShort(float val) {
+    int _x = round(val * 100);
+    if (_x > 32766) {
+      _x = 32767;
+    } else if (_x < -32766) {
+      _x = -32767;
+    }
+    return static_cast<short>(_x);
+  }
+
+private:
+  // Task Information
+  const char *m_task_name = "mrd_ahrs_MPU6050"; ///! 表示用タスク名
+  const uint32_t m_stack_depth = (1 * 4096);    ///! スタックメモリ量
+  UBaseType_t m_priority = 10;                  ///! 優先度
+  TaskHandle_t task_handle;                     ///! タスクハンドル
+  BaseType_t core_id = 1;                       ///! 実行するコア
+
+  ahrs_mpu6050::st_data a_ahrs; ///! MPU6050のAHRSデータ
+  ahrs_mpu6050::thread_args *param = new ahrs_mpu6050::thread_args();
+
+  bool m_rest_flag = false;
+  float yaw_origin = 0.0;
+};
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#undef MPU6050_UPDATE_TYPE_TIME_SPAN
+#undef MPU6050_UPDATE_TYPE_INIT_PIN
+#undef MPU6050_UPDATE_TYPE_SEMAPHORE
+
+#undef DEBUG_OUTPUT_MPU6050
+#undef ENABLE_UPDATE_MPU6050
+
+#endif // __MRD_MODULE_IMU_MPU6050_HPP__

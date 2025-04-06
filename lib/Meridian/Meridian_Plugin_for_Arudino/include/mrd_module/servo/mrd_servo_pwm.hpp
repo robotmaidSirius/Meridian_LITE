@@ -12,21 +12,26 @@
 
 // TODO: (未実装)
 // ライブラリ導入
-#include <mrd_plugin/i_mrd_servo.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_servo.hpp>
 
-class MrdServoPWM : public I_Meridian_Servo {
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdServoPWM : public IMeridianServo {
 public:
   MrdServoPWM() {}
   ~MrdServoPWM() {}
 
 public:
-  const char *get_name() { return "single PWM"; };
+  const char *get_name() { return "single PWM"; }
   bool setup() override { return true; }
-
-  bool write(int a_id, int value) override {};
-  int read(int a_id) override {};
-
-  bool refresh(Meridim90Union &a_meridim) override { return true; }
+  bool input(Meridim90 &a_meridim) override { return true; }
+  bool output(Meridim90 &a_meridim) override { return true; }
 };
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // MRD_SERVO_PWM_HPP

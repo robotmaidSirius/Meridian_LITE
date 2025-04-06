@@ -94,7 +94,7 @@ public:
       Serial.println("Failed.");
     }
     this->_initialed = result;
-    this->_protected = a_protect;
+    this->_protected = result ? a_protect : true; // 初期化が失敗していたら、保護状態にする
     return result;
   }
 
@@ -187,7 +187,7 @@ public:
   //------------------------------------------------------------------------------------
 
   /// @brief EEPROMから任意のshort型データを読み込む.
-  /// @param index 配列の一次元目(0~2).
+  /// @param index 配列のインデックス.
   /// @return short型データを返す.
   short readShort(int index) {
 #if defined(ARDUINO_ESP32_DEV)

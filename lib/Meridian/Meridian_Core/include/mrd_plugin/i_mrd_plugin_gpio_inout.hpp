@@ -7,28 +7,33 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_GPIO_HPP
-#define I_MRD_PLUGIN_GPIO_HPP
+#ifndef __I_MRD_PLUGIN_GPIO_HPP__
+#define __I_MRD_PLUGIN_GPIO_HPP__
 
 #include "i_mrd_plugin.hpp"
 
+namespace meridian {
+namespace modules {
+namespace plugin {
+
 template <typename TYPE>
-class I_Meridian_GPIO_InOut : public I_Meridian_Plugin {
+class IMeridianGPIOInOut : public IMeridianPlugin {
 public:
-  I_Meridian_GPIO_InOut(uint8_t pin, bool is_output = true) {
+  IMeridianGPIOInOut(uint8_t pin, bool is_output = true) {
     this->m_pin = pin;
     this->m_is_output = is_output;
   }
 
+public:
   virtual bool write(TYPE value) = 0;
   virtual TYPE read() = 0;
 
-public:
-  bool is_output() { return this->m_is_output; };
-
 protected:
   uint8_t m_pin = 0xFF;
-  bool m_is_output = true;
 };
 
-#endif // I_MRD_PLUGIN_GPIO_HPP
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#endif // __I_MRD_PLUGIN_GPIO_HPP__

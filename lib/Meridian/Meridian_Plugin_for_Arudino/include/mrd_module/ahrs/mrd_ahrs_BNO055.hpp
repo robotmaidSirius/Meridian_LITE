@@ -1,149 +1,305 @@
 /**
- * @file mrd_ahrs_BNO055.hpp
+ * @file mrd_module_ahrs_BNO055.hpp
  * @brief デバイス[BNO055]制御クラス
  * @version 1.2.0
- * @date 2025-01-18
+ * @date 2025-01-23
  *
  * @copyright Copyright (c) 2025-.
+ * @todo
+ *  - 初期設定-動作モード
+ *    - setMode()の実装
+ *    - OFFSETの実装
+ *      - setSensorOffsets()の実装
+ *      - setSensorOffsets()の実装
+ *    - 電源モードの設定
+ *      - enterSuspendMode()の実装
+ *      - enterNormalMode()の実装
  *
+ * - 関数の機能の調査
+ *  - setAxisRemap()
+ *  - setAxisSign()
+ * - キャリブレーションの実装
+ *
+ *  スレッドじゃなくて、定期的なタイマーに変更する？
+ *
+ * [ISSUE]
+ *  タイムアウト(i2cWriteReadNonStop returned Error 263)時に値を取得しなおすようにライブラリから手を加えないといけないかも
+ *    - エラーハンドリング出来ておらず、エラー検知時の対応が出来ずにいるため
+ *
+ * @note
+ *  ENABLE_SEMAPHORE_BNO055はoutput()関数の最後にセマフォを与える処理を行うため、
+ *  最大１サイクル遅れで更新する仕組みにしている
+ *  理由は、他デバイスと通信するためinput()関数時に更新を行うと、更新時間が発生するため
  */
-#ifndef MRD_AHRS_BNO055_HPP
-#define MRD_AHRS_BNO055_HPP
+#ifndef __MRD_MODULE_AHRS_BNO055_HPP__
+#define __MRD_MODULE_AHRS_BNO055_HPP__
+
+// ヘッダーファイルの読み込み
+#include <mrd_module/mrd_plugin/i_mrd_plugin_i2c.hpp>
 
 // ライブラリ導入
-#include "mrd_plugin/i_mrd_plugin_ahrs.hpp"
-#include <Adafruit_BNO055.h> // 9軸センサBNO055用
-#include <meridian_core.hpp>
+#include <Adafruit_BNO055.h> // 9軸センサBNO055用ライブラリ
+#include <Arduino.h>
+#include <Wire.h>
 
-#define PIN_I2C0_SDA     22 // I2CのSDAピン
-#define PIN_I2C0_SCL     21 // I2CのSCLピン
-#define IMUAHRS_INTERVAL 10 // IMU/AHRSのセンサの読み取り間隔(ms)
+#define DEBUG_OUTPUT_BNO055     0
+#define ENABLE_PIN_BNO055       0
+#define ENABLE_SEMAPHORE_BNO055 1
 
-void mrd_wire0_Core0_bno055_r(void *args) {
-  Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire); // BNO055のインスタンス
-  while (1) {
-    if (true == bno.begin()) {
-      // BNO055 mounted.
-      delay(50);
-      bno.setExtCrystalUse(false);
-      delay(10);
-      while (1) {
-        // 加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
-        imu::Vector<3> accelerometer = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-        ahrs.read[0] = (float)accelerometer.x();
-        ahrs.read[1] = (float)accelerometer.y();
-        ahrs.read[2] = (float)accelerometer.z();
+namespace meridian {
+namespace modules {
+namespace plugin {
+namespace ahrs_bno055 {
+struct st_data {
+  bool initalized = false; ///< 初期化フラグ
 
-        // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
-        imu::Vector<3> gyroscope = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-        ahrs.read[3] = gyroscope.x();
-        ahrs.read[4] = gyroscope.y();
-        ahrs.read[5] = gyroscope.z();
+  // sensors_event_t data;
+  imu::Vector<3> acceleration; ///<  加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
+  imu::Vector<3> gyro;         ///< ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
+  imu::Vector<3> magnetic;     ///< 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
+  imu::Vector<3> orientation;  ///< センサフュージョンによる方向推定値 - VECTOR_EULER - degrees
+  int temperature = 0;
+  unsigned long timestamp = 0;
+};
+struct thread_args {
+  int start_delay_ms;
+  int search_ms;
+  uint8_t reset_pin;
+  uint8_t int_pin;
+  int32_t sensorID;
+  uint8_t address;
+  TwoWire *theWire;
+};
 
-        // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
-        imu::Vector<3> magnetmeter = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-        ahrs.read[6] = magnetmeter.x();
-        ahrs.read[7] = magnetmeter.y();
-        ahrs.read[8] = magnetmeter.z();
+#if ENABLE_SEMAPHORE_BNO055
+volatile SemaphoreHandle_t semaphore_bno055; ///! ハードウェアタイマー用のセマフォ
+#endif
+pthread_mutex_t mutex_bno055 = PTHREAD_MUTEX_INITIALIZER;
+volatile bool flag_mrd_ahrs_bno055_loop = false;
+st_data a_data;
 
-        // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
-        imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-        ahrs.read[12] = euler.y();                   // DMP_ROLL推定値
-        ahrs.read[13] = euler.z();                   // DMP_PITCH推定値
-        ahrs.yaw_source = euler.x();                 // ヨー軸のソースデータ保持
-        float yaw_tmp = euler.x() - ahrs.yaw_origin; // DMP_YAW推定値
-        if (yaw_tmp >= 180) {
-          yaw_tmp = yaw_tmp - 360;
-        } else if (yaw_tmp < -180) {
-          yaw_tmp = yaw_tmp + 360;
-        }
-        ahrs.read[14] = yaw_tmp; // DMP_YAW推定値
-        ahrs.ypr[0] = ahrs.read[14];
-        ahrs.ypr[1] = ahrs.read[13];
-        ahrs.ypr[2] = ahrs.read[12];
-
-        delay(IMUAHRS_INTERVAL);
+void thread_mrd_ahrs_bno055(void *args) {
+  flag_mrd_ahrs_bno055_loop = true;
+  st_data a_ahrs;
+  thread_args param = *(thread_args *)args;
+  int delay_ms = max(1, param.search_ms);
+  int LONG_SPAN_MS_MAX = (5 * 1000) / delay_ms;
+  int long_span_count = LONG_SPAN_MS_MAX;
+  // param.theWire->end();
+  delay(param.start_delay_ms);
+  Adafruit_BNO055 bno = Adafruit_BNO055(param.sensorID, param.address, param.theWire);
+  while (true == flag_mrd_ahrs_bno055_loop) {
+    if (!bno.begin()) {
+    } else {
+#if ENABLE_PIN_BNO055
+      if (0xFF != param.reset_pin) {
+        pinMode(param.reset_pin, OUTPUT);
+        digitalWrite(param.reset_pin, LOW);
+        delay(100);
+        digitalWrite(param.reset_pin, HIGH);
+        delay(100);
       }
+#endif
+      while (param.theWire->available()) {
+        param.theWire->read();
+      }
+      bno.setExtCrystalUse(false);
+      a_ahrs.initalized = true;
+      break;
+    }
+    delay(1000);
+  }
+  sensors_event_t sensors_data;
+  while (true == flag_mrd_ahrs_bno055_loop) {
+#if ENABLE_SEMAPHORE_BNO055
+    if (xSemaphoreTake(semaphore_bno055, portMAX_DELAY) == pdTRUE)
+#else
+    delay(delay_ms);
+#endif
+    {
+      // 加速度センサ値の取得と表示 - VECTOR_ACCELEROMETER - m/s^2
+      a_ahrs.acceleration = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+      // ジャイロセンサ値の取得 - VECTOR_GYROSCOPE - rad/s
+      a_ahrs.gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+      // 磁力センサ値の取得と表示  - VECTOR_MAGNETOMETER - uT
+      a_ahrs.magnetic = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+      // センサフュージョンによる方向推定値の取得と表示 - VECTOR_EULER - degrees
+      a_ahrs.orientation = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+
+      long_span_count++;
+      if (long_span_count >= LONG_SPAN_MS_MAX) {
+        long_span_count -= LONG_SPAN_MS_MAX;
+        // 温度センサ値
+        a_ahrs.temperature = bno.getTemp();
+      }
+
+      // タイムスタンプの更新
+      a_ahrs.timestamp = (a_ahrs.timestamp + 1) % 0xFFFFu;
+
+      // データの更新
+      if (0 == pthread_mutex_lock(&mutex_bno055)) {
+        memcpy(&a_data, &a_ahrs, sizeof(st_data));
+      }
+      pthread_mutex_unlock(&mutex_bno055);
     }
   }
 }
 
-class MrdAhrsBNO055 : public I_Meridian_AHRS {
+} // namespace ahrs_bno055
 
+class MrdAhrsBNO055 : public IMeridianI2C {
 public:
-  TaskHandle_t pvCreatedTask;
-  MrdAhrsBNO055() {
+  virtual const char *get_name() { return "BNO055"; }
+  void set_pin(uint8_t reset_pin, uint8_t int_pin = 0xFF) {
+    if (nullptr == this->param) {
+      this->param = new ahrs_bno055::thread_args();
+    }
+    this->param->reset_pin = reset_pin;
+    this->param->int_pin = int_pin;
+  }
+  MrdAhrsBNO055(int32_t sensorID = -1, uint8_t address = BNO055_ADDRESS_A, TwoWire *theWire = &Wire) : IMeridianI2C(address) {
+    if (nullptr == theWire) {
+      theWire = &Wire;
+    }
+    if (nullptr == this->param) {
+      this->param = new ahrs_bno055::thread_args();
+    }
+    this->param->sensorID = sensorID;
+    this->param->address = address;
+    this->param->theWire = theWire;
+    this->param->search_ms = 10;
+    this->param->start_delay_ms = 100;
+#if ENABLE_SEMAPHORE_BNO055
+    ahrs_bno055::semaphore_bno055 = xSemaphoreCreateBinary();
+#endif
   }
   ~MrdAhrsBNO055() {
-  }
-  bool begin() override {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &pvCreatedTask, 0);
-    return true;
+    ahrs_bno055::flag_mrd_ahrs_bno055_loop = false;
+    vTaskDelete(this->task_handle);
+    pthread_mutex_destroy(&ahrs_bno055::mutex_bno055);
   }
 
+public:
   bool setup() override {
-    int a_i2c0_speed;
-    int a_pinSDA = PIN_I2C0_SDA;
-    int a_pinSCL = PIN_I2C0_SCL;
-    if (a_pinSDA == -1 && a_pinSCL == -1) {
-      return mrd_wire0_init_i2c(a_i2c0_speed);
+    bool result = true;
+    if (true == ahrs_bno055::a_data.initalized) {
+      return result;
+    }
+    this->m_diag->log_info("Task '%s' created on core %d", this->m_task_name, this->core_id);
+    xTaskCreatePinnedToCore(ahrs_bno055::thread_mrd_ahrs_bno055,
+                            this->m_task_name,
+                            this->m_stack_depth,
+                            (void *)this->param,
+                            this->m_priority,
+                            &this->task_handle,
+                            this->core_id);
+    return result;
+  }
+  bool input(Meridim90 &a_meridim) override {
+    if (0 == pthread_mutex_lock(&ahrs_bno055::mutex_bno055)) {
+      memcpy(&this->a_ahrs, &ahrs_bno055::a_data, sizeof(ahrs_bno055::st_data));
+    }
+    if (0 == pthread_mutex_unlock(&ahrs_bno055::mutex_bno055)) {
+      // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
+      if (MCMD_SENSOR_YAW_CALIB == a_meridim.master_command) {
+        this->reset();
+      }
+
+      if (this->is_zero_range(this->a_ahrs.acceleration.x()) || this->is_zero_range(this->a_ahrs.acceleration.y()) || this->is_zero_range(this->a_ahrs.acceleration.z())) {
+        a_meridim.input_data.accelerator.x = this->float2HfShort(this->a_ahrs.acceleration.x()); ///! 加速度センサX値
+        a_meridim.input_data.accelerator.y = this->float2HfShort(this->a_ahrs.acceleration.y()); ///! 加速度センサY値
+        a_meridim.input_data.accelerator.z = this->float2HfShort(this->a_ahrs.acceleration.z()); ///! 加速度センサZ値
+      }
+      if (this->is_zero_range(this->a_ahrs.gyro.x()) || this->is_zero_range(this->a_ahrs.gyro.y()) || this->is_zero_range(this->a_ahrs.gyro.z())) {
+        a_meridim.input_data.gyroscope.x = this->float2HfShort(this->a_ahrs.gyro.x()); ///! ジャイロセンサX値
+        a_meridim.input_data.gyroscope.y = this->float2HfShort(this->a_ahrs.gyro.y()); ///! ジャイロセンサY値
+        a_meridim.input_data.gyroscope.z = this->float2HfShort(this->a_ahrs.gyro.z()); ///! ジャイロセンサZ値
+      }
+      if (this->is_zero_range(this->a_ahrs.magnetic.x()) || this->is_zero_range(this->a_ahrs.magnetic.y()) || this->is_zero_range(this->a_ahrs.magnetic.z())) {
+        a_meridim.input_data.magnetometer.x = this->float2HfShort(this->a_ahrs.magnetic.x()); ///! 磁力センサX値
+        a_meridim.input_data.magnetometer.y = this->float2HfShort(this->a_ahrs.magnetic.y()); ///! 磁力センサY値
+        a_meridim.input_data.magnetometer.z = this->float2HfShort(this->a_ahrs.magnetic.z()); ///! 磁力センサZ値
+      }
+
+      a_meridim.input_data.temperature = this->float2HfShort(this->a_ahrs.temperature); ///! 温度センサ値
+
+      // Estimated heading value using DMP.
+      if (this->is_zero_range(this->a_ahrs.orientation.x()) || this->is_zero_range(this->a_ahrs.orientation.y()) || this->is_zero_range(this->a_ahrs.orientation.z())) {
+        if (this->m_rest_flag) {
+          this->yaw_origin = this->float2HfShort(this->a_ahrs.orientation.x());
+          this->m_rest_flag = false;
+        }
+        a_meridim.input_data.dmp.roll = this->float2HfShort(this->a_ahrs.orientation.z());                                         ///! DMP推定ロール方向値
+        a_meridim.input_data.dmp.pitch = this->float2HfShort(this->a_ahrs.orientation.y());                                        ///! DMP推定ピッチ方向値
+        a_meridim.input_data.dmp.yaw = this->float2HfShort(this->deg_correction(this->a_ahrs.orientation.x() - this->yaw_origin)); ///! DMP推定ヨー方向値
+      }
+    }
+    return true;
+  }
+
+  bool output(Meridim90 &a_meridim) override {
+#if DEBUG_OUTPUT_BNO055
+    if (true == ahrs_bno055::a_data.initalized) {
+      this->m_diag->log_trace("  BN0055-ACC[%7.2f,%7.2f,%7.2f]GYR[%7.2f,%7.2f,%7.2f]MAG[%7.2f,%7.2f,%7.2f]TMP[%3d] %lu",
+                              this->a_ahrs.acceleration.x(), this->a_ahrs.acceleration.y(), this->a_ahrs.acceleration.z(),
+                              this->a_ahrs.gyro.x(), this->a_ahrs.gyro.y(), this->a_ahrs.gyro.z(),
+                              this->a_ahrs.magnetic.x(), this->a_ahrs.magnetic.y(), this->a_ahrs.magnetic.z(),
+                              this->a_ahrs.temperature, a_ahrs.timestamp);
+    }
+#endif
+#if ENABLE_SEMAPHORE_BNO055
+    xSemaphoreGiveFromISR(ahrs_bno055::semaphore_bno055, NULL); // セマフォを与える
+#endif
+    return true;
+  }
+  bool reset() {
+    this->m_rest_flag = true;
+    return this->m_rest_flag;
+  }
+
+private:
+  inline bool is_zero_range(float value) {
+    return !(value < 0.0001f && value > -0.0001f);
+  }
+  inline float deg_correction(float deg) {
+    if (deg >= 180.0f) {
+      return deg - 360.0f;
+    } else if (deg < -180.0f) {
+      return deg + 360.0f;
     } else {
-      return mrd_wire0_init_i2c(a_i2c0_speed, a_pinSDA, a_pinSCL);
+      return deg;
     }
   }
-
-  bool refresh(Meridim90Union &a_meridim) override {
-    a_meridim.sval[2] = mrd.float2HfShort(ahrs.read[0]);   // IMU/AHRS_acc_x
-    a_meridim.sval[3] = mrd.float2HfShort(ahrs.read[1]);   // IMU/AHRS_acc_y
-    a_meridim.sval[4] = mrd.float2HfShort(ahrs.read[2]);   // IMU/AHRS_acc_z
-    a_meridim.sval[5] = mrd.float2HfShort(ahrs.read[3]);   // IMU/AHRS_gyro_x
-    a_meridim.sval[6] = mrd.float2HfShort(ahrs.read[4]);   // IMU/AHRS_gyro_y
-    a_meridim.sval[7] = mrd.float2HfShort(ahrs.read[5]);   // IMU/AHRS_gyro_z
-    a_meridim.sval[8] = mrd.float2HfShort(ahrs.read[6]);   // IMU/AHRS_mag_x
-    a_meridim.sval[9] = mrd.float2HfShort(ahrs.read[7]);   // IMU/AHRS_mag_y
-    a_meridim.sval[10] = mrd.float2HfShort(ahrs.read[8]);  // IMU/AHRS_mag_z
-    a_meridim.sval[11] = mrd.float2HfShort(ahrs.read[15]); // temperature
-    a_meridim.sval[12] = mrd.float2HfShort(ahrs.read[12]); // DMP_ROLL推定値
-    a_meridim.sval[13] = mrd.float2HfShort(ahrs.read[13]); // DMP_PITCH推定値
-    a_meridim.sval[14] = mrd.float2HfShort(ahrs.read[14]); // DMP_YAW推定値
-    return true;
-  }
-  bool reset() override {
-    ahrs.yaw_origin = ahrs.yaw_source;
-    return true;
-  };
-
-  /////////////
-
-  //------------------------------------------------------------------------------------
-  //  初期設定
-  //------------------------------------------------------------------------------------
-
-  /// @brief Wire0 I2C通信を初期化し, 指定されたクロック速度で設定する.
-  /// @param a_i2c0_speed I2C通信のクロック速度です.
-  /// @param a_pinSDA SDAのピン番号. 下記と合わせて省略可.
-  /// @param a_pinSCL SCLのピン番号. 上記と合わせて省略可.
-  bool mrd_wire0_init_i2c(int a_i2c0_speed, int a_pinSDA = -1, int a_pinSCL = -1) {
-    if (a_pinSDA == -1 && a_pinSCL == -1) {
-      Wire.begin();
-    } else {
-      Wire.begin(a_pinSDA, a_pinSCL);
+  short float2HfShort(float val) {
+    int _x = round(val * 100);
+    if (_x > 32766) {
+      _x = 32767;
+    } else if (_x < -32766) {
+      _x = -32767;
     }
-    Wire.setClock(a_i2c0_speed);
-    return true;
+    return static_cast<short>(_x);
   }
 
-  /// @brief 指定されたIMU/AHRSタイプに応じて適切なセンサの初期化を行います.
-  /// @param a_imuahrs_type 使用するセンサのタイプを示す列挙型です（MPU6050, MPU9250, BNO055）.
-  /// @param a_i2c0_speed I2C通信のクロック速度です.
-  /// @param a_ahrs AHRSの値を保持する構造体.
-  /// @param a_pinSDA SDAのピン番号.下記と合わせて省略可.
-  /// @param a_pinSCL SCLのピン番号.上記と合わせて省略可.
-  /// @return センサが正しく初期化された場合はtrueを, そうでない場合はfalseを返す.
+private:
+  // Task Information
+  const char *m_task_name = "mrd_ahrs_BNO055"; ///! 表示用タスク名
+  const uint32_t m_stack_depth = (1 * 4096);   ///! スタックメモリ量
+  UBaseType_t m_priority = 10;                 ///! 優先度
+  TaskHandle_t task_handle;                    ///! タスクハンドル
+  BaseType_t core_id = 1;                      ///! 実行するコア
 
-  //------------------------------------------------------------------------------------
-  //  センサデータの取得処理
-  //------------------------------------------------------------------------------------
+  ahrs_bno055::st_data a_ahrs; ///! MPU6050のAHRSデータ
+  ahrs_bno055::thread_args *param = new ahrs_bno055::thread_args();
+
+  bool m_rest_flag = false;
+  float yaw_origin = 0.0;
 };
 
-#endif // MRD_AHRS_BNO055_HPP
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#undef DEBUG_OUTPUT_BNO055
+#undef ENABLE_PIN_BNO055
+
+#endif // __MRD_MODULE_AHRS_BNO055_HPP__

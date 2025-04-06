@@ -12,21 +12,26 @@
 
 // TODO: (未実装)
 // ライブラリ導入
-#include <mrd_plugin/i_mrd_servo.hpp>
+#include <mrd_module/mrd_plugin/i_mrd_plugin_servo.hpp>
 
-class MrdServoFutabaRSxTTL : public I_Meridian_Servo {
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class MrdServoFutabaRSxTTL : public IMeridianServo {
 public:
   MrdServoFutabaRSxTTL() {}
   ~MrdServoFutabaRSxTTL() {}
 
 public:
-  const char *get_name() { return "RSxTTL(FUTABA)"; };
+  const char *get_name() { return "RSxTTL(FUTABA)"; }
   bool setup() override { return true; }
-
-  bool write(int a_id, int value) override {};
-  int read(int a_id) override {};
-
-  bool refresh(Meridim90Union &a_meridim) override { return true; }
+  bool input(Meridim90 &a_meridim) override { return true; }
+  bool output(Meridim90 &a_meridim) override { return true; }
 };
+
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
 
 #endif // MRD_SERVO_FUTABA_RSX_TTL_HPP

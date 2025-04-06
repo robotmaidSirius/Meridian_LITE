@@ -7,17 +7,23 @@
  * @copyright Copyright (c) 2025-.
  *
  */
-#ifndef I_MRD_PLUGIN_SD_HPP
-#define I_MRD_PLUGIN_SD_HPP
+#ifndef __I_MRD_PLUGIN_SD_HPP__
+#define __I_MRD_PLUGIN_SD_HPP__
 
 #include "i_mrd_plugin.hpp"
 
-class I_Meridian_SD : public I_Meridian_Plugin {
+namespace meridian {
+namespace modules {
+namespace plugin {
+
+class IMeridianSD : public IMeridianPlugin {
 public:
   virtual bool write(uint16_t address, uint8_t data) = 0;
   virtual uint8_t read(uint16_t address) = 0;
-
-  bool refresh(Meridim90Union &a_meridim) override { return false; };
 };
 
-#endif // I_MRD_PLUGIN_SD_HPP
+} // namespace plugin
+} // namespace modules
+} // namespace meridian
+
+#endif // __I_MRD_PLUGIN_SD_HPP__
