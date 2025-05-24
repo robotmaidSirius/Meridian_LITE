@@ -15,10 +15,11 @@ EthernetUDP udp;
 #ifndef SETTINGS_DEFAULT_PIN_ETHERNET_CS
 #define SETTINGS_DEFAULT_PIN_ETHERNET_CS 5
 #endif
-// #ifndef SETTINGS_DEFAULT_MAC_ADDRESS
-// #define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00"
-//  #error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00" を指定してください。
-// #endif
+#ifndef SETTINGS_DEFAULT_MAC_ADDRESS
+#ifndef ETHERNET_DEFAULT_PIN_RESET
+#error SETTINGS_DEFAULT_MAC_ADDRESS が未設定の場合はランダムMACアドレスを設定しますが、#define ETHERNET_DEFAULT_PIN_RESET (GPIO-PIN) で、リセットPINを指定してください。
+#endif
+#endif
 inline byte *toMAC(String mac) {
   static byte mac_str[6];
   char temp[3];
