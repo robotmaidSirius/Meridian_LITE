@@ -15,10 +15,10 @@ EthernetUDP udp;
 #ifndef SETTINGS_DEFAULT_PIN_ETHERNET_CS
 #define SETTINGS_DEFAULT_PIN_ETHERNET_CS 5
 #endif
-#ifndef SETTINGS_DEFAULT_MAC_ADDRESS
-#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00"
-// #error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00" を指定してください。
-#endif
+// #ifndef SETTINGS_DEFAULT_MAC_ADDRESS
+// #define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00"
+//  #error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00" を指定してください。
+// #endif
 inline byte *toMAC(String mac) {
   static byte mac_str[6];
   char temp[3];
@@ -45,8 +45,14 @@ inline byte *toMAC(String mac) {
 bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
                    HardwareSerial &a_serial) {
   bool result = true;
-
+#if defined(SETTINGS_DEFAULT_MAC_ADDRESS)
   byte *mac = toMAC(SETTINGS_DEFAULT_MAC_ADDRESS);
+#else
+  byte *mac = new byte[6]{0x0E, 0x00, 0x00, 0x00, 0x00, 0x00};
+  for (int i = 1; i < 6; i++) {
+    mac[i] = random(0, 255);
+  }
+#endif
   Ethernet.setCsPin(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
 #ifdef ETHERNET_DEFAULT_PIN_RESET
   Ethernet.setRstPin(ETHERNET_DEFAULT_PIN_RESET);
