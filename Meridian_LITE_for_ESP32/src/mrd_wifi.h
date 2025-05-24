@@ -16,7 +16,8 @@ EthernetUDP udp;
 #define SETTINGS_DEFAULT_PIN_ETHERNET_CS 5
 #endif
 #ifndef SETTINGS_DEFAULT_MAC_ADDRESS
-#error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "00:00:00:00:00:00" を指定してください。
+#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00"
+// #error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "70:B3:D5:1F:00:00" を指定してください。
 #endif
 inline byte *toMAC(String mac) {
   static byte mac_str[6];
@@ -65,10 +66,6 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
       result = true;
     }
   }
-  a_serial.print("Network report:\n");
-  a_serial.printf("  %s\n", Ethernet.linkReport());
-  a_serial.printf("  %s\n", Ethernet.speedReport());
-  a_serial.printf("  %s\n", Ethernet.duplexReport());
 
   // start UDP
   if (true == result) {

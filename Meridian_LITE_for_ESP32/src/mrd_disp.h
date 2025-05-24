@@ -179,10 +179,12 @@ public:
                        " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
       m_serial.print("ESP32's"); // ESP32自身のIPアドレスの表示
-      m_serial.printf("  localIP: %s\n", Ethernet.localIP().toString().c_str());
-      m_serial.printf("  subnetMask: %s\n", Ethernet.subnetMask().toString().c_str());
-      m_serial.printf("  gatewayIP: %s\n", Ethernet.gatewayIP().toString().c_str());
-      m_serial.printf("  dnsServerIP: %s\n", Ethernet.dnsServerIP().toString().c_str());
+      m_serial.printf("  %s/%s/%s\n", Ethernet.linkReport(), Ethernet.speedReport(), Ethernet.duplexReport());
+      m_serial.printf("  LocalIP: %s\n", Ethernet.localIP().toString().c_str());
+      m_serial.printf("  SUBNET : %s\n", Ethernet.subnetMask().toString().c_str());
+      m_serial.printf("  GATEWAY: %s\n", Ethernet.gatewayIP().toString().c_str());
+      m_serial.printf("  DNS    : %s\n", Ethernet.dnsServerIP().toString().c_str());
+      m_serial.printf("  MAC Address: %s\n", Ethernet.macAddressReport());
     }
   }
 
