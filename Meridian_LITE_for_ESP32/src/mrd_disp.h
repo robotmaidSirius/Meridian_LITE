@@ -8,6 +8,7 @@
 #include "mrd_util.h"
 
 // ライブラリ導入
+#include <Ethernet3.h>
 #include <WiFi.h>
 
 //==================================================================================================
@@ -177,8 +178,11 @@ public:
       m_serial.println("ESP32's IP address => " + String(FIXED_IP_ADDR) +
                        " (*Fixed)"); // ESP32自身のIPアドレスの表示
     } else {
-      m_serial.print("ESP32's IP address => "); // ESP32自身のIPアドレスの表示
-      m_serial.println(WiFi.localIP().toString());
+      m_serial.print("ESP32's"); // ESP32自身のIPアドレスの表示
+      m_serial.printf("  localIP: %s\n", Ethernet.localIP().toString().c_str());
+      m_serial.printf("  subnetMask: %s\n", Ethernet.subnetMask().toString().c_str());
+      m_serial.printf("  gatewayIP: %s\n", Ethernet.gatewayIP().toString().c_str());
+      m_serial.printf("  dnsServerIP: %s\n", Ethernet.dnsServerIP().toString().c_str());
     }
   }
 

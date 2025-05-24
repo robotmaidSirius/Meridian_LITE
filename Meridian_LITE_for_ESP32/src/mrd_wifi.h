@@ -7,8 +7,8 @@
 #include "main.h"
 
 // ライブラリ導入
-#include <Ethernet2.h>
-#include <EthernetUdp2.h>
+#include <Ethernet3.h>
+#include <EthernetUdp3.h>
 #include <SPI.h>
 EthernetUDP udp;
 
@@ -43,8 +43,14 @@ inline byte *toMAC(String mac) {
 /// @return 初期化に成功した場合はtrueを, 失敗した場合はfalseを返す.
 bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
                    HardwareSerial &a_serial) {
+  bool result = true;
+
   byte *mac = toMAC(SETTINGS_DEFAULT_MAC_ADDRESS);
-  Ethernet.init(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
+  Ethernet.setCsPin(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
+#ifdef ETHERNET_DEFAULT_PIN_RESET
+  Ethernet.setRstPin(ETHERNET_DEFAULT_PIN_RESET);
+#endif
+  Ethernet.init();
 
   if (MODE_FIXED_IP) { // IPアドレスを固定する場合
     IPAddress ip;
@@ -55,25 +61,19 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
     subnet.fromString(FIXED_IP_SUBNET);
     Ethernet.begin(mac, ip, gateway, subnet);
   } else { // IPアドレスをDHCPで取得する場合
-    Ethernet.begin(mac);
-  }
-  int ret = Ethernet.maintain();
-  bool result = false;
-  switch (ret) {
-  case DHCP_CHECK_NONE:
-  case DHCP_CHECK_REBIND_OK:
-  case DHCP_CHECK_RENEW_OK:
-    if (0 != a_udp.begin(UDP_SEND_PORT)) { // UDPのポート番号を指定
+    if (0 != Ethernet.begin(mac)) {
       result = true;
     }
-    break;
-  case DHCP_CHECK_RENEW_FAIL:
-  case DHCP_CHECK_REBIND_FAIL:
-  default:
-    result = false;
-    break;
   }
+  a_serial.print("Network report:\n");
+  a_serial.printf("  %s\n", Ethernet.linkReport());
+  a_serial.printf("  %s\n", Ethernet.speedReport());
+  a_serial.printf("  %s\n", Ethernet.duplexReport());
 
+  // start UDP
+  if (true == result) {
+    udp.begin(UDP_SEND_PORT);
+  }
   return result;
 }
 
