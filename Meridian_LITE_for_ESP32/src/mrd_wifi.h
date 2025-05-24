@@ -16,15 +16,14 @@ EthernetUDP udp;
 #define SETTINGS_DEFAULT_PIN_ETHERNET_CS 5
 #endif
 #ifndef SETTINGS_DEFAULT_MAC_ADDRESS
-#define SETTINGS_DEFAULT_MAC_ADDRESS "DE:AD:BE:EF:FE:ED"
-#error "MACアドレスが設定されていません。指定してください。 -DSETTINGS_DEFAULT_MAC_ADDRESS=00:00:00:00:00:00で指定してください。"
+#error MACアドレスが設定されていません。#define SETTINGS_DEFAULT_MAC_ADDRESS "00:00:00:00:00:00" を指定してください。
 #endif
 inline byte *toMAC(String mac) {
   static byte mac_str[6];
   char temp[3];
   int i;
   for (i = 0; i < 6; i++) {
-    if (mac.length() < (i * 3 + 2)) {
+    if (mac.length() > (i * 3 + 2)) {
       temp[0] = mac[i * 3 + 0];
       temp[1] = mac[i * 3 + 1];
       temp[2] = 0x00;
@@ -45,7 +44,6 @@ inline byte *toMAC(String mac) {
 bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
                    HardwareSerial &a_serial) {
   byte *mac = toMAC(SETTINGS_DEFAULT_MAC_ADDRESS);
-  byte ip[] = {10, 0, 1, 11};
   Ethernet.init(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
 
   if (MODE_FIXED_IP) { // IPアドレスを固定する場合
@@ -65,7 +63,7 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
   case DHCP_CHECK_NONE:
   case DHCP_CHECK_REBIND_OK:
   case DHCP_CHECK_RENEW_OK:
-    if (0 == a_udp.begin(UDP_SEND_PORT)) { // UDPのポート番号を指定
+    if (0 != a_udp.begin(UDP_SEND_PORT)) { // UDPのポート番号を指定
       result = true;
     }
     break;
