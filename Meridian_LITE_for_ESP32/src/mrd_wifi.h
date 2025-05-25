@@ -76,7 +76,14 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
 
   // start UDP
   if (true == result) {
-    udp.begin(UDP_SEND_PORT);
+    int ret = udp.begin(UDP_RESV_PORT);
+    if (0 == ret) {
+      a_serial.println(F("UDP begin failed"));
+      result = false;
+    } else {
+      a_serial.print(F("UDP started on port: "));
+      a_serial.println(UDP_RESV_PORT);
+    }
   }
   return result;
 }
@@ -89,8 +96,9 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
 bool mrd_wifi_udp_receive(byte *a_meridim_bval, int a_len, EthernetUDP &a_udp) {
   if (a_udp.parsePacket() >= a_len) // データの受信バッファ確認
   {
-    a_udp.read(a_meridim_bval, a_len); // データの受信
-    return true;
+    if (0 < a_udp.read(a_meridim_bval, a_len)) { // データの受信
+      return true;
+    }
   }
   return false; // バッファにデータがない
 }
