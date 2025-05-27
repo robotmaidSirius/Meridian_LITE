@@ -54,6 +54,9 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
     mac[i] = random(0, 255);
   }
 #endif
+#ifdef UDP_HOST_NAME
+  Ethernet.setHostname(UDP_HOST_NAME);
+#endif
   Ethernet.setCsPin(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
 #ifdef ETHERNET_DEFAULT_PIN_RESET
   Ethernet.setRstPin(ETHERNET_DEFAULT_PIN_RESET);
@@ -94,8 +97,7 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
 /// @param a_udp 使用するWiFiUDPのインスタンス
 /// @return 受信した場合はtrueを, 受信しなかった場合はfalseを返す.
 bool mrd_wifi_udp_receive(byte *a_meridim_bval, int a_len, EthernetUDP &a_udp) {
-  if (a_udp.parsePacket() >= a_len) // データの受信バッファ確認
-  {
+  if (a_udp.parsePacket() >= a_len) {            // データの受信バッファ確認
     if (0 < a_udp.read(a_meridim_bval, a_len)) { // データの受信
       return true;
     }
