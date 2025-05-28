@@ -7,6 +7,7 @@
 #include "main.h"
 
 // ライブラリ導入
+#include <Dns.h>
 #include <Ethernet3.h>
 #include <EthernetUdp3.h>
 #include <SPI.h>
@@ -20,6 +21,9 @@ EthernetUDP udp;
 #error SETTINGS_DEFAULT_MAC_ADDRESS が未設定の場合はランダムMACアドレスを設定しますが、#define ETHERNET_DEFAULT_PIN_RESET (GPIO-PIN) で、リセットPINを指定してください。
 #endif
 #endif
+IPAddress _WIFI_SEND_IP; // UDP送信先IPアドレス
+bool enable_send = true; // UDP送信を有効にするかどうか
+
 inline byte *toMAC(String mac) {
   static byte mac_str[6];
   char temp[3];
@@ -50,12 +54,13 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
   byte *mac = toMAC(SETTINGS_DEFAULT_MAC_ADDRESS);
 #else
   byte *mac = new byte[6]{0x0E, 0x00, 0x00, 0x00, 0x00, 0x00};
-  for (int i = 1; i < 6; i++) {
+  for (int i = 0; i < 6; i++) {
     mac[i] = random(0, 255);
   }
+  mac[0] = (mac[0] | 0x02) & 0xFE; // 1bit目：ユニキャスト ビット 2bit目：ローカル管理アドレス
 #endif
-#ifdef UDP_HOST_NAME
-  Ethernet.setHostname(UDP_HOST_NAME);
+#ifdef ETH_HOST_NAME
+  Ethernet.setHostname(ETH_HOST_NAME);
 #endif
   Ethernet.setCsPin(SETTINGS_DEFAULT_PIN_ETHERNET_CS);
 #ifdef ETHERNET_DEFAULT_PIN_RESET
@@ -73,6 +78,12 @@ bool mrd_wifi_init(EthernetUDP &a_udp, const char *a_ssid, const char *a_pass,
     Ethernet.begin(mac, ip, gateway, subnet);
   } else { // IPアドレスをDHCPで取得する場合
     if (0 != Ethernet.begin(mac)) {
+      DNSClient dns;
+      dns.begin(Ethernet.dnsServerIP()); // DNSサーバーを開始
+      if (1 != dns.getHostByName(WIFI_SEND_IP, _WIFI_SEND_IP)) {
+        // Send禁止
+        enable_send = false;
+      }
       result = true;
     }
   }
@@ -112,9 +123,11 @@ bool mrd_wifi_udp_receive(byte *a_meridim_bval, int a_len, EthernetUDP &a_udp) {
 /// @return 送信完了時にtrueを返す.
 /// ※WIFI_SEND_IP, UDP_SEND_PORTを関数内で使用.
 bool mrd_wifi_udp_send(byte *a_meridim_bval, int a_len, EthernetUDP &a_udp) {
-  a_udp.beginPacket(WIFI_SEND_IP, UDP_SEND_PORT); // UDPパケットの開始
-  a_udp.write(a_meridim_bval, a_len);             // データの書き込み
-  a_udp.endPacket();                              // UDPパケットの終了
+  if (true == enable_send) {
+    a_udp.beginPacket(_WIFI_SEND_IP, UDP_SEND_PORT); // UDPパケットの開始
+    a_udp.write(a_meridim_bval, a_len);              // データの書き込み
+    a_udp.endPacket();                               // UDPパケットの終了
+  }
   return true;
 }
 
