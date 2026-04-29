@@ -11,4 +11,4 @@ bool mrd_servo_ftc_x() {
   return false;
 }
 
-#endif // __MERIDIAN_SERVO_FUTABA_RSxTTL_H__
+#endif // __MERIDIAN_SERVO_FEETECH_H__

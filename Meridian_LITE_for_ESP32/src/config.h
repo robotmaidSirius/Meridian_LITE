@@ -50,7 +50,7 @@
 //   36          -  OK/アナログ入力のみ（PD/PD/出力不可）
 
 //==================================================================================================
-//  サーボIDとロボット部位、軸との対応表 (KHR-3HVの例)
+//  サーボIDとロボット部位, 軸との対応表 (KHR-3HVの例)
 //==================================================================================================
 //
 // ID    Parts/Axis <ICS_Left_Upper SIO1,SIO2>
@@ -123,7 +123,7 @@
 #define MRD_SERVO_SLOTS 15  // Meridim配列の1系統あたりの最大接続サーボ数(デフォルトは15)
 
 // 各種ハードウェアのマウント有無
-#define MOUNT_SD      0           // SDカードリーダーの有無s(0:なし, 1:あり)
+#define MOUNT_SD      0           // SDカードリーダーの有無(0:なし, 1:あり)
 #define MOUNT_IMUAHRS BNO055_AHRS // IMU/AHRSの搭載 NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS
 #define MOUNT_PAD     PC          // ジョイパッドの搭載 PC, MERIMOTE, BLUERETRO, KRR5FH, WIIMOTE
 
@@ -166,7 +166,7 @@
 // #define I2C1_MERIMOTE_ADDR 0x58 // MerimoteのI2Cアドレス
 
 // SPI設定
-#define SPI0_SPEED 6000000 // SPI通信の速度(6000000kHz推奨)
+#define SPI0_SPEED 30000000 // SPI通信の速度(30MHz)
 
 // PC接続関連設定
 #define SERIAL_PC_BPS     115200 // PCとのシリアル速度(モニタリング表示用)
@@ -222,7 +222,6 @@
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
 int IXL_MT[IXL_MAX] = {
-    // L系統のマウント状態
     43, // [00]頭ヨー
     43, // [01]左肩ピッチ
     43, // [02]左肩ロール
@@ -248,7 +247,6 @@ int IXL_MT[IXL_MAX] = {
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
 int IXR_MT[IXR_MAX] = {
-    // R系統のマウント状態
     43, // [00]腰ヨー
     43, // [01]右肩ピッチ
     43, // [02]右肩ロール
@@ -325,7 +323,6 @@ int IXL_CW[IXL_MAX] = {
 
 // R系統のサーボ回転方向補正(1:変更なし, -1:逆転)
 int IXR_CW[IXR_MAX] = {
-    // R系統の正転逆転
     1, // [00]腰ヨー
     1, // [01]右肩ピッチ
     1, // [02]右肩ロール
@@ -359,7 +356,7 @@ float IXL_TRIM[IXL_MAX] = {
     0.0,     // [11]追加サーボ用
     0.0,     // [12]追加サーボ用
     0.0,     // [13]追加サーボ用
-    0.0,     // [14]追加サーボ用
+    0.0      // [14]追加サーボ用
 };
 
 // R系統のトリム値(degree)
@@ -378,7 +375,7 @@ float IXR_TRIM[IXR_MAX] = {
     0.0,    // [11]追加サーボ用
     0.0,    // [12]追加サーボ用
     0.0,    // [13]追加サーボ用
-    0.0,    // [14]追加サーボ用
+    0.0     // [14]追加サーボ用
 };
 
 //-------------------------------------------------------------------------
@@ -514,7 +511,7 @@ float IXR_TRIM[IXR_MAX] = {
 // #define MRD_CKSM        89 // チェックサム (MRDM_LEN - 1)
 
 // エラービット MRD_ERR_CODEの上位8bit分
-#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし、1:エラー検出)
+#define ERRBIT_15_ESP_PC       15 // ESP32 → PC のUDP受信エラー (0:エラーなし, 1:エラー検出)
 #define ERRBIT_14_PC_ESP       14 // PC → ESP32 のUDP受信エラー
 #define ERRBIT_13_ESP_TSY      13 // ESP32 → TeensyのSPI受信エラー
 #define ERRBIT_12_TSY_ESP      12 // Teensy → ESP32 のSPI受信エラー

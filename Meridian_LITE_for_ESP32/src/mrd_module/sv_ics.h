@@ -3,6 +3,7 @@
 
 // ヘッダファイルの読み込み
 #include "mrd_common.h"
+#include "gs2d_krs.h"
 
 // ライブラリ導入
 #include <IcsHardSerialClass.h>
@@ -16,20 +17,20 @@
 /// @param a_cmd サーボのコマンド
 /// @param a_tgt サーボの目標位置
 /// @param a_tgt_past 前回のサーボの目標位置
-/// @param a_tgt_trim サーボの補正値
+/// @param a_trim サーボの補正値
 /// @param a_cw サーボの回転方向補正値
 /// @param a_err_cnt サーボのエラーカウント
 /// @param a_stat サーボのステータス
-/// @param ics サーボクラスのインスタンス
+/// @param a_ics サーボクラスのインスタンス
 /// @param a_mrd Meridianクラスのインスタンス
-float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_past, int a_trim,
-                            int a_cw, int &a_err_cnt, uint16_t &a_stat, IcsHardSerialClass &ics,
+float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_past, float a_trim,
+                            int a_cw, int &a_err_cnt, uint16_t &a_stat, IcsHardSerialClass &a_ics,
                             MERIDIANFLOW::Meridian &a_mrd) {
   int val_tmp = 0;
   if (a_cmd == 1) { // コマンドが1ならPos指定
-    val_tmp = ics.setPos(a_servo_id, a_mrd.Deg2Krs(a_tgt, a_trim, a_cw));
+    val_tmp = a_ics.setPos(a_servo_id, a_mrd.Deg2Krs(a_tgt, a_trim, a_cw));
   } else { // コマンドが0等なら脱力して値を取得
-    val_tmp = ics.setFree(a_servo_id);
+    val_tmp = a_ics.setFree(a_servo_id);
   }
 
   if (val_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
@@ -58,13 +59,13 @@ void mrd_sv_drive_ics_double(Meridim90Union &a_meridim, ServoParam &a_sv,
                              MERIDIANFLOW::Meridian &a_mrd) {
   for (int i = 0; i < a_sv.num_max; i++) {
     // L系統サーボの処理
-    if (a_sv.ixl_mount[i]) { // 43は近藤科学のICSサーボ
+    if (a_sv.ixl_mount[i]) { // サーボがマウントされている場合
       a_sv.ixl_tgt[i] = mrd_servo_process_ics(
           a_sv.ixl_id[i], a_meridim.sval[(i * 2) + 20], a_sv.ixl_tgt[i], a_sv.ixl_tgt_past[i],
           a_sv.ixl_trim[i], a_sv.ixl_cw[i], a_sv.ixl_err[i], a_sv.ixl_stat[i], a_ics_L, a_mrd);
     }
     // R系統サーボの処理
-    if (a_sv.ixr_mount[i]) { // 43は近藤科学のICSサーボ
+    if (a_sv.ixr_mount[i]) { // サーボがマウントされている場合
       a_sv.ixr_tgt[i] = mrd_servo_process_ics(
           a_sv.ixr_id[i], a_meridim.sval[(i * 2) + 50], a_sv.ixr_tgt[i], a_sv.ixr_tgt_past[i],
           a_sv.ixr_trim[i], a_sv.ixr_cw[i], a_sv.ixr_err[i], a_sv.ixr_stat[i], a_ics_R, a_mrd);
