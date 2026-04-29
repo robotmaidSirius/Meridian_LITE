@@ -200,8 +200,8 @@
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-#define MOUNT_SERVO_TYPE_L 43 // L系統のコマンドサーボの種類
-#define MOUNT_SERVO_TYPE_R 43 // R系統のコマンドサーボの種類
+#define MOUNT_SERVO_TYPE_L KOICS3 // L系統のコマンドサーボの種類
+#define MOUNT_SERVO_TYPE_R KOICS3 // R系統のコマンドサーボの種類
 
 // サーボ関連設定
 #define SERVO_BAUDRATE_L    1250000 // L系統のICSサーボの通信速度bps
@@ -221,7 +221,7 @@
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-int IXL_MT[IXL_MAX] = {
+static int IXL_MT[IXL_MAX] = {
     43, // [00]頭ヨー
     43, // [01]左肩ピッチ
     43, // [02]左肩ロール
@@ -246,7 +246,7 @@ int IXL_MT[IXL_MAX] = {
 // 43: KOICS3 (KONDO_ICS 3.5 / 3.6),    44: KOPMX (KONDO_PMX)[WIP]
 // 51: JRXBUS (JRPROPO_XBUS)[WIP]
 // 61: FTCSTS (FEETECH_STS)[WIP],       62: FTCSCS (FEETECH_SCS)[WIP]
-int IXR_MT[IXR_MAX] = {
+static int IXR_MT[IXR_MAX] = {
     43, // [00]腰ヨー
     43, // [01]右肩ピッチ
     43, // [02]右肩ロール
@@ -265,7 +265,7 @@ int IXR_MT[IXR_MAX] = {
 };
 
 // L系統のコード上のサーボIndexに対し, 実際に呼び出すハードウェアのID番号
-int IXL_ID[IXL_MAX] = {
+static int IXL_ID[IXL_MAX] = {
     0,  // [00]頭ヨー
     1,  // [01]左肩ピッチ
     2,  // [02]左肩ロール
@@ -284,7 +284,7 @@ int IXL_ID[IXL_MAX] = {
 };
 
 // R系統のコード上のサーボIndexに対し, 実際に呼び出すハードウェアのID番号
-int IXR_ID[IXR_MAX] = {
+static int IXR_ID[IXR_MAX] = {
     0,  // [00]腰ヨー
     1,  // [01]右肩ピッチ
     2,  // [02]右肩ロール
@@ -303,7 +303,7 @@ int IXR_ID[IXR_MAX] = {
 };
 
 // L系統のサーボ回転方向補正(1:変更なし, -1:逆転)
-int IXL_CW[IXL_MAX] = {
+static int IXL_CW[IXL_MAX] = {
     1, // [00]頭ヨー
     1, // [01]左肩ピッチ
     1, // [02]左肩ロール
@@ -322,7 +322,7 @@ int IXL_CW[IXL_MAX] = {
 };
 
 // R系統のサーボ回転方向補正(1:変更なし, -1:逆転)
-int IXR_CW[IXR_MAX] = {
+static int IXR_CW[IXR_MAX] = {
     1, // [00]腰ヨー
     1, // [01]右肩ピッチ
     1, // [02]右肩ロール
@@ -341,7 +341,7 @@ int IXR_CW[IXR_MAX] = {
 };
 
 // L系統のトリム値(degree)
-float IXL_TRIM[IXL_MAX] = {
+static float IXL_TRIM[IXL_MAX] = {
     0.0,     // [00]頭ヨー
     -20.42,  // [01]左肩ピッチ
     -103.55, // [02]左肩ロール
@@ -360,7 +360,7 @@ float IXL_TRIM[IXL_MAX] = {
 };
 
 // R系統のトリム値(degree)
-float IXR_TRIM[IXR_MAX] = {
+static float IXR_TRIM[IXR_MAX] = {
     -4.28,  // [00]腰ヨー
     0.68,   // [01]右肩ピッチ
     -89.41, // [02]右肩ロール
