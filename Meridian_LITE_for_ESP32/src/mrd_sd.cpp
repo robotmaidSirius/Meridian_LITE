@@ -1,4 +1,3 @@
-
 // ヘッダファイルの読み込み
 #include "mrd_sd.h"
 
@@ -6,73 +5,71 @@
 #include <SD.h> // SDカード用
 
 //==================================================================================================
-//  SDメモリ 関連の処理
+//  SDメモリ関数
 //==================================================================================================
 
 //------------------------------------------------------------------------------------
-//  初期化処理
+//  初期化
 //------------------------------------------------------------------------------------
 
-/// @brief SDカードの初期化を試みる. SDカードがマウントされているか,
-///        及びチップ選択ピンの設定に基づく.
-/// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-/// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-/// @return SDカードの初期化が成功した場合はtrueを,
-///         失敗またはSDカードがマウントされていない場合はfalseを返す.
-bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin) {
+/// @brief SDカードがマウントされているかとチップセレクトピンの設定に基づいて
+///        SDカードの初期化を試みる
+/// @param a_sd_mount SDカードがマウントされているかのブール値
+/// @param a_sd_chipselect_pin SDカードのチップセレクトピン番号
+/// @param a_serial 出力シリアル
+/// @return SDカードの初期化が成功した場合はtrue,
+///         失敗またはSDカードがマウントされていない場合はfalse
+bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin, HardwareSerial &a_serial) {
   if (a_sd_mount) {
-    Serial.print("Initializing SD card... ");
-    // delay(100);
+    a_serial.print("Initializing SD card... ");
     if (!SD.begin(a_sd_chipselect_pin)) {
-      Serial.println("Card failed, or not present.");
-      // delay(100);
+      a_serial.println("Card failed, or not present.");
       return false;
     } else {
-      Serial.println("OK.");
-      // delay(100);
+      a_serial.println("OK.");
       return true;
     }
   }
-  Serial.println("SD not mounted.");
-  // delay(100);
+  a_serial.println("SD not mounted.");
   return false;
 }
 
 //------------------------------------------------------------------------------------
-//  リードライトテスト
+//  読み書きテスト
 //------------------------------------------------------------------------------------
 
-/// @brief SDカードの読み書き機能をテストする. SDカードがマウントされ,
-/// 読み書きのチェックが要求された場合のみテストを実行する.
-/// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-/// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-/// @param a_sd_check_rw SDカードの読み書きをチェックするかどうかのブール値.
-/// @return SDカードの読み書きが成功した場合はtrueを, 失敗した場合はfalseを返す.
-bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw) {
+/// @brief SDカードの読み書き機能をテストする. SDカードがマウントされており
+///        読み書きチェックが要求された場合のみテストを実行する
+/// @param a_sd_mount SDカードがマウントされているかのブール値
+/// @param a_sd_chipselect_pin SDカードのチップセレクトピン番号
+/// @param a_sd_check_rw SDカードの読み書きをチェックするかのブール値
+/// @param a_serial 出力シリアル
+/// @return SDカードの読み書きが成功した場合はtrue, 失敗した場合はfalse
+bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw, HardwareSerial &a_serial) {
   if (a_sd_mount && a_sd_check_rw) {
     File sd_file; // SDカード用
     sd_file = SD.open("/test.txt", FILE_WRITE);
-    delay(1); // SPI安定化検証用
+    delay(1); // SPI安定化用
 
     if (sd_file) {
-      Serial.print("Checking SD card r/w... ");
-      // SD書き込みテスト用のランダムな4桁の数字を生成
-      randomSeed(long(analogRead(A0))); // 未接続ピンのノイズを利用
+      a_serial.print("Checking SD card r/w... ");
+      // SD書き込みテスト用のランダム4桁数字を生成
+      randomSeed(long(analogRead(A0))); // 未接続ピンのノイズを使用
       int rand_number_tmp = random(1000, 9999);
 
-      Serial.print("write code ");
-      Serial.print(rand_number_tmp);
-      // ファイルへの書き込みを実行
+      a_serial.print("write code ");
+      a_serial.print(rand_number_tmp);
+      // ファイル書き込みを実行
       sd_file.println(rand_number_tmp);
-      delayMicroseconds(1); // SPI安定化検証用
+      delayMicroseconds(1); // SPI安定化用
       sd_file.close();
-      delayMicroseconds(10); // SPI安定化検証用
-      // ファイルからの読み込みを実行
+      delayMicroseconds(10); // SPI安定化用
+      // ファイル読み込みを実行
       sd_file = SD.open("/test.txt");
       if (sd_file) {
-        Serial.print(" and read code ");
+        a_serial.print(" and read code ");
         while (sd_file.available()) {
-          Serial.write(sd_file.read());
+          a_serial.write(sd_file.read());
         }
         sd_file.close();
       }
@@ -80,14 +77,10 @@ bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw) 
       delay(10);
       return true;
     } else {
-      Serial.println("Could not open SD test.txt file.");
+      a_serial.println("Could not open SD test.txt file.");
       return false;
     }
   } else {
     return false;
   }
 }
-
-//------------------------------------------------------------------------------------
-//  各種オペレーション
-//------------------------------------------------------------------------------------

@@ -1,32 +1,39 @@
 #ifndef __MERIDIAN_SD_H__
 #define __MERIDIAN_SD_H__
 
+// ヘッダファイルの読み込み
+
+// ライブラリ導入
+#include <Arduino.h>
+
 //==================================================================================================
-//  SDメモリ 関連の処理
+//  SDメモリ関数宣言
 //==================================================================================================
 
 //------------------------------------------------------------------------------------
-//  初期化処理
+//  初期化
 //------------------------------------------------------------------------------------
 
-/// @brief SDカードの初期化を試みる. SDカードがマウントされているか,
-///        及びチップ選択ピンの設定に基づく.
-/// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-/// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-/// @return SDカードの初期化が成功した場合はtrueを,
-///         失敗またはSDカードがマウントされていない場合はfalseを返す.
-bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin);
+/// @brief SDカードがマウントされているかとチップセレクトピンの設定に基づいて
+///        SDカードの初期化を試みる
+/// @param a_sd_mount SDカードがマウントされているかのブール値
+/// @param a_sd_chipselect_pin SDカードのチップセレクトピン番号
+/// @param a_serial 出力シリアル
+/// @return SDカードの初期化が成功した場合はtrue,
+///         失敗またはSDカードがマウントされていない場合はfalse
+bool mrd_sd_init(bool a_sd_mount, int a_sd_chipselect_pin, HardwareSerial &a_serial);
 
 //------------------------------------------------------------------------------------
-//  リードライトテスト
+//  読み書きテスト
 //------------------------------------------------------------------------------------
 
-/// @brief SDカードの読み書き機能をテストする. SDカードがマウントされ,
-/// 読み書きのチェックが要求された場合のみテストを実行する.
-/// @param a_sd_mount SDカードがマウントされているかどうかのブール値.
-/// @param a_sd_chipselect_pin SDカードのチップ選択ピン番号.
-/// @param a_sd_check_rw SDカードの読み書きをチェックするかどうかのブール値.
-/// @return SDカードの読み書きが成功した場合はtrueを, 失敗した場合はfalseを返す.
-bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw);
+/// @brief SDカードの読み書き機能をテストする. SDカードがマウントされており
+///        読み書きチェックが要求された場合のみテストを実行する
+/// @param a_sd_mount SDカードがマウントされているかのブール値
+/// @param a_sd_chipselect_pin SDカードのチップセレクトピン番号
+/// @param a_sd_check_rw SDカードの読み書きをチェックするかのブール値
+/// @param a_serial 出力シリアル
+/// @return SDカードの読み書きが成功した場合はtrue, 失敗した場合はfalse
+bool mrd_sd_check(bool a_sd_mount, int a_sd_chipselect_pin, bool a_sd_check_rw, HardwareSerial &a_serial);
 
 #endif // __MERIDIAN_SD_H__
