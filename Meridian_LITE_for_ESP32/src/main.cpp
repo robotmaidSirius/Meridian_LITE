@@ -20,11 +20,12 @@
 #include "mrd_bt_pad.h"
 #include "mrd_command.h"
 #include "mrd_disp.h"
-// #include "mrd_eeprom.h"
+#include "mrd_eeprom.h"
 #include "mrd_ether.h"
 #include "mrd_move.h"
 #include "mrd_sd.h"
-// #include "mrd_servo.h"
+#include "mrd_servo.h"
+#include "mrd_util.h"
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
 
@@ -251,7 +252,7 @@ void setup() {
 
   // Bluetoothの開始と表示(WIIMOTE)
   if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, wiimote, PIN_LED_BT, Serial);
+    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, PIN_LED_BT, Serial);
     xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
   }
 
