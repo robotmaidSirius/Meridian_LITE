@@ -2,8 +2,7 @@
 #define __MERIDIAN_UTILITY_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
+#include "mrd_common.h"
 
 //==================================================================================================
 // Utility ごく小規模な汎用関数
@@ -153,7 +152,7 @@ const char *mrd_get_line_name(UartLine a_line) {
 /// @param a_msg エラーメッセージ.
 /// @param a_serial 出力先シリアルの指定.
 void mrd_error_stop(int a_led, String a_msg, HardwareSerial &a_serial) {
-  Serial.println(a_msg);
+  a_serial.println(a_msg);
   while (1) {
     digitalWrite(a_led, HIGH);
     delay(250);

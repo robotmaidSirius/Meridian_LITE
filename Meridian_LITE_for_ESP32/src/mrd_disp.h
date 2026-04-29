@@ -1,10 +1,8 @@
-#ifndef __MERIDIAN_MESSAGE_H__
-#define __MERIDIAN_MESSAGE_H__
+#ifndef __MERIDIAN_DISP_H__
+#define __MERIDIAN_DISP_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
 #include "keys.h"
-#include "main.h"
 #include "mrd_util.h"
 
 // ライブラリ導入
@@ -286,4 +284,4 @@ public:
   }
 };
 
-#endif // __MERIDIAN_MESSAGE_H__
+#endif // __MERIDIAN_DISP_H__

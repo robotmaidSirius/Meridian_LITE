@@ -139,7 +139,7 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
   // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_SENSOR_YAW_CALIB) {
     ahrs.yaw_origin = ahrs.yaw_source;
-    String msg_tmp = "cmd: caliblate sensor's yaw.[" + String(MCMD_SENSOR_YAW_CALIB) + "]";
+    String msg_tmp = "cmd: calibrate sensor's yaw.[" + String(MCMD_SENSOR_YAW_CALIB) + "]";
     Serial.println(msg_tmp);
     return true;
   }

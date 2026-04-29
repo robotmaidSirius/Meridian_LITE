@@ -15,29 +15,66 @@
 //==================================================================================================
 
 // ヘッダファイルの読み込み
-#include "main.h"
 #include "config.h"
 #include "keys.h"
+#include "mrd_common.h"
 
 #include "mrd_bt_pad.h"
 #include "mrd_command.h"
 #include "mrd_disp.h"
-#include "mrd_eeprom.h"
 #include "mrd_ether.h"
 #include "mrd_move.h"
 #include "mrd_sd.h"
-#include "mrd_servo.h"
 #include "mrd_util.h"
 #include "mrd_wifi.h"
 #include "mrd_wire0.h"
+
+// ライブラリ導入
+#include <Arduino.h>
 
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
 IcsHardSerialClass ics_R(&Serial2, PIN_EN_R, SERVO_BAUDRATE_R, SERVO_TIMEOUT_R);
 
-// ライブラリ導入
-#include <Arduino.h>
+//------------------------------------------------------------------------------------
+//  クラス・構造体・共用体
+//------------------------------------------------------------------------------------
 
+// Meridim配列用の共用体の設定
+Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
+Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
+Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
+
+// フラグ用変数
+MrdFlags flg;
+
+// シーケンス番号理用の変数
+MrdSq mrdsq;
+
+// タイマー管理用の変数
+MrdTimer tmr;
+
+// エラーカウント用
+MrdErr err;
+
+PadUnion pad_array = {0}; // pad値の格納用配列
+PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
+
+// リモコンのアナログ入力データ
+PadValue pad_analog;
+
+// 6軸or9軸センサーの値
+AhrsValue ahrs;
+
+// サーボ用変数
+ServoParam sv;
+
+// モニタリング設定
+MrdMonitor monitor;
+
+MrdMsgHandler mrd_disp(Serial);
+
+TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
 volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ
@@ -54,6 +91,22 @@ void IRAM_ATTR frame_timer() {
   count_timer++;
   portEXIT_CRITICAL_ISR(&timer_mux);
   xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
+}
+
+//==================================================================================================
+//  関数各種
+//==================================================================================================
+
+///@brief Generate expected sequence number from input.
+///@param a_previous_num Previous sequence number.
+///@return Expected sequence number. (0 to 59,999)
+uint16_t mrd_seq_predict_num(uint16_t a_previous_num) {
+  uint16_t x_tmp = a_previous_num + 1;
+  if (x_tmp > 59999) // Reset counter
+  {
+    x_tmp = 0;
+  }
+  return x_tmp;
 }
 
 //==================================================================================================
