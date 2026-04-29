@@ -59,14 +59,10 @@ MrdTimer tmr;
 // エラーカウント用
 MrdErr err;
 
-PadUnion pad_array = {0}; // pad値の格納用配列
-PadUnion pad_i2c = {0};   // pad値のi2c送受信用配列
+extern PadUnion pad_array; // pad値の格納用配列
 
 // リモコンのアナログ入力データ
 PadValue pad_analog;
-
-// 6軸or9軸センサーの値
-AhrsValue ahrs;
 
 // サーボ用変数
 ServoParam sv;
@@ -156,8 +152,8 @@ void setup() {
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L);         // サーボモータの通信初期設定. Serial1
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R);         // サーボモータの通信初期設定. Serial2
+  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L, ics_L);  // サーボモータの通信初期設定. Serial1
+  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R, ics_R);  // サーボモータの通信初期設定. Serial2
   mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_L); // サーボプロトコルの表示
   mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
 
@@ -177,7 +173,7 @@ void setup() {
     Serial.println("Set EEPROM data from config.");
     // 書き込みデータの作成と書き込み
     if (
-        mrd_eeprom_write(mrd_eeprom_make_data_from_config(sv), EEPROM_PROTECT, Serial)) {
+        mrd_eeprom_write(mrd_eeprom_make_data_from_config(sv, mrd), EEPROM_PROTECT, Serial, flg)) {
       Serial.println("Write EEPROM succeed.");
     } else {
       Serial.println("Write EEPROM failed.");
@@ -193,8 +189,8 @@ void setup() {
   mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE, Serial); //
 
   // EEPROMのリードライトテスト
-  // mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(),
-  //                             CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE);
+  // mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(sv,mrd),
+  //                             CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE, flg);
 
   // SDカードの初期設定とチェック
   mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
@@ -401,7 +397,7 @@ void loop() {
   mrd.monitor_check_flow("[3]", monitor.flow); // デバグ用フロー表示
 
   // @[3-1] MasterCommand group1 の処理
-  execute_master_command_1(s_udp_meridim, flg.meridim_rcvd, sv, Serial);
+  execute_master_command_1(s_udp_meridim, flg.meridim_rcvd, sv, Serial, ics_L, ics_R, flg, mrd);
 
   //------------------------------------------------------------------------------------
   //  [ 4 ] センサー類読み取り
@@ -409,7 +405,7 @@ void loop() {
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS); // BNO055_AHRS
+  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS, mrd, flg); // BNO055_AHRS
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
@@ -420,7 +416,7 @@ void loop() {
   if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
 
     // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val);
+    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
 
     // リモコンの値をmeridimに格納する
     meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
@@ -432,7 +428,7 @@ void loop() {
   mrd.monitor_check_flow("[6]", monitor.flow); // デバグ用フロー表示
 
   // @[6-1] MasterCommand group2 の処理
-  execute_master_command_2(s_udp_meridim, flg.meridim_rcvd, sv, Serial);
+  execute_master_command_2(s_udp_meridim, flg.meridim_rcvd, s_udp_meridim, sv, Serial, ahrs, flg);
 
   //------------------------------------------------------------------------------------
   //  [ 7 ] ESP32内部で位置制御する場合の処理
@@ -483,8 +479,8 @@ void loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STANDALONE) {                                                      // サーボ処理を行うかどうか
-    mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv); // サーボ動作を実行する
+  if (!MODE_ESP32_STANDALONE) {                                                                         // サーボ処理を行うかどうか
+    mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv, ics_L, ics_R, mrd); // サーボ動作を実行する
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -516,7 +512,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[11]", monitor.flow); // デバグ用フロー表示
 
-  execute_master_command_3(s_udp_meridim, flg.meridim_rcvd, sv, Serial);
+  execute_master_command_3(s_udp_meridim, flg.meridim_rcvd, sv, Serial, ics_L, ics_R, flg, mrd);
 
   //------------------------------------------------------------------------------------
   //  [ 12 ] UDP送信信号作成

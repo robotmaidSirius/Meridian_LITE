@@ -5,8 +5,8 @@
 #include "mrd_module/sv_ftbrx.h"
 #include "mrd_module/sv_ics.h"
 
-extern IcsHardSerialClass ics_L;
-extern IcsHardSerialClass ics_R;
+// ライブラリの読み込み
+#include <Meridian.h> // Meridianのライブラリ導入
 
 //==================================================================================================
 //  Servo 関連の処理
@@ -20,7 +20,7 @@ extern IcsHardSerialClass ics_R;
 /// @param a_line UART通信ライン(L, R, またはC).
 /// @param a_servo_type サーボのタイプを示す整数値.
 /// @return サーボがサポートされている場合はtrueを, サポートされていない場合はfalseを返す.
-bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
+bool mrd_servo_begin(UartLine a_line, int a_servo_type, IcsHardSerialClass a_ics) {
   switch (a_servo_type) {
   case 1:
     // single PWM [WIP]
@@ -38,10 +38,7 @@ bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
     // DYNAMIXEL Protocol 2.0 [WIP]
     return false;
   case 43:
-    if (a_line == L)
-      ics_L.begin(); // サーボモータの通信初期設定. Serial1
-    else if (a_line == R)
-      ics_R.begin(); // サーボモータの通信初期設定. Serial2
+    a_ics.begin();
     return true;
   case 44:
     // PMX(KONDO) [WIP]
@@ -70,11 +67,17 @@ bool mrd_servo_begin(UartLine a_line, int a_servo_type) {
 /// @param a_L_type L系統のサーボタイプ.
 /// @param a_R_type R系統のサーボタイプ.
 /// @param a_sv サーボパラメータの構造体.
+/// @param a_ics_L L系統のICSサーボ通信クラスのインスタンス.
+/// @param a_ics_R R系統のICSサーボ通信クラスのインスタンス.
+/// @param a_mrd Meridianクラスのインスタンス.
 /// @return サーボの駆動が成功した場合はtrueを, 失敗した場合はfalseを返す.
-bool mrd_servo_drive_lite(Meridim90Union &a_meridim, int a_L_type, int a_R_type, ServoParam &a_sv) {
+bool mrd_servo_drive_lite(Meridim90Union &a_meridim, int a_L_type, int a_R_type,
+                          ServoParam &a_sv,
+                          IcsHardSerialClass &a_ics_L, IcsHardSerialClass &a_ics_R,
+                          MERIDIANFLOW::Meridian &a_mrd) {
   if (a_L_type == 43 && a_R_type == 43) // ICSサーボがL系R系に設定されていた場合はLR均等送信を実行
   {
-    mrd_sv_drive_ics_double(a_meridim, a_sv);
+    mrd_sv_drive_ics_double(a_meridim, a_sv, a_ics_L, a_ics_R, a_mrd);
     return true;
   } else {
     return false;

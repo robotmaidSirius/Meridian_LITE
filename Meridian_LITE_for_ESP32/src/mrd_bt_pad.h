@@ -9,10 +9,7 @@
 #include <IcsHardSerialClass.h>
 
 ESP32Wiimote wiimote;
-extern IcsHardSerialClass ics_L;
-extern IcsHardSerialClass ics_R;
-extern PadUnion pad_array; // pad値の格納用配列
-extern PadUnion pad_i2c;   // pad値のi2c送受信用配列
+PadUnion pad_array = {0}; // pad値の格納用配列
 
 // リモコン受信ボタンデータの変換テーブル
 constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
@@ -34,6 +31,7 @@ constexpr unsigned short PAD_TABLE_KRC5FH_TO_COMMON[16] = { //
 
 /// @brief KRC-5FHジョイパッドからデータを読み取り, 指定された間隔でデータを更新する.
 /// @param a_interval 読み取り間隔(ミリ秒).
+/// @param a_ics ICS通信のためのIcsHardSerialClassオブジェクト.(参照渡し)
 /// @return 更新されたジョイパッドの状態を64ビット整数で返す.
 uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
   static uint64_t pre_val_tmp = 0; // 前回の値を保持する静的変数
@@ -48,7 +46,7 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
     int krr_analog_tmp[4];             // krrからのアナログ入力データ
     unsigned short pad_common_tmp = 0; // PS準拠に変換後のボタンデータ
     bool rcvd_tmp;                     // 受信機がデータを受信成功したか
-    rcvd_tmp = ics_R.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
+    rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
     delayMicroseconds(2);
 
     if (rcvd_tmp) // リモコンデータが受信できていたら
@@ -192,10 +190,10 @@ uint64_t mrd_bt_read_wiimote() {
 /// @param a_pad_data 64ビットのボタンデータ
 /// @return 64ビット整数に変換された受信データ
 /// @note WIIMOTEの場合は, スレッドがpad_array.ui64valを自動更新.
-uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data) {
+uint64_t mrd_pad_read(PadType a_pad_type, uint64_t a_pad_data, IcsHardSerialClass &a_ics) {
 
   if (a_pad_type == KRR5FH) { // KRR5FH
-    return mrd_pad_read_krc(PAD_INTERVAL, ics_R);
+    return mrd_pad_read_krc(PAD_INTERVAL, a_ics);
   }
 
   if (a_pad_type == WIIMOTE) { // Wiimote

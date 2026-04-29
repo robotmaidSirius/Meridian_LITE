@@ -7,11 +7,12 @@
 // ライブラリ導入
 #include <Wire.h>
 
-extern AhrsValue ahrs;
-
 //==================================================================================================
 //  I2C wire0 関連の処理
 //==================================================================================================
+
+// 6軸or9軸センサーの値
+AhrsValue ahrs;
 
 //------------------------------------------------------------------------------------
 //  初期設定
@@ -185,7 +186,7 @@ void mrd_wire0_Core0_bno055_r(void *args) {
 /// @brief AHRSセンサーからI2C経由でデータを読み取る関数.
 /// MPU6050, MPU9250を想定していますが, MPU9250は未実装.
 /// 各データは`ahrs.read`配列に格納され, 利用可能な場合は`ahrs.result`にコピーされる.
-bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引数のためvoid必須
+bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs, MrdFlags &a_flg) { // ※wireTimer0.beginの引数のためvoid必須
 
   if (MOUNT_IMUAHRS == MPU6050_IMU) {                                // MPU6050
     if (a_ahrs.mpu6050.dmpGetCurrentFIFOPacket(a_ahrs.fifoBuffer)) { // Get new data
@@ -223,7 +224,7 @@ bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引�
       // Temperature
       a_ahrs.read[15] = 0; // Not implemented.
 
-      if (flg.imuahrs_available) {
+      if (a_flg.imuahrs_available) {
         memcpy(a_ahrs.result, a_ahrs.read, sizeof(float) * 16);
       }
       return true;
@@ -245,9 +246,9 @@ bool mrd_wire0_read_ahrs_i2c(AhrsValue &a_ahrs) { // ※wireTimer0.beginの引�
 /// @param a_type 使用するセンサのタイプを示す列挙(MPU6050, MPU9250, BNO055).
 /// @param a_ahrs_result AHRSから読み取った結果を格納した配列.
 /// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
-bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type) {
+bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type, MERIDIANFLOW::Meridian &mrd, MrdFlags &a_flg) {
   if (a_type == BNO055_AHRS) {
-    flg.imuahrs_available = false;
+    a_flg.imuahrs_available = false;
     a_meridim.sval[2] = mrd.float2HfShort(a_ahrs_result[0]);   // IMU/AHRS_acc_x
     a_meridim.sval[3] = mrd.float2HfShort(a_ahrs_result[1]);   // IMU/AHRS_acc_y
     a_meridim.sval[4] = mrd.float2HfShort(a_ahrs_result[2]);   // IMU/AHRS_acc_z
@@ -261,7 +262,7 @@ bool meriput90_ahrs(Meridim90Union &a_meridim, float a_ahrs_result[], int a_type
     a_meridim.sval[12] = mrd.float2HfShort(a_ahrs_result[12]); // DMP_ROLL推定値
     a_meridim.sval[13] = mrd.float2HfShort(a_ahrs_result[13]); // DMP_PITCH推定値
     a_meridim.sval[14] = mrd.float2HfShort(a_ahrs_result[14]); // DMP_YAW推定値
-    flg.imuahrs_available = true;
+    a_flg.imuahrs_available = true;
     return true;
   }
   return false;

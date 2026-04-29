@@ -7,9 +7,6 @@
 
 // ライブラリ導入
 
-extern Meridim90Union s_udp_meridim; // Meridim配列データ送信用(short型, センサや角度は100倍値)
-extern AhrsValue ahrs;
-
 //==================================================================================================
 //  コマンド処理
 //==================================================================================================
@@ -18,8 +15,16 @@ extern AhrsValue ahrs;
 /// @param a_meridim 実行したいコマンドの入ったMeridim配列.(参照渡し)
 /// @param a_flg_exe Meridimの受信成功判定フラグ.
 /// @param a_sv サーボパラメータの構造体.(参照渡し)
+/// @param a_serial シリアル通信クラスのインスタンス.(参照渡し)
+/// @param a_ics_L L系統のICSサーボ通信クラスのインスタンス.(参照渡し)
+/// @param a_ics_R R系統のICSサーボ通信クラスのインスタンス.(参照渡し)
+/// @param a_flg フラグの構造体.(参照渡し)
+/// @param a_mrd Meridianクラスのインスタンス.
 /// @return コマンドを実行した場合はtrue, しなかった場合はfalseを返す.
-bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoParam &a_sv, HardwareSerial &a_serial) {
+bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe,
+                              ServoParam &a_sv, HardwareSerial &a_serial,
+                              IcsHardSerialClass &a_ics_L, IcsHardSerialClass &a_ics_R,
+                              MrdFlags &a_flg, MERIDIANFLOW::Meridian &a_mrd) {
   if (!a_flg_exe) {
     return false;
   }
@@ -41,15 +46,15 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
   // コマンド:MCMD_BOARD_TRANSMIT_ACTIVE (10005) UDP受信の通信周期制御をボード側主導に(デフォルト)
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_ACTIVE) {
-    flg.udp_board_passive = false; // UDP送信をアクティブモードに
-    flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
+    a_flg.udp_board_passive = false; // UDP送信をアクティブモードに
+    a_flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_EEPROM_ENTER_WRITE (10009) EEPROMの書き込みモードスタート
   if (a_meridim.sval[MRD_MASTER] == MCMD_EEPROM_ENTER_WRITE) {
-    flg.eeprom_write_mode = true; // 書き込みモードのフラグをセット
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    a_flg.eeprom_write_mode = true; // 書き込みモードのフラグをセット
+    a_flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
@@ -84,7 +89,7 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     // a_serial.println();
 
     // 書き込みデータの作成と書き込み
-    if (mrd_eeprom_write(array_tmp, EEPROM_PROTECT, a_serial)) {
+    if (mrd_eeprom_write(array_tmp, EEPROM_PROTECT, a_serial, a_flg)) {
       a_serial.println("write EEPROM succeed.");
     } else {
       a_serial.println("write EEPROM failed.");
@@ -108,10 +113,10 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
     // サーボ動作を実行する
     if (!MODE_ESP32_STANDALONE) {
-      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv);
+      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv, a_ics_L, a_ics_R, a_mrd);
     }
 
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    a_flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
@@ -121,9 +126,16 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 /// @brief Master Commandの第2群を実行する. 受信コマンドに基づき, 異なる処理を行う.
 /// @param a_meridim 実行したいコマンドの入ったMeridim配列.(参照渡し)
 /// @param a_flg_exe Meridimの受信成功判定フラグ.
+/// @param a_s_udp_meridim PCに送信するMeridim配列.(参照渡し)
 /// @param a_sv サーボパラメータの構造体.(参照渡し)
+/// @param a_serial シリアル通信のためのHardwareSerialオブジェクト.(参照渡し)
+/// @param a_ahrs AHRS値の構造体.(参照渡し
+/// @param a_flg 各種フラグの構造体.(参照渡し)
 /// @return コマンドを実行した場合はtrue, しなかった場合はfalseを返す.
-bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoParam &a_sv, HardwareSerial &a_serial) {
+bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe,
+                              Meridim90Union &a_s_udp_meridim, ServoParam &a_sv,
+                              HardwareSerial &a_serial, AhrsValue &a_ahrs,
+                              MrdFlags &a_flg) {
   if (!a_flg_exe) {
     return false;
   }
@@ -131,7 +143,7 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
   // コマンド:[0] 全サーボ脱力
   if (a_meridim.sval[MRD_MASTER] == 0) {
-    mrd_servo_all_off(s_udp_meridim);
+    mrd_servo_all_off(a_s_udp_meridim);
     return true;
   }
 
@@ -139,7 +151,7 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
   // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_SENSOR_YAW_CALIB) {
-    ahrs.yaw_origin = ahrs.yaw_source;
+    a_ahrs.yaw_origin = a_ahrs.yaw_source;
     String msg_tmp = "cmd: calibrate sensor's yaw.[" + String(MCMD_SENSOR_YAW_CALIB) + "]";
     Serial.println(msg_tmp);
     return true;
@@ -147,8 +159,8 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
   // コマンド:MCMD_BOARD_TRANSMIT_PASSIVE (10006) UDP受信の通信周期制御をPC側主導に(SSH的な動作)
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_TRANSMIT_PASSIVE) {
-    flg.udp_board_passive = true; // UDP送信をパッシブモードに
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    a_flg.udp_board_passive = true; // UDP送信をパッシブモードに
+    a_flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     String msg_tmp = "cmd: enter passive mode.[" + String(MCMD_BOARD_TRANSMIT_PASSIVE) + "]";
     Serial.println(msg_tmp);
     return true;
@@ -156,13 +168,13 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
   // コマンド:MCMD_FRAMETIMER_RESET) (10007) フレームカウンタを現在時刻にリセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_FRAMETIMER_RESET) {
-    flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
+    a_flg.count_frame_reset = true; // フレームの管理時計をリセットフラグをセット
     return true;
   }
 
   // コマンド:MCMD_BOARD_STOP_DURING (10008) ボードの末端処理を指定時間だけ止める.
   if (a_meridim.sval[MRD_MASTER] == MCMD_BOARD_STOP_DURING) {
-    flg.stop_board_during = true; // ボードの処理停止フラグをセット
+    a_flg.stop_board_during = true; // ボードの処理停止フラグをセット
     // ボードの末端処理をmeridim[2]ミリ秒だけ止める.
 
     String msg_tmp = "cmd: stop ESP32's processing during " + String(int(a_meridim.sval[MRD_STOP_FRAMES])) + " ms.[" + String(MCMD_BOARD_TRANSMIT_PASSIVE) + "]";
@@ -171,8 +183,8 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
     for (int i = 0; i < int(a_meridim.sval[MRD_STOP_FRAMES]); i++) {
       delay(1);
     }
-    flg.stop_board_during = false; // ボードの処理停止フラグをクリア
-    flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
+    a_flg.stop_board_during = false; // ボードの処理停止フラグをクリア
+    a_flg.count_frame_reset = true;  // フレームの管理時計をリセットフラグをセット
     return true;
   }
   return false;
@@ -182,8 +194,13 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 /// @param a_meridim 実行したいコマンドの入ったMeridim配列.(参照渡し)
 /// @param a_flg_exe Meridimの受信成功判定フラグ.
 /// @param a_sv サーボパラメータの構造体.(参照渡し)
+/// @param a_serial シリアル通信のためのHardwareSerialオブジェクト.(参照渡し)
+/// @param a_flg 各種フラグの構造体.(参照渡し)
 /// @return コマンドを実行した場合はtrue, しなかった場合はfalseを返す.
-bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoParam &a_sv, HardwareSerial &a_serial) {
+bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoParam &a_sv,
+                              HardwareSerial &a_serial,
+                              IcsHardSerialClass &a_ics_L, IcsHardSerialClass &a_ics_R,
+                              MrdFlags &a_flg, MERIDIANFLOW::Meridian &a_mrd) {
   if (!a_flg_exe) {
     return false;
   }
@@ -215,7 +232,7 @@ bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
     // サーボ動作を実行する
     if (!MODE_ESP32_STANDALONE) {
-      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv);
+      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv, a_ics_L, a_ics_R, a_mrd);
     }
 
     // サーボの目標値として現在のTRIM値をセットする
@@ -232,7 +249,7 @@ bool execute_master_command_3(Meridim90Union &a_meridim, bool a_flg_exe, ServoPa
 
     // サーボ動作を実行する. サーボはTRIM値を0としつつ, tgtとしてこれまでのTRIM値の角度をキープする
     if (!MODE_ESP32_STANDALONE) {
-      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv); // サーボ動作を実行する
+      mrd_servo_drive_lite(a_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, a_sv, a_ics_L, a_ics_R, a_mrd); // サーボ動作を実行する
     }
 
     // サーボ設定を格納する ####(おかしそう)
