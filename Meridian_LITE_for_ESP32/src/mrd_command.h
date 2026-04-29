@@ -5,7 +5,6 @@
 #include "mrd_common.h"
 
 // ライブラリ導入
-#include <Arduino.h> // HardwareSerial用
 #include <IcsHardSerialClass.h>
 #include <Meridian.h> // Meridianのライブラリ導入
 

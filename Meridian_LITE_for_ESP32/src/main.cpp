@@ -14,12 +14,10 @@
 // ヘッダファイルの読み込み
 #include "keys.h"
 #include "mrd_command.h"
-#include "mrd_common.h"
 #include "mrd_disp.h"
 #include "mrd_eeprom.h"
 #include "mrd_move.h"
 #include "mrd_servo.h"
-#include "mrd_util.h"
 #include "mrd_wire0.h"
 
 // 通信モジュール（排他選択）

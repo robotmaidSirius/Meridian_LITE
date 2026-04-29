@@ -7,7 +7,6 @@
 #include "mrd_util.h"
 
 // ライブラリ導入 (標準Ethernetライブラリ)
-#include <Ethernet.h>
 #include <EthernetUdp.h>
 #include <SPI.h>
 
