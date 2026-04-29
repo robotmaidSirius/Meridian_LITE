@@ -220,8 +220,8 @@ void setup() {
         mrd_error_stop(PIN_ERR_LED, "Please Check '#define FIXED_IP_ADDR, FIXED_IP_GATEWAY, FIXED_IP_SUBNET' in 'keys.h'", Serial);
       }
     }
-    if (mrd_wifi_init(udp, WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {  // wifiの初期化
-      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR); // wifiIPの表示
+    if (mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RECV_PORT, Serial)) { // wifiの初期化
+      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);          // wifiIPの表示
     }
 
   } else { // MODE_ETHER = 1 ならEthernet初期化
@@ -298,7 +298,7 @@ void loop() {
   {
     flg.udp_busy = true; // UDP使用中フラグをアゲる
     if (!MODE_ETHER) {   // 0ならwifi通信
-      mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp);
+      mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, WIFI_SEND_IP, UDP_SEND_PORT);
     } else { // 1なら有線LAN通信
       // 事前にパース済みのIPアドレスを使用
       mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp_et, ether_send_ip, UDP_SEND_PORT);
@@ -320,8 +320,8 @@ void loop() {
     flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (!MODE_ETHER) {                                              // 0ならwifi通信
-        if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp)) // 受信確認
+      if (!MODE_ETHER) {                                         // 0ならwifi通信
+        if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
         {
           flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
         }
