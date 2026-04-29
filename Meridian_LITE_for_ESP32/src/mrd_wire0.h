@@ -8,53 +8,57 @@
 #include <Meridian.h> // Meridianのライブラリ導入
 
 //------------------------------------------------------------------------------------
-//  初期設定
+//  初期化
 //------------------------------------------------------------------------------------
 
-/// @brief Wire0 I2C通信を初期化し, 指定されたクロック速度で設定する.
-/// @param a_i2c0_speed I2C通信のクロック速度です.
-/// @param a_pinSDA SDAのピン番号. 下記と合わせて省略可.
-/// @param a_pinSCL SCLのピン番号. 上記と合わせて省略可.
+/// @brief 指定されたクロック速度でWire0 I2C通信を初期化する
+/// @param a_i2c0_speed I2C通信クロック速度
+/// @param a_pinSDA SDAピン番号. a_pinSCLと共に省略可能. デフォルト -1.
+/// @param a_pinSCL SCLピン番号. a_pinSDAと共に省略可能. デフォルト -1.
+/// @return 完了時にtrueを返す
 bool mrd_wire0_init_i2c(int a_i2c0_speed, int a_pinSDA = -1, int a_pinSCL = -1);
 
-/// @brief MPU6050センサーのDMP(デジタルモーションプロセッサ)を初期化し,
-///        ジャイロスコープと加速度センサーのオフセットを設定する.
-/// @return DMPの初期化が成功した場合はtrue, 失敗した場合はfalseを返す.
+/// @brief MPU6050センサのDMP (Digital Motion Processor) を初期化し,
+///        ジャイロスコープと加速度センサのオフセットを設定する
+/// @return DMP初期化が成功した場合はtrue, 失敗した場合はfalse
 bool mrd_wire0_init_mpu6050_dmp();
 
-/// @brief BNO055センサーの初期化を試みます.
-/// @return BNO055センサーの初期化が成功した場合はtrue, それ以外の場合はfalseを返す.
-///         現在, この関数は常にfalseを返すように設定されています.
+/// @brief BNO055センサの初期化を試みる
+/// @return BNO055初期化が成功した場合はtrue, 検出できなかった場合はfalse
 bool mrd_wire0_init_bno055();
 
-/// @brief 指定されたIMU/AHRSタイプに応じて適切なセンサの初期化を行います.
-/// @param a_imuahrs_type 使用するセンサのタイプを示す列挙型です(MPU6050, MPU9250, BNO055).
-/// @param a_i2c0_speed I2C通信のクロック速度です.
-/// @param a_pinSDA SDAのピン番号.下記と合わせて省略可.
-/// @param a_pinSCL SCLのピン番号.上記と合わせて省略可.
-/// @return センサが正しく初期化された場合はtrueを, そうでない場合はfalseを返す.
+/// @brief 指定されたIMU/AHRSタイプに基づいて適切なセンサを初期化する
+/// @param a_imuahrs_type センサタイプ (0:なし, 1:MPU6050, 2:MPU9250, 3:BNO055)
+/// @param a_i2c0_speed I2C通信クロック速度
+/// @param a_pinSDA SDAピン番号. a_pinSCLと共に省略可能. デフォルト -1.
+/// @param a_pinSCL SCLピン番号. a_pinSDAと共に省略可能. デフォルト -1.
+/// @return センサが正しく初期化された場合はtrue, それ以外はfalse
 bool mrd_wire0_setup(ImuAhrsType a_imuahrs_type, int a_i2c0_speed, int a_pinSDA = -1, int a_pinSCL = -1);
 
 //------------------------------------------------------------------------------------
-//  センサデータの取得処理
+//  センサデータ取得
 //------------------------------------------------------------------------------------
 
-/// @brief bno055からI2C経由でデータを読み取るスレッド用関数. IMUAHRS_INTERVALの間隔で実行する.
+/// @brief I2C経由でBNO055からデータを読み取るスレッド関数. IMUAHRS_INTERVAL間隔で実行.
+/// @param args 未使用の引数
 void mrd_wire0_Core0_bno055_r(void *args);
 
-/// @brief AHRSセンサーからI2C経由でデータを読み取る関数.
-/// MPU6050, MPU9250を想定していますが, MPU9250は未実装.
-/// 各データは`ahrs.read`配列に格納され, 利用可能な場合は`ahrs.result`にコピーされる.
+/// @brief I2C経由でAHRSセンサからデータを読み取る.
+///        MPU6050, MPU9250用だが, MPU9250は未実装.
+///        各データはahrs.read配列に格納され, 利用可能な場合ahrs.resultにコピーされる.
+/// @param a_ahrs AHRS値を保持する構造体
+/// @return 成功時はtrue, 失敗時はfalse
 bool mrd_wire0_read_ahrs_i2c(MrdFlags &a_flg);
 
 //------------------------------------------------------------------------------------
 //  meriput
 //------------------------------------------------------------------------------------
 
-/// @brief 指定されたIMU/AHRSタイプに基づいて, 計測したAHRSデータを読み込む.
-/// @param a_type 使用するセンサのタイプを示す列挙(MPU6050, MPU9250, BNO055).
-/// @param a_ahrs_result AHRSから読み取った結果を格納した配列.
-/// @return データの書き込みが成功した場合はtrue, それ以外の場合はfalseを返す.
+/// @brief 指定されたIMU/AHRSタイプに基づいて測定されたAHRSデータを読み取る
+/// @param a_meridim Meridim配列共用体. 参照渡し.
+/// @param a_ahrs_result AHRSから読み取った結果を格納する配列
+/// @param a_type センサタイプのenum (MPU6050, MPU9250, BNO055)
+/// @return データ書き込みが成功した場合はtrue, それ以外はfalse
 bool meriput90_ahrs(Meridim90Union &a_meridim, int a_type, MERIDIANFLOW::Meridian &mrd, MrdFlags &a_flg);
 
 /// @brief AHRSセンサーのyaw_originを現在のyaw_sourceにキャリブレートする関数.

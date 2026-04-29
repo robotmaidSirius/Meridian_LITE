@@ -13,21 +13,33 @@
 
 // ヘッダファイルの読み込み
 #include "keys.h"
-#include "mrd_bt_pad.h"
 #include "mrd_command.h"
 #include "mrd_common.h"
 #include "mrd_disp.h"
 #include "mrd_eeprom.h"
-#include "mrd_ether.h"
 #include "mrd_move.h"
-#include "mrd_sd.h"
 #include "mrd_servo.h"
 #include "mrd_util.h"
-#include "mrd_wifi.h"
 #include "mrd_wire0.h"
 
+// 通信モジュール（排他選択）
+#if MODE_ETHER
+#include "mrd_ether.h"
+#else
+#include "mrd_wifi.h"
+#endif
+
+// オプションモジュール: SDカード
+#if MOUNT_SD
+#include "mrd_sd.h"
+#endif
+
+// オプションモジュール: Bluetoothパッド
+#if MOUNT_PAD == WIIMOTE || MOUNT_PAD == WIIMOTE_C
+#include "mrd_bt_pad.h"
+#endif
+
 // ライブラリ導入
-// #include <Arduino.h>
 
 MERIDIANFLOW::Meridian mrd;
 IcsHardSerialClass ics_L(&Serial1, PIN_EN_L, SERVO_BAUDRATE_L, SERVO_TIMEOUT_L);
@@ -42,49 +54,38 @@ Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型,
 Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
 Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
 
-// フラグ用変数
-MrdFlags flg;
-
-// シーケンス番号理用の変数
-MrdSq mrdsq;
-
-// タイマー管理用の変数
-MrdTimer tmr;
-
-// エラーカウント用
-MrdErr err;
-
+MrdFlags flg;              // フラグ用変数
+MrdSq mrdsq;               // シーケンス番号理用の変数
+MrdTimer tmr;              // タイマー管理用の変数
+MrdErr err;                // エラーカウント用
+PadValue pad_analog;       // リモコンのアナログ入力データ
+ServoParam sv;             // サーボ用変数
+MrdMonitor monitor;        // モニタリング設定
 extern PadUnion pad_array; // pad値の格納用配列
 
-// リモコンのアナログ入力データ
-PadValue pad_analog;
-
-// サーボ用変数
-ServoParam sv;
-
-// モニタリング設定
-MrdMonitor monitor;
-
 MrdMsgHandler mrd_disp(Serial);
-extern SemaphoreHandle_t pad_mutex; // PADデータアクセス用mutex
+SemaphoreHandle_t ahrs_mutex; // AHRSデータアクセス用mutex
+SemaphoreHandle_t pad_mutex;  // PADデータアクセス用mutex
 
-TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 // ハードウェアタイマーとカウンタ用変数の定義
 hw_timer_t *timer = NULL;                              // ハードウェアタイマーの設定
-volatile SemaphoreHandle_t timer_semaphore;            // ハードウェアタイマー用のセマフォ
+SemaphoreHandle_t timer_semaphore;                     // ハードウェアタイマー用のセマフォ
 portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタイマー用のミューテックス
 unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
 volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
+TaskHandle_t thp[4];                                   // マルチスレッドのタスクハンドル格納用
 
 // Ethernet送信先IP(事前パース)
 IPAddress ether_send_ip(0, 0, 0, 0); // Ethernet送信先IP(初期化)
 
 /// @brief count_timerを保護しつつ1ずつインクリメント.
 void IRAM_ATTR frame_timer() {
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   portENTER_CRITICAL_ISR(&timer_mux);
   count_timer++;
   portEXIT_CRITICAL_ISR(&timer_mux);
-  xSemaphoreGiveFromISR(timer_semaphore, NULL); // セマフォを与える
+  xSemaphoreGiveFromISR(timer_semaphore, &xHigherPriorityTaskWoken);
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken); // 高優先度タスクへの即時切替
 }
 
 //==================================================================================================
@@ -131,7 +132,7 @@ void setup() {
   // サーボ値の初期設定
   sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),
                    mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映
+  for (int i = 0; i < sv.num_max; i++) {                 // configで設定した値を反映
     sv.ixl_mount[i] = IXL_MT[i];
     sv.ixr_mount[i] = IXR_MT[i];
     sv.ixl_type[i] = IXL_MT[i];
@@ -197,62 +198,82 @@ void setup() {
   // I2Cの初期化と開始
   mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
+  // AHRSデータ用mutexの作成
+  ahrs_mutex = xSemaphoreCreateMutex();
+  if (ahrs_mutex == NULL) {
+    mrd_error_stop(PIN_ERR_LED, "ERROR: Failed to create AHRS mutex", Serial);
+  }
+
+  // PADデータ用mutexの作成
+  pad_mutex = xSemaphoreCreateMutex();
+  if (pad_mutex == NULL) {
+    mrd_error_stop(PIN_ERR_LED, "ERROR: Failed to create PAD mutex", Serial);
+  }
+
   // I2C用スレッドの開始
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
-    xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
+    BaseType_t result = xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
+    if (result != pdPASS) {
+      mrd_error_stop(PIN_ERR_LED, "ERROR: Failed to create BNO055 task", Serial);
+    }
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
   }
 
   // 通信モジュールの初期化
-  if (!MODE_ETHER) { // MODE_ETHER = 0 ならWiFiの初期化
-    mrd_disp.esp_wifi(WIFI_AP_SSID);
-    if (MODE_FIXED_IP) { // 固定IPを使用する場合はwifi.configの設定を使用する
-      IPAddress fixed_ip = mrd_parse_ip_address(FIXED_IP_ADDR, Serial);
-      IPAddress fixed_gw = mrd_parse_ip_address(FIXED_IP_GATEWAY, Serial);
-      IPAddress fixed_sb = mrd_parse_ip_address(FIXED_IP_SUBNET, Serial);
-      if (mrd_validate_network_config(fixed_ip, fixed_gw, fixed_sb, Serial)) { // IPチェック
-        WiFi.config(fixed_ip, fixed_gw, fixed_sb);                             // 固定IPを設定
-        Serial.println("FIXEDIP****");
-      } else { // IPのパースが失敗なら停止
-        mrd_error_stop(PIN_ERR_LED, "Please Check '#define FIXED_IP_ADDR, FIXED_IP_GATEWAY, FIXED_IP_SUBNET' in 'keys.h'", Serial);
-      }
-    }
-    if (mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {       // wifiの初期化
-      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR); // wifiIPの表示
-    }
-
-  } else { // MODE_ETHER = 1 ならEthernet初期化
-
-    byte ether_mac[6];
-    if (parseMacAddress(ETHER_MAC, ether_mac)) {
-
-      if (mrd_ether_init(PIN_CHIPSELECT_LAN, ether_mac, Serial)) {
-        // Ethernet送信先IPの事前パース
-        ether_send_ip = mrd_parse_ip_address(ETHER_GATEWAY, Serial);
-
-        if (ether_send_ip == IPAddress(0, 0, 0, 0)) {
-          // エラー状態でシステム停止（LEDで視覚的に通知）
-          mrd_error_stop(PIN_ERR_LED, "ERROR: Ethernet initialization failed. Fix WIFI_SEND_IP and restart", Serial);
-        }
-      } else {
-        mrd_error_stop(PIN_ERR_LED, "ERROR: Ethernet initialization failed. Check Ethernet hardware/config.", Serial);
+#if MODE_ETHER
+  // Ethernet初期化
+  byte ether_mac[6];
+  if (parseMacAddress(ETHER_MAC, ether_mac)) {
+    if (mrd_ether_init(PIN_CHIPSELECT_LAN, ether_mac, Serial)) {
+      // Ethernet送信先IPを事前パース
+      ether_send_ip = mrd_parse_ip_address(ETHER_GATEWAY, Serial);
+      if (ether_send_ip == IPAddress(0, 0, 0, 0)) {
+        mrd_error_stop(PIN_ERR_LED, "ERROR: Ethernet initialization failed. Fix ETHER_GATEWAY and restart", Serial);
       }
     } else {
-      Serial.print("ERROR: Failed to parse MAC address ");
-      Serial.println(ETHER_MAC);
-      mrd_error_stop(PIN_ERR_LED, "Please check '#define ETHER_MAC' in 'keys.h'", Serial);
+      mrd_error_stop(PIN_ERR_LED, "ERROR: Ethernet initialization failed. Check Ethernet hardware/config.", Serial);
+    }
+  } else {
+    Serial.print("ERROR: Failed to parse MAC address ");
+    Serial.println(ETHER_MAC);
+    mrd_error_stop(PIN_ERR_LED, "Please check '#define ETHER_MAC' in 'keys.h'", Serial);
+  }
+#else
+  // WiFi初期化
+  mrd_disp.esp_wifi(WIFI_AP_SSID);
+  if (MODE_FIXED_IP) { // 固定IP使用時はwifi.configの設定を使用
+    IPAddress fixed_ip = mrd_parse_ip_address(FIXED_IP_ADDR, Serial);
+    IPAddress fixed_gw = mrd_parse_ip_address(FIXED_IP_GATEWAY, Serial);
+    IPAddress fixed_sb = mrd_parse_ip_address(FIXED_IP_SUBNET, Serial);
+    if (mrd_validate_network_config(fixed_ip, fixed_gw, fixed_sb, Serial)) { // IP検証
+      WiFi.config(fixed_ip, fixed_gw, fixed_sb);                             // 固定IPを設定
+      Serial.println("FIXEDIP****");
+    } else { // IPパース失敗時は停止
+      mrd_error_stop(PIN_ERR_LED, "Please Check '#define FIXED_IP_ADDR, FIXED_IP_GATEWAY, FIXED_IP_SUBNET' in 'keys.h'", Serial);
     }
   }
+  if (mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {       // WiFi初期化
+    mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR); // WiFi IPの表示
+  } else {
+    mrd_error_stop(PIN_ERR_LED, "ERROR: WiFi initialization failed. Check SSID/password in 'keys.h'", Serial);
+  }
+#endif
 
   // コントロールパッドの種類を表示
   mrd_disp.mounted_pad(MOUNT_PAD);
 
-  // Bluetoothの開始と表示(WIIMOTE)
-  if (MOUNT_PAD == WIIMOTE) { // Bluetooth用スレッドの開始
-    mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, PIN_LED_BT, Serial);
-    xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
+  // Bluetoothの開始(WIIMOTE)
+#if MOUNT_PAD == WIIMOTE || MOUNT_PAD == WIIMOTE_C
+  if (mrd_bt_settings(MOUNT_PAD, PAD_INIT_TIMEOUT, PIN_LED_BT, Serial)) {
+    BaseType_t result = xTaskCreatePinnedToCore(Core0_BT_r, "Core0_BT_r", 2048, NULL, 5, &thp[2], 0);
+    if (result != pdPASS) {
+      mrd_error_stop(PIN_ERR_LED, "ERROR: Failed to create Wiimote task", Serial);
+    }
+    Serial.println("Core0 thread for Wiimote start.");
   }
+  // mrd_bt_settingsが失敗した場合はタイムアウトメッセージが表示済み
+#endif
 
   // UDP開始用ダミーデータの生成
   s_udp_meridim.sval[MRD_MASTER] = 90;
@@ -261,12 +282,15 @@ void setup() {
   r_udp_meridim.sval[MRD_CKSM] = mrd.cksm_val(r_udp_meridim.sval, MRDM_LEN);
 
   // タイマーの設定
-  timer_semaphore = xSemaphoreCreateBinary(); // セマフォの作成
-  timer = timerBegin(0, 80, true);            // タイマーの設定(1つ目のタイマーを使用, 分周比80)
+  timer_semaphore = xSemaphoreCreateBinary(); // セマフォ作成
+  if (timer_semaphore == NULL) {
+    mrd_error_stop(PIN_ERR_LED, "ERROR: Failed to create timer semaphore", Serial);
+  }
+  timer = timerBegin(0, 80, true); // タイマー設定(1つ目のタイマー, 分周比80)
 
-  timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数をタイマーの割り込みに登録
-  timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10msごとにトリガー
-  timerAlarmEnable(timer);                             // タイマーを開始
+  timerAttachInterrupt(timer, &frame_timer, true);     // frame_timer関数を割込みに登録
+  timerAlarmWrite(timer, FRAME_DURATION * 1000, true); // タイマーを10ms毎にトリガー
+  timerAlarmEnable(timer);                             // タイマー開始
 
   // 開始メッセージ
   mrd_disp.flow_start_lite_esp();
@@ -293,13 +317,18 @@ void loop() {
 
   // @[1-1] UDP送信の実行
   if (flg.udp_send_mode) { // UDP送信実施フラグの確認(モード確認)
-    flg.udp_busy = true;   // UDP使用中フラグをセット
-    if (!MODE_ETHER) {     // 0ならwifi通信
-      mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE);
-    } else { // 1なら有線LAN通信
-      // 事前にパース済みのIPアドレスを使用
-      mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, ether_send_ip);
-    }
+    // [DEBUG] UDP送信直前のsval[21]を表示
+    Serial.print("[DBG_TX] sval[21]=");
+    Serial.println(s_udp_meridim.sval[21]);
+
+    flg.udp_busy = true; // UDP使用中フラグをセット
+#if MODE_ETHER
+    // 有線LAN通信: 事前パース済みのIPアドレスを使用
+    mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, ether_send_ip);
+#else
+    // WiFi通信
+    mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE);
+#endif
     flg.udp_busy = false; // UDP使用中フラグをクリア
     flg.udp_rcvd = false; // UDP受信完了フラグをクリア
   }
@@ -316,19 +345,22 @@ void loop() {
     flg.udp_rcvd = false; // UDP受信完了フラグをクリア
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (!MODE_ETHER) {                                           // 0ならwifi通信
-        if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) { // 受信確認
-          flg.udp_rcvd = true;                                     // UDP受信完了フラグをアゲる
-        }
-      } else {                                                      // 1なら有線LAN通信
-        if (mrd_ether_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) { // 受信確認
-          flg.udp_rcvd = true;                                      // UDP受信完了フラグをアゲる
-        }
+#if MODE_ETHER
+      // 有線LAN通信
+      if (mrd_ether_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) {
+        flg.udp_rcvd = true; // UDP受信完了フラグをセット
       }
-      // タイムアウト抜け処理
+#else
+      // WiFi通信
+      if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) {
+        flg.udp_rcvd = true; // UDP受信完了フラグをセット
+      }
+#endif
+
+      // タイムアウト処理
       unsigned long current_tmp = millis();
       if (current_tmp - start_tmp >= UDP_TIMEOUT) {
-        if (millis() > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
+        if (current_tmp > MONITOR_SUPPRESS_DURATION) { // 起動直後はエラー表示を抑制
           Serial.println("UDP timeout");
         }
         flg.udp_rcvd = false;
@@ -407,11 +439,21 @@ void loop() {
   // @[5-1] リモコンデータの書込み
   if (MOUNT_PAD > 0) { // リモコンがマウントされている場合
 
-    // リモコンデータの読み込み
-    pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
-
-    // リモコンの値をmeridimに格納する
-    meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+    // リモコンデータを読込み
+    if (MOUNT_PAD == WIIMOTE) {
+      // WIIMOTE: Copy pad data under mutex protection
+      if (xSemaphoreTake(pad_mutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+        PadUnion pad_local = pad_array; // Copy under mutex
+        xSemaphoreGive(pad_mutex);
+        // リモコン値をMeridimに格納
+        meriput90_pad(s_udp_meridim, pad_local, PAD_BUTTON_MARGE);
+      }
+    } else {
+      // Other pads: No mutex needed
+      pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
+      // リモコン値をMeridimに格納
+      meriput90_pad(s_udp_meridim, pad_array, PAD_BUTTON_MARGE);
+    }
   }
 
   //------------------------------------------------------------------------------------
@@ -428,30 +470,32 @@ void loop() {
   mrd.monitor_check_flow("[7]", monitor.flow); // デバグ用フロー表示
 
   // @[7-1] 前回のサーボ位置をサーボ配列に書込み
-  for (int i = 0; i <= sv.num_max; i++) {
-    sv.ixl_tgt_past[i] = sv.ixl_tgt[i];                    // 前回のdegreeをキープ
-    sv.ixr_tgt_past[i] = sv.ixr_tgt[i];                    // 前回のdegreeをキープ
-    sv.ixl_tgt[i] = s_udp_meridim.sval[i * 2 + 21] * 0.01; // 受信したdegreeを格納
-    sv.ixr_tgt[i] = s_udp_meridim.sval[i * 2 + 51] * 0.01; // 受信したdegreeを格納
+  constexpr float DEGREE_SCALE = 0.01f; // 度数変換係数(ループ外で定義)
+  for (int i = 0; i < sv.num_max; i++) {
+    int idx_l = i * 2 + 21; // インデックス計算を一度だけ実行
+    int idx_r = i * 2 + 51;
+    sv.ixl_tgt_past[i] = sv.ixl_tgt[i];                       // 前回のdegreeを保持
+    sv.ixr_tgt_past[i] = sv.ixr_tgt[i];                       // 前回のdegreeを保持
+    sv.ixl_tgt[i] = s_udp_meridim.sval[idx_l] * DEGREE_SCALE; // 受信degreeを格納
+    sv.ixr_tgt[i] = s_udp_meridim.sval[idx_r] * DEGREE_SCALE; // 受信degreeを格納
   }
 
-  // 移動差が大きい時に和らげる補正フィルタ
-  float tgt_gap_max = 3.0; // ギャップの最大値
-
-  for (int i = 0; i <= sv.num_max; i++) {
-    if (abs(sv.ixl_tgt[i] - sv.ixl_tgt_past[i]) > tgt_gap_max) {
-      if (sv.ixl_tgt[i] > sv.ixl_tgt_past[i]) {
-        sv.ixl_tgt[i] = sv.ixl_tgt[i] - tgt_gap_max;
-      } else {
-        sv.ixl_tgt[i] = sv.ixl_tgt[i] + tgt_gap_max;
-      }
+  // 移動差が大きい時に緩和する補正フィルタ (clamp処理で分岐を削減)
+  constexpr float TGT_GAP_MAX = 3.0f; // ギャップ最大値
+  for (int i = 0; i < sv.num_max; i++) {
+    // L系統: 差分をギャップ範囲内にクランプ
+    float diff_l = sv.ixl_tgt[i] - sv.ixl_tgt_past[i];
+    if (diff_l > TGT_GAP_MAX) {
+      sv.ixl_tgt[i] = sv.ixl_tgt_past[i] + TGT_GAP_MAX;
+    } else if (diff_l < -TGT_GAP_MAX) {
+      sv.ixl_tgt[i] = sv.ixl_tgt_past[i] - TGT_GAP_MAX;
     }
-    if (abs(sv.ixr_tgt[i] - sv.ixr_tgt_past[i]) > tgt_gap_max) {
-      if (sv.ixr_tgt[i] > sv.ixr_tgt_past[i]) {
-        sv.ixr_tgt[i] = sv.ixr_tgt[i] - tgt_gap_max;
-      } else {
-        sv.ixr_tgt[i] = sv.ixr_tgt[i] + tgt_gap_max;
-      }
+    // R系統: 差分をギャップ範囲内にクランプ
+    float diff_r = sv.ixr_tgt[i] - sv.ixr_tgt_past[i];
+    if (diff_r > TGT_GAP_MAX) {
+      sv.ixr_tgt[i] = sv.ixr_tgt_past[i] + TGT_GAP_MAX;
+    } else if (diff_r < -TGT_GAP_MAX) {
+      sv.ixr_tgt[i] = sv.ixr_tgt_past[i] - TGT_GAP_MAX;
     }
   }
 
@@ -474,8 +518,13 @@ void loop() {
   if (!MODE_ESP32_STANDALONE) { // サーボ処理を実行
     mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv, ics_L, ics_R, mrd);
   } else {
-    // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
-    sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
+    // ボード単体動作モードではサーボ処理をせずL0番サーボ値として+-30度のサイン波を返す
+    sv.ixl_tgt[0] = sinf(tmr.count_loop * (float)M_PI / 180.0f) * 30.0f;
+    // サイン波用カウンタをインクリメント
+    tmr.count_loop += tmr.count_loop_dlt;
+    if (tmr.count_loop > tmr.count_loop_max) {
+      tmr.count_loop = 0;
+    }
   }
 
   //------------------------------------------------------------------------------------
@@ -484,10 +533,19 @@ void loop() {
   mrd.monitor_check_flow("[9]", monitor.flow); // デバグ用フロー表示
 
   // @[9-1] 各サーボIDの現在位置または計算結果を配列に格納
-  for (int i = 0; i <= sv.num_max; i++) {
+  for (int i = 0; i < sv.num_max; i++) {
+    int idx_l = i * 2 + 21; // インデックス計算を一度だけ実行
+    int idx_r = i * 2 + 51;
     // 最新のサーボ角度をdegree単位で格納
-    s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl_tgt[i]);
-    s_udp_meridim.sval[i * 2 + 51] = mrd.float2HfShort(sv.ixr_tgt[i]);
+    s_udp_meridim.sval[idx_l] = mrd.float2HfShort(sv.ixl_tgt[i]);
+    s_udp_meridim.sval[idx_r] = mrd.float2HfShort(sv.ixr_tgt[i]);
+    // [DEBUG] L0の書き戻し値を表示
+    if (i == 0) {
+      Serial.print("[DBG_WB] L0 tgt=");
+      Serial.print(sv.ixl_tgt[0]);
+      Serial.print(" sval[21]=");
+      Serial.println(s_udp_meridim.sval[21]);
+    }
   }
 
   //------------------------------------------------------------------------------------
@@ -528,22 +586,30 @@ void loop() {
 
   // @[13-1] count_timerがcount_frameに追いつくまで待機
   count_frame++;
+  const TickType_t timeout_ticks = pdMS_TO_TICKS(FRAME_DURATION * 2); // タイムアウト設定
   while (true) {
-    if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
+    if (xSemaphoreTake(timer_semaphore, timeout_ticks) == pdTRUE) {
       portENTER_CRITICAL(&timer_mux);
       unsigned long current_count_timer = count_timer; // ハードウェアタイマー値を読取り
       portEXIT_CRITICAL(&timer_mux);
       if (current_count_timer >= count_frame) {
         break;
       }
+    } else {
+      // タイムアウト発生時はフレームカウンタを同期
+      portENTER_CRITICAL(&timer_mux);
+      count_frame = count_timer;
+      portEXIT_CRITICAL(&timer_mux);
+      break;
     }
   }
 
-  // @[13-2] 必要に応じてフレームの遅延累積時間frameDelayをリセット
+  // @[13-2] 必要に応じてフレーム遅延累積時間をリセット
   if (flg.count_frame_reset) {
     portENTER_CRITICAL(&timer_mux);
     count_frame = count_timer;
     portEXIT_CRITICAL(&timer_mux);
+    flg.count_frame_reset = false; // リセット完了後にフラグをクリア
   }
 
   mrd.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示

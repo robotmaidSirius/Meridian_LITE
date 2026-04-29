@@ -10,8 +10,8 @@
 // 定数定義
 //==================================================================================================
 ESP32Wiimote m_wiimote;
-PadUnion pad_array = {0};    // pad値の格納用配列
-SemaphoreHandle_t pad_mutex; // PADデータアクセス用mutex
+PadUnion pad_array = {0};           // pad値の格納用配列
+extern SemaphoreHandle_t pad_mutex; // PADデータアクセス用mutex
 
 // リモコンボタンデータ変換テーブル
 constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {
