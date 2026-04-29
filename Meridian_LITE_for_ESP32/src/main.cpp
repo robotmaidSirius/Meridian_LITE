@@ -1,7 +1,4 @@
-#ifndef __MERIDIAN_LITE_MAIN__
-#define __MERIDIAN_LITE_MAIN__
-
-#define VERSION "Meridian_LITE_v1.1.1_2026_04.26" // バージョン表示
+#define VERSION "Meridian_LITE_v1.1.1_2026.04.28" // バージョン表示
 
 /// @file    Meridian_LITE_for_ESP32/src/main.cpp
 /// @brief   Meridian is a system that smartly realizes the digital twin of a robot.
@@ -80,10 +77,10 @@ portMUX_TYPE timer_mux = portMUX_INITIALIZER_UNLOCKED; // ハードウェアタ�
 unsigned long count_frame = 0;                         // フレーム処理の完了時にカウントアップ
 volatile unsigned long count_timer = 0;                // フレーム用タイマーのカウントアップ
 
-// Ethernet送信先IP（事前パース）
-IPAddress ether_send_ip(0, 0, 0, 0); // Ethernet送信先IP（初期化）
+// Ethernet送信先IP(事前パース)
+IPAddress ether_send_ip(0, 0, 0, 0); // Ethernet送信先IP(初期化)
 
-/// @brief count_timerを保護しつつ1ずつインクリメント
+/// @brief count_timerを保護しつつ1ずつインクリメント.
 void IRAM_ATTR frame_timer() {
   portENTER_CRITICAL_ISR(&timer_mux);
   count_timer++;
@@ -126,16 +123,16 @@ void setup() {
   // ピンモードの設定
   pinMode(PIN_ERR_LED, OUTPUT); // エラー通知用LED
 
-  // ボード搭載のコンデンサの充電時間として待機
+  // ボード搭載コンデンサの充電時間として待機
   mrd_disp.charging(CHARGE_TIME);
 
-  // 起動メッセージの表示(バージョン, PC-USB,SPI0,i2c0のスピード)
+  // 起動メッセージの表示(バージョン, PC-USB, SPI0, I2C0のスピード)
   mrd_disp.hello_lite_esp(VERSION, SERIAL_PC_BPS, SPI0_SPEED, I2C0_SPEED);
 
   // サーボ値の初期設定
-  sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),  //
+  sv.num_max = max(mrd_max_used_index(IXL_MT, IXL_MAX),
                    mrd_max_used_index(IXR_MT, IXR_MAX)); // サーボ処理回数
-  for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映させる
+  for (int i = 0; i <= sv.num_max; i++) {                // configで設定した値を反映
     sv.ixl_mount[i] = IXL_MT[i];
     sv.ixr_mount[i] = IXR_MT[i];
     sv.ixl_type[i] = IXL_MT[i];
@@ -146,16 +143,16 @@ void setup() {
     sv.ixr_cw[i] = IXR_CW[i];
     sv.ixl_trim[i] = IXL_TRIM[i];
     sv.ixr_trim[i] = IXR_TRIM[i];
-  };
+  }
 
   // サーボUARTの通信速度の表示
   mrd_disp.servo_bps_2lines(SERVO_BAUDRATE_L, SERVO_BAUDRATE_R);
 
   // サーボ用UART設定
-  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L, ics_L);  // サーボモータの通信初期設定. Serial1
-  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R, ics_R);  // サーボモータの通信初期設定. Serial2
-  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_L); // サーボプロトコルの表示
-  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R);
+  mrd_servo_begin(L, MOUNT_SERVO_TYPE_L, ics_L);  // サーボモータの通信初期設定(Serial1)
+  mrd_servo_begin(R, MOUNT_SERVO_TYPE_R, ics_R);  // サーボモータの通信初期設定(Serial2)
+  mrd_disp.servo_protocol(L, MOUNT_SERVO_TYPE_L); // L系統プロトコルの表示
+  mrd_disp.servo_protocol(R, MOUNT_SERVO_TYPE_R); // R系統プロトコルの表示
 
   // マウントされたサーボIDの表示
   mrd_disp.servo_mounts_2lines(sv);
@@ -171,7 +168,7 @@ void setup() {
   // EEPROMにconfigのサーボ設定値を書き込む場合
   if (EEPROM_SET) {
     Serial.println("Set EEPROM data from config.");
-    // 書き込みデータの作成と書き込み
+    // 書込データの作成と書込
     if (
         mrd_eeprom_write(mrd_eeprom_make_data_from_config(sv, mrd), EEPROM_PROTECT, Serial, flg)) {
       Serial.println("Write EEPROM succeed.");
@@ -186,7 +183,7 @@ void setup() {
   }
 
   // EEPROMの内容ダンプ表示をする場合
-  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE, Serial); //
+  mrd_eeprom_dump_at_boot(EEPROM_DUMP, EEPROM_STYLE, Serial);
 
   // EEPROMのリードライトテスト
   // mrd_eeprom_write_read_check(mrd_eeprom_make_data_from_config(sv,mrd),
@@ -197,16 +194,16 @@ void setup() {
   mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(BNO055_AHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
-  // I2Cスレッドの開始
+  // I2C用スレッドの開始
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
     xTaskCreatePinnedToCore(mrd_wire0_Core0_bno055_r, "Core0_bno055_r", 4096, NULL, 2, &thp[0], 0);
     Serial.println("Core0 thread for BNO055 start.");
     delay(10);
   }
 
-  // WiFiの初期化と開始
+  // 通信モジュールの初期化
   if (!MODE_ETHER) { // MODE_ETHER = 0 ならWiFiの初期化
     mrd_disp.esp_wifi(WIFI_AP_SSID);
     if (MODE_FIXED_IP) { // 固定IPを使用する場合はwifi.configの設定を使用する
@@ -229,7 +226,7 @@ void setup() {
     byte ether_mac[6];
     if (parseMacAddress(ETHER_MAC, ether_mac)) {
 
-      if (mrd_ether_init(udp_et, PIN_CHIPSELECT_LAN, ether_mac, Serial)) {
+      if (mrd_ether_init(PIN_CHIPSELECT_LAN, ether_mac, Serial)) {
         // Ethernet送信先IPの事前パース
         ether_send_ip = mrd_parse_ip_address(ETHER_GATEWAY, Serial);
 
@@ -294,17 +291,16 @@ void loop() {
   mrd.monitor_check_flow("[1]", monitor.flow); // デバグ用フロー表示
 
   // @[1-1] UDP送信の実行
-  if (flg.udp_send_mode) // UDPの送信実施フラグの確認(モード確認)
-  {
-    flg.udp_busy = true; // UDP使用中フラグをアゲる
-    if (!MODE_ETHER) {   // 0ならwifi通信
+  if (flg.udp_send_mode) { // UDP送信実施フラグの確認(モード確認)
+    flg.udp_busy = true;   // UDP使用中フラグをセット
+    if (!MODE_ETHER) {     // 0ならwifi通信
       mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, WIFI_SEND_IP, UDP_SEND_PORT);
     } else { // 1なら有線LAN通信
       // 事前にパース済みのIPアドレスを使用
-      mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, udp_et, ether_send_ip, UDP_SEND_PORT);
+      mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, ether_send_ip, UDP_SEND_PORT);
     }
-    flg.udp_busy = false; // UDP使用中フラグをサゲる
-    flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
+    flg.udp_busy = false; // UDP使用中フラグをクリア
+    flg.udp_rcvd = false; // UDP受信完了フラグをクリア
   }
 
   //------------------------------------------------------------------------------------
@@ -312,23 +308,20 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[2]", monitor.flow); // デバグ用フロー表示
 
-  // @[2-1] UDPの受信待ち受けループ
-  if (flg.udp_receive_mode) // UDPの受信実施フラグの確認(モード確認)
-  {
+  // @[2-1] UDP受信待受けループ
+  if (flg.udp_receive_mode) { // UDP受信実施フラグの確認(モード確認)
     unsigned long start_tmp = millis();
-    flg.udp_busy = true;  // UDP使用中フラグをアゲる
-    flg.udp_rcvd = false; // UDP受信完了フラグをサゲる
+    flg.udp_busy = true;  // UDP使用中フラグをセット
+    flg.udp_rcvd = false; // UDP受信完了フラグをクリア
     while (!flg.udp_rcvd) {
       // UDP受信処理
-      if (!MODE_ETHER) {                                         // 0ならwifi通信
-        if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) // 受信確認
-        {
-          flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
+      if (!MODE_ETHER) {                                           // 0ならwifi通信
+        if (mrd_wifi_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) { // 受信確認
+          flg.udp_rcvd = true;                                     // UDP受信完了フラグをアゲる
         }
-      } else {                                                            // 1なら有線LAN通信
-        if (mrd_ether_udp_receive(r_udp_meridim.bval, MRDM_BYTE, udp_et)) // 受信確認
-        {
-          flg.udp_rcvd = true; // UDP受信完了フラグをアゲる
+      } else {                                                      // 1なら有線LAN通信
+        if (mrd_ether_udp_receive(r_udp_meridim.bval, MRDM_BYTE)) { // 受信確認
+          flg.udp_rcvd = true;                                      // UDP受信完了フラグをアゲる
         }
       }
       // タイムアウト抜け処理
@@ -343,52 +336,50 @@ void loop() {
       delay(1);
     }
   }
-  flg.udp_busy = false; // UDP使用中フラグをサゲる
+  flg.udp_busy = false; // UDP使用中フラグをクリア
 
-  // @[2-2] チェックサムを確認
-  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) // Check sum OK!
-  {
-    mrd.monitor_check_flow("CsOK", monitor.flow); // デバグ用フロー表示
+  // @[2-2] チェックサム確認
+  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) { // Check sum OK
+    mrd.monitor_check_flow("CsOK", monitor.flow);    // デバグ用フロー表示
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
     memcpy(s_udp_meridim.bval, r_udp_meridim.bval, MRDM_LEN * 2);
 
-    // @[2-4a] エラービット14番(ESP32のPCからのUDP受信エラー検出)をサゲる
+    // @[2-4a] エラービット14番(PCからのUDP受信エラー検出)をクリア
     mrd_clear_bit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
 
     if (s_udp_meridim.sval[0] == MCMD_EEPROM_SAVE_TRIM) {
       Serial.println(r_udp_meridim.sval[0]);
     }
 
-  } else // チェックサムがNGならバッファから転記せず前回のデータを使用する
-  {
+  } else { // チェックサムNGなら前回データを使用
 
-    // @[2-4b] エラービット14番(ESP32のPCからのUDP受信エラー検出)をアゲる
+    // @[2-4b] エラービット14番(PCからのUDP受信エラー検出)をセット
     mrd_set_bit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_14_PC_ESP);
     err.pc_esp++;
     mrd.monitor_check_flow("CsErr*", monitor.flow); // デバグ用フロー表示
   }
 
   // @[2-5] シーケンス番号チェック
-  mrdsq.r_expect = mrd_seq_predict_num(mrdsq.r_expect); // シーケンス番号予想値の生成
+  mrdsq.r_expect = mrd_seq_predict_num(mrdsq.r_expect); // シーケンス番号予想値を生成
 
-  // @[2-6] シーケンス番号のシリアルモニタ表示
+  // @[2-6] シーケンス番号をシリアルモニタに表示
   mrd_disp.seq_number(mrdsq.r_expect, r_udp_meridim.usval[MRD_SEQ], monitor.seq_num);
 
   if (mrd.seq_compare_nums(mrdsq.r_expect, int(s_udp_meridim.usval[MRD_SEQ]))) {
 
-    // エラービット10番[ESP受信のスキップ検出]をサゲる
+    // エラービット10番(ESP受信スキップ検出)をクリア
     mrd_clear_bit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_10_UDP_ESP_SKIP);
-    flg.meridim_rcvd = true; // Meridim受信成功フラグをアゲる.
+    flg.meridim_rcvd = true; // Meridim受信成功フラグをセット
 
-  } else {                                              // 受信シーケンス番号の値が予想と違ったら
-    mrdsq.r_expect = int(s_udp_meridim.usval[MRD_SEQ]); // 現在の受信値を予想結果としてキープ
+  } else {                                              // 受信シーケンス番号が予想と異なる場合
+    mrdsq.r_expect = int(s_udp_meridim.usval[MRD_SEQ]); // 現在の受信値を予想値として保持
 
-    // エラービット10番[ESP受信のスキップ検出]をアゲる
+    // エラービット10番(ESP受信スキップ検出)をセット
     mrd_set_bit16(s_udp_meridim.usval[MRD_ERR], ERRBIT_10_UDP_ESP_SKIP);
 
     err.esp_skip++;
-    flg.meridim_rcvd = false; // Meridim受信成功フラグをサゲる.
+    flg.meridim_rcvd = false; // Meridim受信成功フラグをクリア
   }
 
   //------------------------------------------------------------------------------------
@@ -404,16 +395,16 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
-  // @[4-1] センサ値のMeridimへの転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS, mrd, flg); // BNO055_AHRS
+  // @[4-1] センサ値をMeridimに転記
+  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS, mrd, flg); // MOUNT_IMUAHRS
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[5]", monitor.flow); // デバグ用フロー表示
 
-  // @[5-1] リモコンデータの書き込み
-  if (MOUNT_PAD > 0) { // リモコンがマウントされていれば
+  // @[5-1] リモコンデータの書込み
+  if (MOUNT_PAD > 0) { // リモコンがマウントされている場合
 
     // リモコンデータの読み込み
     pad_array.ui64val = mrd_pad_read(MOUNT_PAD, pad_array.ui64val, ics_R);
@@ -435,7 +426,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[7]", monitor.flow); // デバグ用フロー表示
 
-  // @[7-1] 前回のラストに読み込んだサーボ位置をサーボ配列に書き込む
+  // @[7-1] 前回のサーボ位置をサーボ配列に書込み
   for (int i = 0; i <= sv.num_max; i++) {
     sv.ixl_tgt_past[i] = sv.ixl_tgt[i];                    // 前回のdegreeをキープ
     sv.ixr_tgt_past[i] = sv.ixr_tgt[i];                    // 前回のdegreeをキープ
@@ -464,7 +455,7 @@ void loop() {
   }
 
   // @[7-2] ESP32による次回動作の計算
-  // 以下はリモコンの左十字キー左右でL系統0番サーボ(首部)を30度左右にふるサンプル
+  // リモコン十字キー左右でL系統0番サーボ(首部)を30度左右に振るサンプル
   if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_RIGHT) {
     sv.ixl_tgt[0] = -30.00; // -30度
   } else if (s_udp_meridim.sval[MRD_PAD_BUTTONS] == PAD_LEFT) {
@@ -479,8 +470,8 @@ void loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STANDALONE) {                                                                         // サーボ処理を行うかどうか
-    mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv, ics_L, ics_R, mrd); // サーボ動作を実行する
+  if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
+    mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv, ics_L, ics_R, mrd);
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
     sv.ixl_tgt[0] = sin(tmr.count_loop * M_PI / 180.0) * 30;
@@ -491,7 +482,7 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[9]", monitor.flow); // デバグ用フロー表示
 
-  // @[9-1] サーボIDごとにの現在位置もしくは計算結果を配列に格納
+  // @[9-1] 各サーボIDの現在位置または計算結果を配列に格納
   for (int i = 0; i <= sv.num_max; i++) {
     // 最新のサーボ角度をdegreeで格納
     s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl_tgt[i]);
@@ -519,11 +510,11 @@ void loop() {
   //------------------------------------------------------------------------------------
   mrd.monitor_check_flow("[12]", monitor.flow); // デバグ用フロー表示
 
-  // @[12-1] フレームスキップ検出用のカウントをカウントアップして送信用に格納
+  // @[12-1] フレームスキップ検出用カウントをインクリメントし送信用に格納
   mrdsq.s_increment = mrd.seq_increase_num(mrdsq.s_increment);
   s_udp_meridim.usval[1] = mrdsq.s_increment;
 
-  // @[12-2] エラーが出たサーボのインデックス番号を格納
+  // @[12-2] エラー発生サーボのインデックス番号を格納
   s_udp_meridim.ubval[MRD_ERR_l] = mrd_servo_make_errcode_lite(sv);
 
   // @[12-3] チェックサムを計算して格納
@@ -539,7 +530,7 @@ void loop() {
   while (true) {
     if (xSemaphoreTake(timer_semaphore, 0) == pdTRUE) {
       portENTER_CRITICAL(&timer_mux);
-      unsigned long current_count_timer = count_timer; // ハードウェアタイマーの値を読む
+      unsigned long current_count_timer = count_timer; // ハードウェアタイマー値を読取り
       portEXIT_CRITICAL(&timer_mux);
       if (current_count_timer >= count_frame) {
         break;
@@ -556,5 +547,3 @@ void loop() {
 
   mrd.monitor_check_flow("\n", monitor.flow); // 動作チェック用シリアル表示
 }
-
-#endif // __MERIDIAN_LITE_MAIN__
