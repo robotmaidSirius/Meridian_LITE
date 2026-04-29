@@ -1,6 +1,7 @@
 // ヘッダファイルの読み込み
 #include "mrd_ether.h"
 #include "keys.h"
+#include "mrd_util.h"
 
 // ライブラリ導入 (標準Ethernetライブラリ)
 #include <Ethernet.h>
@@ -81,134 +82,6 @@ bool parseMacAddress(const char *macStr, byte *macBytes) {
   }
 
   return true;
-}
-
-/// @brief IPアドレス設定の妥当性をチェックする
-/// @param local_ip ローカルIP
-/// @param gateway ゲートウェイIP
-/// @param subnet サブネットマスク
-/// @param a_serial エラー出力用シリアル
-/// @return 妥当性チェック結果 (true: OK, false: NG)
-bool mrd_validate_network_config(IPAddress local_ip, IPAddress gateway, IPAddress subnet, HardwareSerial &a_serial) {
-  // ゼロIPアドレスチェック
-  if (local_ip == IPAddress(0, 0, 0, 0)) {
-    a_serial.println("ERROR: Local IP is invalid (0.0.0.0)");
-    return false;
-  }
-
-  if (gateway == IPAddress(0, 0, 0, 0)) {
-    a_serial.println("ERROR: Gateway IP is invalid (0.0.0.0)");
-    return false;
-  }
-
-  if (subnet == IPAddress(0, 0, 0, 0)) {
-    a_serial.println("ERROR: Subnet mask is invalid (0.0.0.0)");
-    return false;
-  }
-
-  // ローカルIPとゲートウェイが同じサブネットにあるかチェック
-  bool same_network = true;
-  for (int i = 0; i < 4; i++) {
-    if ((local_ip[i] & subnet[i]) != (gateway[i] & subnet[i])) {
-      same_network = false;
-      break;
-    }
-  }
-
-  if (!same_network) {
-    a_serial.println("WARNING: Local IP and Gateway are not in the same network");
-    a_serial.print("Local IP network: ");
-    for (int i = 0; i < 4; i++) {
-      a_serial.print(local_ip[i] & subnet[i]);
-      if (i < 3)
-        a_serial.print(".");
-    }
-    a_serial.println();
-
-    a_serial.print("Gateway network: ");
-    for (int i = 0; i < 4; i++) {
-      a_serial.print(gateway[i] & subnet[i]);
-      if (i < 3)
-        a_serial.print(".");
-    }
-    a_serial.println();
-  }
-
-  return true;
-}
-
-/// @brief 文字列形式のIPアドレスをIPAddressオブジェクトに変換する
-/// @param ip_str IPアドレス文字列 (例: "192.168.1.1")
-/// @param a_serial エラー出力用シリアル
-/// @return 成功時はIPAddressオブジェクト、失敗時は IPAddress(0,0,0,0)
-IPAddress mrd_parse_ip_address(const char *ip_str, HardwareSerial &a_serial) {
-  uint8_t octets[4] = {0, 0, 0, 0};
-  int octet_index = 0;
-  int current_number = 0;
-  bool has_digit = false;
-
-  for (int i = 0; ip_str[i] != '\0'; i++) {
-    char c = ip_str[i];
-
-    if (c >= '0' && c <= '9') {
-      // 数字の場合
-      current_number = current_number * 10 + (c - '0');
-      has_digit = true;
-
-      // 範囲チェック (0-255)
-      if (current_number > 255) {
-        a_serial.print("ERROR Parsing IP: ");
-        a_serial.println(ip_str);
-        a_serial.println("Octet out of range (0-255), Ethernet initialization ABORTED.");
-        return IPAddress(0, 0, 0, 0);
-      }
-    } else if (c == '.') {
-      // ドット区切り文字の場合
-      if (!has_digit) {
-        a_serial.print("ERROR Parsing IP: ");
-        a_serial.println(ip_str);
-        a_serial.println("Invalid IP format, Ethernet initialization ABORTED.");
-        return IPAddress(0, 0, 0, 0);
-      }
-      if (octet_index >= 4) {
-        a_serial.print("ERROR Parsing IP: ");
-        a_serial.println(ip_str);
-        a_serial.println("Too many octets(expected 4), Ethernet initialization ABORTED.");
-        return IPAddress(0, 0, 0, 0);
-      }
-
-      octets[octet_index] = current_number;
-      octet_index++;
-      current_number = 0;
-      has_digit = false;
-    } else if (c == ' ' || c == '\t') {
-      // スペースやタブは無視（何もしない）
-      continue;
-    } else {
-      // 無効な文字
-      a_serial.print("ERROR Parsing IP: ");
-      a_serial.println(ip_str);
-      a_serial.println("Invalid character, Ethernet initialization ABORTED.");
-      return IPAddress(0, 0, 0, 0);
-    }
-  }
-
-  // 最後のオクテットを処理
-  if (!has_digit) {
-    a_serial.print("ERROR Parsing IP: ");
-    a_serial.println(ip_str);
-    a_serial.println("IP address ends without a digit, Ethernet initialization ABORTED.");
-    return IPAddress(0, 0, 0, 0);
-  }
-  if (octet_index != 3) {
-    a_serial.print("ERROR Parsing IP: ");
-    a_serial.println(ip_str);
-    a_serial.println("Incorrect number of octets(expected 4), Ethernet initialization ABORTED.");
-    return IPAddress(0, 0, 0, 0);
-  }
-
-  octets[3] = current_number;
-  return IPAddress(octets[0], octets[1], octets[2], octets[3]);
 }
 
 /// @brief Ethernetを初期化する (文字列IP設定版)

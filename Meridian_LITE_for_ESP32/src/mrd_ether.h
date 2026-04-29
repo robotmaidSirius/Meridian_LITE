@@ -13,20 +13,6 @@
 // MACアドレス文字列をバイト配列にパースする関数（改良版）
 bool parseMacAddress(const char *macStr, byte *macBytes);
 
-/// @brief IPアドレス設定の妥当性をチェックする
-/// @param local_ip ローカルIP
-/// @param gateway ゲートウェイIP
-/// @param subnet サブネットマスク
-/// @param a_serial エラー出力用シリアル
-/// @return 妥当性チェック結果 (true: OK, false: NG)
-bool mrd_validate_network_config(IPAddress local_ip, IPAddress gateway, IPAddress subnet, HardwareSerial &a_serial);
-
-/// @brief 文字列形式のIPアドレスをIPAddressオブジェクトに変換する
-/// @param ip_str IPアドレス文字列 (例: "192.168.1.1")
-/// @param a_serial エラー出力用シリアル
-/// @return 成功時はIPAddressオブジェクト、失敗時は IPAddress(0,0,0,0)
-IPAddress mrd_parse_ip_address(const char *ip_str, HardwareSerial &a_serial);
-
 /// @brief Ethernetを初期化する (文字列IP設定版)
 /// @param a_cs_pin W5500のCSピン番号
 /// @param mac_address MACアドレスバイト配列
