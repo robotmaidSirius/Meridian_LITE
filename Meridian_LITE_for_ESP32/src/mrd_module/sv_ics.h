@@ -22,7 +22,7 @@
 /// @param a_err_cnt サーボのエラーカウント
 /// @param a_stat サーボのステータス
 /// @param a_ics サーボクラスのインスタンス
-/// @param a_mrd Meridianクラスのインスタンス
+/// @param a_mrd Meridianライブラリインスタンス
 float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_past, float a_trim,
                             int a_cw, int &a_err_cnt, uint16_t &a_stat, IcsHardSerialClass &a_ics,
                             MERIDIANFLOW::Meridian &a_mrd) {
@@ -31,6 +31,14 @@ float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_
     val_tmp = a_ics.setPos(a_servo_id, a_mrd.Deg2Krs(a_tgt, a_trim, a_cw));
   } else { // コマンドが0等なら脱力して値を取得
     val_tmp = a_ics.setFree(a_servo_id);
+  }
+
+  // [DEBUG] L0 (ID=0) のサーボ通信結果を表示
+  if (a_servo_id == 0) {
+    Serial.print("[DBG_ICS] id=0 cmd=");
+    Serial.print(a_cmd);
+    Serial.print(" setPos_ret=");
+    Serial.print(val_tmp);
   }
 
   if (val_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
@@ -45,15 +53,23 @@ float mrd_servo_process_ics(int a_servo_id, int a_cmd, float a_tgt, float a_tgt_
     a_stat = 0;
   }
 
-  return a_mrd.Krs2Deg(val_tmp, a_trim, a_cw);
+  float result_deg = a_mrd.Krs2Deg(val_tmp, a_trim, a_cw);
+
+  // [DEBUG] L0 (ID=0) の変換結果を表示
+  if (a_servo_id == 0) {
+    Serial.print(" deg=");
+    Serial.println(result_deg);
+  }
+
+  return result_deg;
 }
 
 /// @brief ICSサーボを駆動する関数
 /// @param a_meridim Meridimデータの参照
 /// @param a_sv サーボパラメータの配列
-/// @param a_ics_L L系統のICSサーボ通信クラスのインスタンス
-/// @param a_ics_R R系統のICSサーボ通信クラスのインスタンス
-/// @param a_mrd Meridianクラスのインスタンス
+/// @param a_ics_L L系統ICSサーボクラスインスタンス
+/// @param a_ics_R R系統ICSサーボクラスインスタンス
+/// @param a_mrd Meridianライブラリインスタンス
 void mrd_sv_drive_ics_double(Meridim90Union &a_meridim, ServoParam &a_sv,
                              IcsHardSerialClass &a_ics_L, IcsHardSerialClass &a_ics_R,
                              MERIDIANFLOW::Meridian &a_mrd) {
@@ -73,45 +89,5 @@ void mrd_sv_drive_ics_double(Meridim90Union &a_meridim, ServoParam &a_sv,
     delayMicroseconds(2); // Teensyの場合には必要かも
   }
 }
-
-//==================================================================================================
-//  gs2d によるICSサーボの処理
-//  https://github.com/karakuri-products/gs2d
-//==================================================================================================
-
-/// @brief ICSサーボの実行処理を行う関数
-/// @param a_servo_id サーボのインデックス番号
-/// @param a_cmd サーボのコマンド
-/// @param a_tgt サーボの目標位置
-/// @param a_tgt_past 前回のサーボの目標位置
-/// @param a_tgt_trim サーボの補正値
-/// @param a_cw サーボの回転方向補正値
-/// @param a_err_cnt サーボのエラーカウント
-/// @param a_stat サーボのステータス
-/// @param ics サーボクラスのインスタンス
-// float mrd_servo_process_ics_gs2d(int a_servo_id, int a_cmd,
-//                                  float a_tgt, float a_tgt_past, int a_trim,
-//                                  int a_cw, int &a_err_cnt, uint16_t &a_stat,
-//                                  IcsHardSerialClass &ics) {
-//   int val_tmp = 0;
-//   if (a_cmd == 1) { // コマンドが1ならPos指定
-//     val_tmp = ics.setPos(a_servo_id, mrd.Deg2Krs(a_tgt, a_trim, a_cw));
-//   } else { // コマンドが0等なら脱力して値を取得
-//     val_tmp = ics.setFree(a_servo_id);
-//   }
-//   if (val_tmp == -1) { // サーボからの返信信号を受け取れなかった場合
-//     val_tmp = mrd.Deg2Krs(a_tgt_past, a_trim, a_cw);
-//     a_err_cnt++;
-//     if (a_err_cnt >= SERVO_LOST_ERR_WAIT) { // 一定以上の連続エラーで通信不能とみなす
-//       a_err_cnt = SERVO_LOST_ERR_WAIT;
-//       a_stat = 1;
-//     }
-//   } else {
-//     a_err_cnt = 0;
-//     a_stat = 0;
-//   }
-
-//   return mrd.Krs2Deg(val_tmp, a_trim, a_cw);
-// }
 
 #endif // __MERIDIAN_SERVO_KONDO_ICS_H__

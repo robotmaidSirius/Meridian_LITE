@@ -4,6 +4,7 @@
 // ヘッダファイルの読み込み
 #include "mrd_eeprom.h"
 #include "mrd_servo.h"
+#include "mrd_wire0.h"
 
 // ライブラリ導入
 
@@ -129,13 +130,11 @@ bool execute_master_command_1(Meridim90Union &a_meridim, bool a_flg_exe,
 /// @param a_s_udp_meridim PCに送信するMeridim配列.(参照渡し)
 /// @param a_sv サーボパラメータの構造体.(参照渡し)
 /// @param a_serial シリアル通信のためのHardwareSerialオブジェクト.(参照渡し)
-/// @param a_ahrs AHRS値の構造体.(参照渡し
 /// @param a_flg 各種フラグの構造体.(参照渡し)
 /// @return コマンドを実行した場合はtrue, しなかった場合はfalseを返す.
 bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe,
                               Meridim90Union &a_s_udp_meridim, ServoParam &a_sv,
-                              HardwareSerial &a_serial, AhrsValue &a_ahrs,
-                              MrdFlags &a_flg) {
+                              HardwareSerial &a_serial, MrdFlags &a_flg) {
   if (!a_flg_exe) {
     return false;
   }
@@ -151,7 +150,7 @@ bool execute_master_command_2(Meridim90Union &a_meridim, bool a_flg_exe,
 
   // コマンド:MCMD_SENSOR_YAW_CALIB(10002) IMU/AHRSのヨー軸リセット
   if (a_meridim.sval[MRD_MASTER] == MCMD_SENSOR_YAW_CALIB) {
-    a_ahrs.yaw_origin = a_ahrs.yaw_source;
+    mrd_wire0_calibrate_yaw_origin();
     String msg_tmp = "cmd: calibrate sensor's yaw.[" + String(MCMD_SENSOR_YAW_CALIB) + "]";
     Serial.println(msg_tmp);
     return true;

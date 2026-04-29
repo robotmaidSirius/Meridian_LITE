@@ -12,10 +12,10 @@
 //==================================================================================================
 
 // ヘッダファイルの読み込み
-#include "main.h"
 #include "keys.h"
 #include "mrd_bt_pad.h"
 #include "mrd_command.h"
+#include "mrd_common.h"
 #include "mrd_disp.h"
 #include "mrd_eeprom.h"
 #include "mrd_ether.h"
@@ -195,7 +195,7 @@ void setup() {
 #endif
 
   // I2Cの初期化と開始
-  mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
+  mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, PIN_I2C0_SDA, PIN_I2C0_SCL);
 
   // I2C用スレッドの開始
   if (MOUNT_IMUAHRS == BNO055_AHRS) {
@@ -397,7 +397,7 @@ void loop() {
   mrd.monitor_check_flow("[4]", monitor.flow); // デバグ用フロー表示
 
   // @[4-1] センサ値をMeridimに転記
-  meriput90_ahrs(s_udp_meridim, ahrs.read, MOUNT_IMUAHRS, mrd, flg); // MOUNT_IMUAHRS
+  meriput90_ahrs(s_udp_meridim, MOUNT_IMUAHRS, mrd, flg); // MOUNT_IMUAHRS
 
   //------------------------------------------------------------------------------------
   //  [ 5 ] リモコンの読み取り
@@ -420,7 +420,7 @@ void loop() {
   mrd.monitor_check_flow("[6]", monitor.flow); // デバグ用フロー表示
 
   // @[6-1] MasterCommand group2 の処理
-  execute_master_command_2(s_udp_meridim, flg.meridim_rcvd, s_udp_meridim, sv, Serial, ahrs, flg);
+  execute_master_command_2(s_udp_meridim, flg.meridim_rcvd, s_udp_meridim, sv, Serial, flg);
 
   //------------------------------------------------------------------------------------
   //  [ 7 ] ESP32内部で位置制御する場合の処理
