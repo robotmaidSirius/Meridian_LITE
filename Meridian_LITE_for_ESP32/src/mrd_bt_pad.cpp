@@ -9,7 +9,7 @@
 //==================================================================================================
 // 定数定義
 //==================================================================================================
-ESP32Wiimote l_wiimote;
+ESP32Wiimote m_wiimote;
 PadUnion pad_array = {0};    // pad値の格納用配列
 SemaphoreHandle_t pad_mutex; // PADデータアクセス用mutex
 
@@ -59,8 +59,9 @@ uint64_t mrd_pad_read_krc(uint a_interval, IcsHardSerialClass &a_ics) {
     rcvd_tmp = a_ics.getKrrAllData(&krr_button_tmp, krr_analog_tmp);
     delayMicroseconds(2);
 
-    if (rcvd_tmp) {                    // リモコンデータが受信できていたら
-                                       // ボタンデータ処理
+    if (rcvd_tmp) { // リモコンデータが受信できていたら
+                    // ボタンデータ処理
+
       int button_tmp = krr_button_tmp; // 受信したボタンデータを読み取り
 
       if (PAD_GENERALIZE) { // ボタンデータ汎用化処理
@@ -132,16 +133,16 @@ uint64_t mrd_bt_read_wiimote() {
   static int calib_l1y = 0;
 
   // 受信データを問い合わせ
-  l_wiimote.task();
+  m_wiimote.task();
   ButtonState rcvd_button_tmp;
   NunchukState nunchuk_tmp;
   // AccelState accel_tmp;
 
-  if (l_wiimote.available() > 0) {
+  if (m_wiimote.available() > 0) {
 
     // リモコンデータを取得
-    rcvd_button_tmp = l_wiimote.getButtonState();
-    nunchuk_tmp = l_wiimote.getNunchukState();
+    rcvd_button_tmp = m_wiimote.getButtonState();
+    nunchuk_tmp = m_wiimote.getNunchukState();
 
     uint16_t new_pad_tmp[4] = {0}; // アナログ入力データ組み立て用
 
@@ -236,15 +237,15 @@ bool mrd_bt_settings(int a_mount_pad,
   // Wiiコントローラー接続を開始
   if (a_mount_pad == WIIMOTE) {
     a_serial.println("Try to connect Wiimote...");
-    l_wiimote.init();
-    l_wiimote.addFilter(ACTION_IGNORE, FILTER_ACCEL);
+    m_wiimote.init();
+    m_wiimote.addFilter(ACTION_IGNORE, FILTER_ACCEL);
 
     uint16_t count_tmp = 0;
     unsigned long start_time = millis();
-    while (!l_wiimote.available()) {
+    while (!m_wiimote.available()) {
 
       // リモコンを問い合わせ
-      l_wiimote.task();
+      m_wiimote.task();
 
       // タイムアウトチェック
       if (millis() - start_time >= a_timeout) {

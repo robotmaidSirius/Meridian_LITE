@@ -1,3 +1,6 @@
+// mrd_ether.cpp
+// Ethernet関連の関数実装
+
 // ヘッダファイルの読み込み
 #include "mrd_ether.h"
 #include "keys.h"
@@ -156,7 +159,6 @@ bool mrd_ether_init(int a_cs_pin, byte *mac_address, HardwareSerial &a_serial) {
 /// @brief UDP経由でデータを受信しMeridim配列に格納する
 /// @param a_meridim_bval バイト型のMeridim配列
 /// @param a_len バイト型Meridim配列の長さ
-/// @param a_udp 使用するEthernetUDPインスタンス
 /// @return 受信した場合はtrue, 受信しなかった場合はfalse
 bool mrd_ether_udp_receive(byte *a_meridim_bval, int a_len) {
   int packet_size = udp_et.parsePacket();
@@ -171,10 +173,9 @@ bool mrd_ether_udp_receive(byte *a_meridim_bval, int a_len) {
 /// @param a_meridim_bval バイト型のMeridim配列
 /// @param a_len バイト型Meridim配列の長さ
 /// @param a_send_ip 送信先IPアドレス
-/// @param a_send_port 送信先ポート番号
 /// @return 完了時にtrueを返す
-bool mrd_ether_udp_send(byte *a_meridim_bval, int a_len, IPAddress a_send_ip, int a_send_port) {
-  int result = udp_et.beginPacket(a_send_ip, a_send_port);
+bool mrd_ether_udp_send(byte *a_meridim_bval, int a_len, IPAddress a_send_ip) {
+  int result = udp_et.beginPacket(a_send_ip, UDP_SEND_PORT);
   if (result == 0) {
     return false; // パケット開始失敗
   }

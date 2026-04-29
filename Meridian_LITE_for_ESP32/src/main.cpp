@@ -12,11 +12,8 @@
 //==================================================================================================
 
 // ヘッダファイルの読み込み
-// #include "config.h"
-#include "keys.h"
-// #include "mrd_common.h"
-
 #include "main.h"
+#include "keys.h"
 #include "mrd_bt_pad.h"
 #include "mrd_command.h"
 #include "mrd_disp.h"
@@ -69,6 +66,7 @@ ServoParam sv;
 MrdMonitor monitor;
 
 MrdMsgHandler mrd_disp(Serial);
+extern SemaphoreHandle_t pad_mutex; // PADデータアクセス用mutex
 
 TaskHandle_t thp[4]; // マルチスレッドのタスクハンドル格納用
 // ハードウェアタイマーとカウンタ用変数の定義
@@ -220,8 +218,8 @@ void setup() {
         mrd_error_stop(PIN_ERR_LED, "Please Check '#define FIXED_IP_ADDR, FIXED_IP_GATEWAY, FIXED_IP_SUBNET' in 'keys.h'", Serial);
       }
     }
-    if (mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, UDP_RECV_PORT, Serial)) { // wifiの初期化
-      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR);          // wifiIPの表示
+    if (mrd_wifi_init(WIFI_AP_SSID, WIFI_AP_PASS, Serial)) {       // wifiの初期化
+      mrd_disp.esp_ip(MODE_FIXED_IP, WIFI_SEND_IP, FIXED_IP_ADDR); // wifiIPの表示
     }
 
   } else { // MODE_ETHER = 1 ならEthernet初期化
@@ -297,10 +295,10 @@ void loop() {
   if (flg.udp_send_mode) { // UDP送信実施フラグの確認(モード確認)
     flg.udp_busy = true;   // UDP使用中フラグをセット
     if (!MODE_ETHER) {     // 0ならwifi通信
-      mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE, WIFI_SEND_IP, UDP_SEND_PORT);
+      mrd_wifi_udp_send(s_udp_meridim.bval, MRDM_BYTE);
     } else { // 1なら有線LAN通信
       // 事前にパース済みのIPアドレスを使用
-      mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, ether_send_ip, UDP_SEND_PORT);
+      mrd_ether_udp_send(s_udp_meridim.bval, MRDM_BYTE, ether_send_ip);
     }
     flg.udp_busy = false; // UDP使用中フラグをクリア
     flg.udp_rcvd = false; // UDP受信完了フラグをクリア

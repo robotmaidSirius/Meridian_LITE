@@ -1,10 +1,14 @@
+// mrd_wifi.cpp
+// WiFi関連の関数実装
+
 // ヘッダファイルの読み込み
 #include "mrd_wifi.h"
+#include "keys.h"
 
 // ライブラリ導入
 #include <WiFi.h>
 #include <WiFiUdp.h>
-WiFiUDP l_udp; // wifi設定
+WiFiUDP m_udp; // wifi設定
 
 //==================================================================================================
 //  WiFi関数
@@ -13,10 +17,9 @@ WiFiUDP l_udp; // wifi設定
 /// @brief WiFiを初期化する
 /// @param a_ssid WiFiアクセスポイントのSSID
 /// @param a_pass WiFiアクセスポイントのパスワード
-/// @param receive_port UDP受信に使用するポート番号
 /// @param a_serial 出力シリアル
 /// @return 成功時はtrue, 失敗時はfalse
-bool mrd_wifi_init(const char *a_ssid, const char *a_pass, uint16_t receive_port, HardwareSerial &a_serial) {
+bool mrd_wifi_init(const char *a_ssid, const char *a_pass, HardwareSerial &a_serial) {
   WiFi.disconnect(true, true); // 新規接続のためWiFi接続をリセット
   delay(100);
   WiFi.begin(a_ssid, a_pass); // WiFiに接続
@@ -33,7 +36,7 @@ bool mrd_wifi_init(const char *a_ssid, const char *a_pass, uint16_t receive_port
       return false;
     }
   }
-  l_udp.begin(receive_port);
+  m_udp.begin(UDP_RECV_PORT);
   return true;
 }
 
@@ -42,8 +45,8 @@ bool mrd_wifi_init(const char *a_ssid, const char *a_pass, uint16_t receive_port
 /// @param a_len バイト型Meridim配列の長さ
 /// @return 受信した場合はtrue, 受信しなかった場合はfalse
 bool mrd_wifi_udp_receive(byte *a_meridim_bval, int a_len) {
-  if (l_udp.parsePacket() >= a_len) {  // データの受信バッファ確認
-    l_udp.read(a_meridim_bval, a_len); // データを受信
+  if (m_udp.parsePacket() >= a_len) {  // 受信バッファにデータがあるか確認
+    m_udp.read(a_meridim_bval, a_len); // データを受信
     return true;
   }
   return false; // バッファにデータなし
@@ -52,21 +55,19 @@ bool mrd_wifi_udp_receive(byte *a_meridim_bval, int a_len) {
 /// @brief Meridim配列データをUDP経由でWIFI_SEND_IP, UDP_SEND_PORTへ送信する
 /// @param a_meridim_bval バイト型のMeridim配列
 /// @param a_len バイト型Meridim配列の長さ
-/// @param host 送信先のホスト名またはIPアドレス
-/// @param port 送信先のポート番号
 /// @return 成功時はtrue, 失敗時はfalse
 /// 内部でWIFI_SEND_IP, UDP_SEND_PORTを使用
-bool mrd_wifi_udp_send(byte *a_meridim_bval, int a_len, const char *host, uint16_t port) {
-  int result = l_udp.beginPacket(host, port); // UDPパケット開始
+bool mrd_wifi_udp_send(byte *a_meridim_bval, int a_len) {
+  int result = m_udp.beginPacket(WIFI_SEND_IP, UDP_SEND_PORT); // UDPパケット開始
   if (result == 0) {
     return false; // パケット開始失敗
   }
 
-  size_t bytes_written = l_udp.write(a_meridim_bval, a_len); // データ書き込み
+  size_t bytes_written = m_udp.write(a_meridim_bval, a_len); // データ書き込み
   if (bytes_written != a_len) {
     return false; // 書き込みサイズ不一致
   }
 
-  result = l_udp.endPacket(); // UDPパケット終了
+  result = m_udp.endPacket(); // UDPパケット終了
   return (result == 1);       // 成功時は1を返す
 }

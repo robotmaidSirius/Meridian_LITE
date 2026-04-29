@@ -1,3 +1,6 @@
+// mrd_sd.cpp
+// SDカード関連の関数実装
+
 // ヘッダファイルの読み込み
 #include "mrd_sd.h"
 

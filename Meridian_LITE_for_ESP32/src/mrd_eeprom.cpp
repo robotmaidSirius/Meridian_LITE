@@ -169,49 +169,50 @@ bool mrd_eeprom_dump_at_boot(bool a_do_dump, int a_bhd, HardwareSerial &a_serial
 /// @param a_flg フラグの構造体 (参照渡し)
 /// @return 書き込みが成功した場合はtrue, 書き込まなかった場合はfalse
 bool mrd_eeprom_write(UnionEEPROM a_write_data, bool a_flg_protect, HardwareSerial &a_serial, MrdFlags &a_flg) {
-  if (a_flg_protect) { // EEPROM書き込み実施フラグをチェック
+  if (a_flg_protect) { // EEPROM書き込みフラグを確認
     return false;
   }
-  if (a_flg.eeprom_protect) { // config.hのEEPROM書き込みプロテクトをチェック
+  if (a_flg.eeprom_protect) { // config.hのEEPROM書き込み保護を確認
     Serial.println("EEPROM is protected. To unprotect, please set 'EEPROM_PROTECT' to false.");
     return false;
   }
 
   // EEPROM書き込み
-  byte old_value_tmp;                     // EEPROMにすでに書き込んであるデータ
-  bool flg_renew_tmp = false;             // 書き込みコミットを実施するかのフラグ
-  for (int i = 0; i < EEPROM_SIZE; i++) { // データを書き込む時はbyte型
-    if (i >= EEPROM.length()) {           // EEPROMのサイズを超えないようチェック
+  byte old_value_tmp;                     // 既にEEPROMに書き込まれているデータ
+  bool flg_renew_tmp = false;             // 書き込みコミット用フラグ
+  for (int i = 0; i < EEPROM_SIZE; i++) { // byte型でデータを書き込み
+    if (i >= EEPROM.length()) {           // EEPROMサイズを超えないか確認
       Serial.println("Error: EEPROM address out of range.");
       return false;
     }
     old_value_tmp = EEPROM.read(i);
-    // 書き込みデータがEEPROM内のデータと違う場合のみ書き込みをセット
+    // EEPROMの内容と異なる場合のみ書き込みをセット
     if (old_value_tmp != a_write_data.bval[i]) {
       EEPROM.write(i, a_write_data.bval[i]);
       flg_renew_tmp = true;
     }
   }
 
-  for (int i = 0; i < 15; i++) { // データを書き込む時はbyte型
+  // 書き込み内容を表示
+  for (int i = 0; i < 15; i++) {
     a_serial.print("L-idx:");
     a_serial.print(mrd_pddstr(i, 2, 0, false));
     a_serial.print(", id:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 1, 7), 2, 0, false)); // 2bit-7bit目:サーボID
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 1, 7), 2, 0, false)); // bit2-7:サーボID
     a_serial.print(", mt:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 0, 1), 1, 0, false)); // 1bit目:マウント有無
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 0, 1), 1, 0, false)); // bit1:マウント状態
     a_serial.print(", cw:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 8, 1), 1, 0, false)); // 9bit目:正転逆転
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][20 + i * 2], 8, 1), 1, 0, false)); // bit9:正転/逆転
     a_serial.print(", trm:");
     a_serial.print(mrd_pddstr(float(a_write_data.saval[1][21 + i * 2] / 100), 7, 2, true));
     a_serial.print("  R-idx: ");
     a_serial.print(mrd_pddstr(i, 2, 0, false));
     a_serial.print(", id:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 1, 7), 2, 0, false)); // 2bit-7bit目:サーボID
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 1, 7), 2, 0, false)); // bit2-7:サーボID
     a_serial.print(", mt:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 0, 1), 1, 0, false)); // 1bit目:マウント有無
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 0, 1), 1, 0, false)); // bit1:マウント状態
     a_serial.print(", cw:");
-    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 8, 1), 1, 0, false)); // 9bit目:正転逆転
+    a_serial.print(mrd_pddstr(mrd_slice_bits(a_write_data.usaval[1][50 + i * 2], 8, 1), 1, 0, false)); // bit9:正転/逆転
     a_serial.print(", trm:");
     a_serial.println(mrd_pddstr(float(a_write_data.saval[1][51 + i * 2] / 100), 7, 2, true));
   }

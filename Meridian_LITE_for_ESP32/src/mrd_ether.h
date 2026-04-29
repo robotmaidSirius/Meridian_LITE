@@ -30,8 +30,7 @@ bool mrd_ether_udp_receive(byte *a_meridim_bval, int a_len);
 /// @param a_meridim_bval バイト型のMeridim配列
 /// @param a_len バイト型Meridim配列の長さ
 /// @param a_send_ip 送信先IPアドレス
-/// @param a_send_port 送信先ポート番号
 /// @return 完了時にtrueを返す
-bool mrd_ether_udp_send(byte *a_meridim_bval, int a_len, IPAddress a_send_ip, int a_send_port);
+bool mrd_ether_udp_send(byte *a_meridim_bval, int a_len, IPAddress a_send_ip);
 
 #endif // __MERIDIAN_ETHER_H__

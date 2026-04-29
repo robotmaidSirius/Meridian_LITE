@@ -150,13 +150,10 @@ void mrd_error_stop(int a_led, String a_msg, HardwareSerial &a_serial, unsigned 
   ESP.restart();
 }
 
-//------------------------------------------------------------------------------------
-//  meriput / meridimへのデータ書き込み
-//------------------------------------------------------------------------------------
-
-/// @brief meridim配列のチェックサムを算出して[len-1]に書き込む.
-/// @param a_meridim Meridim配列の共用体. 参照渡し.
-/// @return 常にtrueを返す.
+/// @brief meridim配列のチェックサムを計算して[len-1]に書き込む
+/// @param a_meridim Meridim配列共用体. 参照渡し.
+/// @param len 配列の長さ (デフォルト90)
+/// @return 常にtrueを返す
 bool mrd_meriput90_cksm(Meridim90Union &a_meridim, int len) {
   int a_cksm = 0;
   for (int i = 0; i < len - 1; i++) {
@@ -233,17 +230,9 @@ IPAddress mrd_parse_ip_address(const char *ip_str, HardwareSerial &a_serial) {
         return IPAddress(0, 0, 0, 0);
       }
     } else if (c == '.') {
-      // ドット区切り文字の場合
-      if (!has_digit) {
+      if (!has_digit || octet_index >= 4) {
         a_serial.print("ERROR Parsing IP: ");
         a_serial.println(ip_str);
-        a_serial.println("Invalid IP format, Ethernet initialization ABORTED.");
-        return IPAddress(0, 0, 0, 0);
-      }
-      if (octet_index >= 4) {
-        a_serial.print("ERROR Parsing IP: ");
-        a_serial.println(ip_str);
-        a_serial.println("Too many octets(expected 4), Ethernet initialization ABORTED.");
         return IPAddress(0, 0, 0, 0);
       }
 
@@ -260,17 +249,9 @@ IPAddress mrd_parse_ip_address(const char *ip_str, HardwareSerial &a_serial) {
     }
   }
 
-  // 最後のオクテットを処理
-  if (!has_digit) {
+  if (!has_digit || octet_index != 3) {
     a_serial.print("ERROR Parsing IP: ");
     a_serial.println(ip_str);
-    a_serial.println("IP address ends without a digit, Ethernet initialization ABORTED.");
-    return IPAddress(0, 0, 0, 0);
-  }
-  if (octet_index != 3) {
-    a_serial.print("ERROR Parsing IP: ");
-    a_serial.println(ip_str);
-    a_serial.println("Incorrect number of octets(expected 4), Ethernet initialization ABORTED.");
     return IPAddress(0, 0, 0, 0);
   }
 

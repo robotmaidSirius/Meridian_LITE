@@ -1,5 +1,5 @@
-#ifndef __MRD_COMMON_H__
-#define __MRD_COMMON_H__
+#ifndef __MERIDIAN_COMMON_H__
+#define __MERIDIAN_COMMON_H__
 
 // ヘッダファイルの読み込み
 #include "config.h"
@@ -222,4 +222,4 @@ typedef union {
   uint16_t usval[270];       // unsigned short型で270個のデータを持つ
 } UnionEEPROM;
 
-#endif // __MRD_COMMON_H__
+#endif // __MERIDIAN_COMMON_H__
