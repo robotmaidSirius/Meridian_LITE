@@ -159,7 +159,7 @@ void setup() {
 
   // EEPROMの開始
   Serial.print("Initializing EEPROM... ");
-  if (mrd_eeprom_init(EEPROM_SIZE)) { // EEPROMの初期化
+  if (mrd_eeprom_init(EEPROM_SIZE)) {
     Serial.println("OK");
   } else {
     Serial.println("Failed");
@@ -190,8 +190,10 @@ void setup() {
   //                             CHECK_EEPROM_RW, EEPROM_PROTECT, EEPROM_STYLE, flg);
 
   // SDカードの初期設定とチェック
-  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD);
-  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW);
+#if MOUNT_SD
+  mrd_sd_init(MOUNT_SD, PIN_CHIPSELECT_SD, Serial);
+  mrd_sd_check(MOUNT_SD, PIN_CHIPSELECT_SD, CHECK_SD_RW, Serial);
+#endif
 
   // I2Cの初期化と開始
   mrd_wire0_setup(MOUNT_IMUAHRS, I2C0_SPEED, ahrs, PIN_I2C0_SDA, PIN_I2C0_SCL);
@@ -339,7 +341,7 @@ void loop() {
   flg.udp_busy = false; // UDP使用中フラグをクリア
 
   // @[2-2] チェックサム確認
-  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) { // Check sum OK
+  if (mrd.cksm_rslt(r_udp_meridim.sval, MRDM_LEN)) { // チェックサムOK
     mrd.monitor_check_flow("CsOK", monitor.flow);    // デバグ用フロー表示
 
     // @[2-3] UDP受信配列から UDP送信配列にデータを転写
@@ -470,7 +472,7 @@ void loop() {
   mrd.monitor_check_flow("[8]", monitor.flow); // デバグ用フロー表示
 
   // @[8-1] サーボ受信値の処理
-  if (!MODE_ESP32_STANDALONE) { // サーボ処理を行うかどうか
+  if (!MODE_ESP32_STANDALONE) { // サーボ処理を実行
     mrd_servo_drive_lite(s_udp_meridim, MOUNT_SERVO_TYPE_L, MOUNT_SERVO_TYPE_R, sv, ics_L, ics_R, mrd);
   } else {
     // ボード単体動作モードの場合はサーボ処理をせずL0番サーボ値として+-30度のサインカーブ値を返す
@@ -484,7 +486,7 @@ void loop() {
 
   // @[9-1] 各サーボIDの現在位置または計算結果を配列に格納
   for (int i = 0; i <= sv.num_max; i++) {
-    // 最新のサーボ角度をdegreeで格納
+    // 最新のサーボ角度をdegree単位で格納
     s_udp_meridim.sval[i * 2 + 21] = mrd.float2HfShort(sv.ixl_tgt[i]);
     s_udp_meridim.sval[i * 2 + 51] = mrd.float2HfShort(sv.ixr_tgt[i]);
   }
