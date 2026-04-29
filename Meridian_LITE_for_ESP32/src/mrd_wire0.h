@@ -2,11 +2,12 @@
 #define __MERIDIAN_WIRE0_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
+#include "mrd_common.h"
 
 // ライブラリ導入
 #include <Wire.h>
+
+extern AhrsValue ahrs;
 
 //==================================================================================================
 //  I2C wire0 関連の処理

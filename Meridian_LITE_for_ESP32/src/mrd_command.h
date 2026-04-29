@@ -2,12 +2,13 @@
 #define __MERIDIAN_COMMAND_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
-
-// ライブラリ導入
 #include "mrd_eeprom.h"
 #include "mrd_servo.h"
+
+// ライブラリ導入
+
+extern Meridim90Union s_udp_meridim; // Meridim配列データ送信用(short型, センサや角度は100倍値)
+extern AhrsValue ahrs;
 
 //==================================================================================================
 //  コマンド処理

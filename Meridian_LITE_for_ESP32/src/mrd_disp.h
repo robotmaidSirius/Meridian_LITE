@@ -2,7 +2,6 @@
 #define __MERIDIAN_DISP_H__
 
 // ヘッダファイルの読み込み
-#include "keys.h"
 #include "mrd_util.h"
 
 // ライブラリ導入

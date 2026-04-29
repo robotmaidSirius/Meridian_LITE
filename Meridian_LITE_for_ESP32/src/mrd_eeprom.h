@@ -2,23 +2,20 @@
 #define __MERIDIAN_EEPROM_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
+#include "mrd_common.h"
 #include "mrd_util.h"
 
 // ライブラリ導入
 #include <EEPROM.h>
+#include <Meridian.h> // Meridianのライブラリ導入
 
 // EEPROM読み書き用共用体
-typedef union {
-  uint8_t bval[EEPROM_SIZE]; // 1バイト単位で540個のデータを持つ
-  int16_t saval[3][90];      // short型で3*90個の配列データを持つ
-  uint16_t usaval[3][90];    // unsigned short型で3*90個の配列データを持つ
-  int16_t sval[270];         // short型で270個のデータを持つ
-  uint16_t usval[270];       // unsigned short型で270個のデータを持つ
-} UnionEEPROM;
 UnionEEPROM eeprom_write_data; // EEPROM書き込み用
 UnionEEPROM eeprom_read_data;  // EEPROM読み込み用
+
+extern MERIDIANFLOW::Meridian mrd;
+extern ServoParam sv; // サーボ用変数
+extern MrdFlags flg;
 
 //==================================================================================================
 //  EEPROM関連の処理

@@ -1,11 +1,11 @@
 #ifndef __MERIDIAN_SERVO_KONDO_ICS_H__
 #define __MERIDIAN_SERVO_KONDO_ICS_H__
 
-#include "config.h"
-#include "main.h"
-#include "mrd_disp.h"
+// ヘッダファイルの読み込み
+#include "mrd_common.h"
 
-#include "gs2d_krs.h"
+// ライブラリ導入
+#include <IcsHardSerialClass.h>
 
 //==================================================================================================
 //  KONDO ICSサーボ関連の処理

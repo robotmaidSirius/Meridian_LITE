@@ -2,12 +2,17 @@
 #define __MERIDIAN_BT_PAD_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "main.h"
+#include "mrd_common.h"
 
 // ライブラリ導入
 #include <ESP32Wiimote.h> // Wiiコントローラー
+#include <IcsHardSerialClass.h>
+
 ESP32Wiimote wiimote;
+extern IcsHardSerialClass ics_L;
+extern IcsHardSerialClass ics_R;
+extern PadUnion pad_array; // pad値の格納用配列
+extern PadUnion pad_i2c;   // pad値のi2c送受信用配列
 
 // リモコン受信ボタンデータの変換テーブル
 constexpr unsigned short PAD_TABLE_WIIMOTE_SOLO[16] = {

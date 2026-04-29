@@ -2,17 +2,13 @@
 #define __MERIDIAN_MAIN_FUNC__
 
 // ヘッダファイルの読み込み
-#include "mrd_disp.h"
+#include "mrd_common.h"
 
 // ライブラリ導入
 #include <Adafruit_BNO055.h>            // 9軸センサBNO055用
 #include <IcsHardSerialClass.h>         // ICSサーボのインスタンス設定
 #include <MPU6050_6Axis_MotionApps20.h> // MPU6050用
 #include <Meridian.h>                   // Meridianのライブラリ導入
-
-extern MERIDIANFLOW::Meridian mrd;
-extern IcsHardSerialClass ics_L;
-extern IcsHardSerialClass ics_R;
 
 //------------------------------------------------------------------------------------
 //  列挙型
@@ -30,13 +26,6 @@ enum ServoType { // サーボプロトコルのタイプ
   JRXBUS = 51,   // JRPROPO_XBUS (WIP)
   FTCSTS = 61,   // FEETECH_STS (WIP)
   FTCSCS = 62    // FEETECH_SCS (WIP)
-};
-
-enum ImuAhrsType { // 6軸9軸センサ種の列挙型(NO_IMU, MPU6050_IMU, MPU9250_IMU, BNO055_AHRS)
-  NO_IMU = 0,      // IMU/AHRS なし.
-  MPU6050_IMU = 1, // MPU6050
-  MPU9250_IMU = 2, // MPU9250(未設定)
-  BNO055_AHRS = 3  // BNO055
 };
 
 enum PadButton {  // リモコンボタンの列挙型
@@ -69,43 +58,11 @@ enum BinHexDec { // 数値表示タイプの列挙型(Bin, Hex, Dec)
 //  クラス・構造体・共用体
 //------------------------------------------------------------------------------------
 
-// Meridim配列用の共用体の設定
-extern Meridim90Union s_udp_meridim;       // Meridim配列データ送信用(short型, センサや角度は100倍値)
-extern Meridim90Union r_udp_meridim;       // Meridim配列データ受信用
-extern Meridim90Union s_udp_meridim_dummy; // SPI送信ダミー用
-
-// フラグ用変数
-struct MrdFlags {
-  bool imuahrs_available = true;        // メインセンサ値を読み取る間, サブスレッドによる書き込みを待機
-  bool udp_board_passive = false;       // UDP通信の周期制御がボード主導(false) か, PC主導(true)か.
-  bool count_frame_reset = false;       // フレーム管理時計をリセットする
-  bool stop_board_during = false;       // ボードの末端処理をmeridim[2]秒, meridim[3]ミリ秒だけ止める.
-  bool eeprom_write_mode = false;       // EEPROMへの書き込みモード.
-  bool eeprom_read_mode = false;        // EEPROMからの読み込みモード.
-  bool eeprom_protect = EEPROM_PROTECT; // EEPROMの書き込みプロテクト.
-  bool eeprom_load = EEPROM_LOAD;       // 起動時にEEPROMの内容を読み込む
-  bool eeprom_set = EEPROM_SET;         // 起動時にEEPROMに規定値をセット
-  bool sdcard_write_mode = false;       // SDCARDへの書き込みモード.
-  bool sdcard_read_mode = false;        // SDCARDからの読み込みモード.
-  bool wire0_init = false;              // I2C 0系統の初期化合否
-  bool wire1_init = false;              // I2C 1系統の初期化合否
-  bool bt_busy = false;                 // Bluetoothの受信中フラグ(UDPコンフリクト回避用)
-  bool spi_rcvd = true;                 // SPIのデータ受信判定
-  bool udp_rcvd = false;                // UDPのデータ受信判定
-  bool udp_busy = false;                // UDPスレッドでの受信中フラグ(送信抑制)
-
-  bool udp_receive_mode = MODE_UDP_RECEIVE; // PCからのデータ受信実施(0:OFF, 1:ON, 通常は1)
-  bool udp_send_mode = MODE_UDP_SEND;       // PCへのデータ送信実施(0:OFF, 1:ON, 通常は1)
-  bool meridim_rcvd = false;                // Meridimが正しく受信できたか.
-};
-extern MrdFlags flg;
-
 // シーケンス番号理用の変数
 struct MrdSq {
   int s_increment = 0; // フレーム毎に0-59999をカウントし, 送信
   int r_expect = 0;    // フレーム毎に0-59999をカウントし, 受信値と比較
 };
-extern MrdSq mrdsq;
 
 // タイマー管理用の変数
 struct MrdTimer {
@@ -117,23 +74,6 @@ struct MrdTimer {
 
   int pad_interval = (PAD_INTERVAL - 1 > 0) ? PAD_INTERVAL - 1 : 1; // パッドの問い合わせ待機時間
 };
-extern MrdTimer tmr;
-
-// エラーカウント用
-extern MrdErr err;
-
-typedef union // リモコン値格納用
-{
-  short sval[PAD_LEN];        // short型で4個の配列データを持つ
-  uint16_t usval[PAD_LEN];    // 上記のunsigned short型
-  int8_t bval[PAD_LEN * 2];   // 上記のbyte型
-  uint8_t ubval[PAD_LEN * 2]; // 上記のunsigned byte型
-  uint64_t ui64val;           // 上記のunsigned int16型
-                              // [0]button, [1]pad.stick_L_x:pad.stick_L_y,
-                              // [2]pad.stick_R_x:pad.stick_R_y, [3]pad.L2_val:pad.R2_val
-} PadUnion;
-extern PadUnion pad_array; // pad値の格納用配列
-extern PadUnion pad_i2c;   // pad値のi2c送受信用配列
 
 // リモコンのアナログ入力データ
 struct PadValue {
@@ -147,7 +87,6 @@ struct PadValue {
   int R2_val = 0;
   int L2_val = 0;
 };
-extern PadValue pad_analog;
 
 // 6軸or9軸センサーの値
 struct AhrsValue {
@@ -176,10 +115,6 @@ struct AhrsValue {
   VectorInt16 mag;                     // [x, y, z]            磁力センサの測定値
   long temperature;                    // センサの温度測定値
 };
-extern AhrsValue ahrs;
-
-// サーボ用変数
-extern ServoParam sv;
 
 // モニタリング設定
 struct MrdMonitor {
@@ -189,6 +124,5 @@ struct MrdMonitor {
   bool seq_num = MONITOR_SEQ;         // シーケンス番号チェックを表示
   bool pad = MONITOR_PAD;             // リモコンのデータを表示
 };
-extern MrdMonitor monitor;
 
 #endif //__MERIDIAN_MAIN_FUNC__

@@ -2,8 +2,6 @@
 #define __MERIDIAN_ETHER_H__
 
 // ヘッダファイルの読み込み
-#include "config.h"
-#include "keys.h"
 
 // ライブラリ導入 (標準Ethernetライブラリ)
 #include <Ethernet.h>
@@ -221,7 +219,7 @@ IPAddress mrd_parse_ip_address(const char *ip_str, HardwareSerial &a_serial) {
 /// @return 初期化に成功した場合はtrueを, 失敗した場合はfalseを返す.
 bool mrd_ether_init(EthernetUDP &a_udp, int a_cs_pin, byte *mac_address, HardwareSerial &a_serial) {
   // MACアドレス表示
-  a_serial.print("Wierd LAN MAC Address: ");
+  a_serial.print("Weird LAN MAC Address: ");
   for (int i = 0; i < 6; i++) {
     if (mac_address[i] < 16)
       a_serial.print("0");
